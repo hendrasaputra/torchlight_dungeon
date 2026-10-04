@@ -22,18 +22,18 @@ Still to decide or do (not done here):
 
 - **The arcade repository still has the game.** Remove it from there, or replace its cartridge with a link to the
   new domain, once this one is live.
-- **No remote and no domain yet.** Create the GitHub repository, add it as `origin`, push, turn on GitHub Pages
-  from `main` (the page is `index.html`), and add a `CNAME` file with the new domain.
+- **Remote and domain.** `origin` is github.com/hendrasaputra/torchlight_dungeon (private; its only commit was a
+  LICENSE identical to ours). The domain is dungeon.hensap.id (DNS at Hostinger); `CNAME` holds it. Still to do:
+  push, and turn on GitHub Pages from `main` (the page is `index.html`).
 - **Saved data does not carry over.** localStorage belongs to a domain, so players' keys, high scores and monster
   recall from games.hendrasaputra.com will not appear on the new domain. The keys keep the same names.
 - **The cover art** shows the old ASCII look; the game is pixel art since phase 6.
 
 ## State of the game
 
-Phases 0 to 7 of [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md) are done; its Progress table says what each phase built
-and what it left out. Next is **phase 8, survival and dungeon detail**: hunger stages, more status effects
-(cuts, stun, hallucination), about 15 traps, secret and locked doors, digging, repeat commands and level
-feelings. Then phase 9 (save games) and phase 10 (sound, help, options and polish).
+Phases 0 to 8 of [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md) are done; its Progress table says what each phase built
+and what it left out. Next is **phase 9, save games** (levels now also hold `lock`, `trap` and `trapSeen` arrays to
+save), then phase 10 (sound, help, options and polish).
 
 Known gaps and bugs:
 

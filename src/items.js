@@ -32,6 +32,9 @@ const ITEMS = [
       ["pike", "Pike", "2d5", 16, 10, 240], ["glaive", "Glaive", "2d6", 19, 14, 360], ["battleaxe", "Battle axe", "2d8", 17, 16, 420], ["halberd", "Halberd", "3d5", 19, 20, 600],
       ["lance", "Lance", "2d8", 30, 22, 500], ["greataxe", "Great axe", "4d4", 23, 28, 900], ["scythe", "War scythe", "5d3", 25, 32, 1000]]
     .map(([id, n, d, wt, dep, c]) => I("weapon", id, n, dep, dep > 12 ? 2 : 1, wt, c, { dice: d, glyph: "/" })),
+  // digging tools (phase 8): poor weapons; the best one you carry or wield helps you dig. dig: digging power
+  I("weapon", "shovel", "Shovel", 1, 1, 6, 15, { dice: "1d2", dig: 25 }), I("weapon", "pick", "Pick", 5, 1, 15, 80, { dice: "1d3", dig: 45 }),
+  I("weapon", "mattock", "Mattock", 15, 2, 25, 400, { dice: "2d6", dig: 70 }),
   // launchers and what they shoot
   I("bow", "sling", "Sling", 1, 1, 0.5, 5, { mult: 2, ammo: "shot" }), I("bow", "shortbow", "Short bow", 3, 1, 3, 80, { mult: 2, ammo: "arrow" }),
   I("bow", "longbow", "Long bow", 8, 2, 4, 200, { mult: 3, ammo: "arrow" }), I("bow", "lightxbow", "Light crossbow", 10, 2, 11, 300, { mult: 3, ammo: "bolt" }),
@@ -64,7 +67,7 @@ const ITEMS = [
   I("food", "ration", "Ration of food", 1, 1, 0.8, 3, { food: 3000 }), I("food", "jerky", "Strip of dried meat", 1, 1, 0.3, 2, { food: 1500 }),
   I("food", "biscuit", "Hard biscuit", 1, 1, 0.2, 1, { food: 800 }), I("food", "honeycake", "Honey cake", 3, 2, 0.4, 10, { food: 2000, effect: "curePoison" }),
   ...[["mvigor", "Vigor", "heal", { dice: "2d8" }, 1], ["mclear", "Clear Mind", "mana", { amount: 10 }, 4], ["mcure", "Cleansing", "cure", {}, 2],
-      ["msick", "Sickness", "poison", {}, 1], ["mstupor", "Stupor", "sleep", {}, 2], ["msight", "Second Sight", "detectMon", {}, 3]]
+      ["mvisions", "Visions", "halluc", {}, 2], ["msick", "Sickness", "poison", {}, 1], ["mstupor", "Stupor", "sleep", {}, 2], ["msight", "Second Sight", "detectMon", {}, 3]]
     .map(([id, n, e, o, dep]) => I("mushroom", id, n, dep, 1, 0.1, 5, { effect: e, ...o, food: 300 })),
   // potions
   ...[["heal", "Mending", "heal", { dice: "4d6" }, 1, 1, 20], ["bigheal", "Greater Mending", "heal", { dice: "10d8" }, 6, 2, 80], ["life", "Life", "healFull", {}, 35, 6, 2500],
@@ -85,7 +88,7 @@ const ITEMS = [
       ["senchac", "Enchant Armour", "enchAc", 6, 2, 125], ["sbless", "Blessing", "bless", 1, 1, 15], ["schant", "Holy Chant", "chant", 10, 2, 40],
       ["sfood", "Satisfy Hunger", "satisfy", 5, 2, 10], ["sconf", "Monster Confusion", "monConf", 3, 2, 30], ["sslumber", "Slumber", "slumber", 4, 2, 35],
       ["sdark", "Darkness", "darkness", 1, 1, 0], ["saggr", "Aggravate Monsters", "aggravate", 5, 1, 0], ["scursearm", "Curse Armour", "curseArmour", 10, 2, 0],
-      ["sundead", "Summon Undead", "summonUndead", 15, 2, 0], ["srecall", "Word of Recall", "recall", 5, 2, 125]]
+      ["sundead", "Summon Undead", "summonUndead", 15, 2, 0], ["srecall", "Word of Recall", "recall", 5, 2, 125], ["sfind", "Door and Trap Finding", "findTraps", 3, 1, 30]]
     .map(([id, n, e, dep, r, c]) => I("scroll", id, n, dep, r, 0.5, c, { effect: e })),
   // wands: aimed, with charges
   ...[["wmissile", "Magic Missile", "bolt", { elem: "arcane", dice: "3d4" }, 2, 1, 100, "5d4"], ["wstink", "Stinking Cloud", "ball", { elem: "poison", dmg: 12, r: 2 }, 5, 1, 400, "5d3"],
@@ -221,7 +224,7 @@ function makeItem(k, depth, rng, know, n = 1){
     if (rng.int(100) < Math.min(35, 5 + depth)){   // great
       const art = ARTIFACTS.find(a => a.base === k && a.depth <= depth && !know.arts[a.id]);
       if (art && rng.chance(0.15)) return makeArtifact(art, know);
-      const egos = EGOS.filter(e => e.cats.includes(K.cat) && e.depth <= depth);
+      const egos = EGOS.filter(e => e.cats.includes(K.cat) && e.depth <= depth && !K.dig);
       if (egos.length && K.cat !== "ammo"){ const e = rng.pick(egos); it.ego = e.id; if (e.speed) it.pval = e.speed[0] + rng.int(e.speed[1]); if (e.dam) it.todam = (it.todam || 0) + e.dam; if (e.hit) it.tohit = (it.tohit || 0) + e.hit; if (e.ac) it.toac = (it.toac || 0) + e.ac; }
     }
   }

@@ -2,7 +2,7 @@
 // Loads the game's logic files without a browser: random numbers, sight and light, turns, levels and data.
 const fs = require("fs"), vm = require("vm"), path = require("path");
 const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "sprites.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
-const G = vm.runInNewContext(files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, reachable, T, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
+const G = vm.runInNewContext(files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, reachable, T, TRAPS, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
 
 let failed = 0;
 const check = (name, ok, detail) => { console.log((ok ? "ok    " : "FAIL  ") + name + (detail ? "  (" + detail + ")" : "")); if (!ok) failed++; };
@@ -200,6 +200,25 @@ const { MW, MH, T } = G;
   check("about 25 named uniques and one final boss, deep down", U.length >= 25 && boss.length === 1 && boss[0].depth >= 50 && U.every(K => K.dropGood), U.length + " uniques");
   const names = new Set(M.map(K => K.name.toLowerCase()));
   check("every monster has its own name", names.size === M.length);
+}
+
+{ // phase 8: traps, rock and doors
+  const game = fs.readFileSync(path.join(__dirname, "..", "src", "game.js"), "utf8");
+  const noFx = G.TRAPS.filter(Tr => !new RegExp("\\b" + Tr.id + ": ").test(game)).map(Tr => Tr.id);
+  check("about 15 kinds of trap, each with an effect in game.js", G.TRAPS.length >= 15 && !noFx.length, noFx.join(", "));
+  const rock = Object.values(G.T).filter(t => G.rocky(t));
+  check("every kind of rock has a hardness, and nothing you can dig is walkable", rock.every(t => G.HARDNESS[t] > 0 && !G.passable(t)));
+  let bad = "", secret = 0, locked = 0, veins = 0, traps = 0;
+  for (let k = 0; k < 100; k++){
+    const d = 1 + (k % 40), L = G.generateLevel(new G.RNG(5000 + k), d);
+    for (let i = 0; i < L.tiles.length; i++){
+      const t = L.tiles[i];
+      if (t === T.SECRET) secret++; if (L.lock[i]) locked++; if (t >= T.MAGMA && t <= T.QUARTZ_T) veins++;
+      if (L.trap[i]){ traps++; if (t !== T.FLOOR || G.TRAPS[L.trap[i] - 1].depth > d) bad = "seed " + (5000 + k) + ": a trap off the floor or too deep"; }
+      if (L.lock[i] && t !== T.DOOR && t !== T.SECRET) bad = "seed " + (5000 + k) + ": a lock on something that is not a closed door";
+    }
+  }
+  check("100 levels: traps on floor and of their depth, locks only on closed doors", !bad, bad || `${secret} secret doors, ${locked} locks, ${veins} vein cells, ${traps} traps`);
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");

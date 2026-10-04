@@ -122,10 +122,11 @@ const healthWord = m => m.hp >= m.mhp ? "unhurt" : m.hp > m.mhp * 0.6 ? "wounded
 function bar(label, v, max, cls){ return `<div class="meter ${cls}"><span>${label}<b>${v} / ${max}</b></span><i><s style="width:${Math.max(0, Math.min(100, 100 * v / max))}%"></s></i></div>`; }
 function drawHud(){
   const p = player, lt = p.eq.light;
-  const food = p.food < 0 ? "Starving" : p.food < 1000 ? "Weak" : p.food < 2000 ? "Hungry" : "";
+  const food = p.food < 0 ? "Starving" : p.food < 500 ? "Fainting" : p.food < 1000 ? "Weak" : p.food < 2000 ? "Hungry" : "";
   const T0 = p.t, chips = [[T0.fast, "Fast", "good"], [T0.hero, "Hero", "good"], [T0.berserk, "Berserk", "good"], [T0.bless, "Blessed", "good"], [T0.protEvil, "Warded", "good"],
     [T0.resFire, "Res. heat", "good"], [T0.resCold, "Res. cold", "good"], [T0.seeInv, "True sight", "good"], [T0.poison, "Poisoned", "bad"], [T0.confused, "Confused", "bad"], [T0.blind, "Blind", "bad"], [T0.asleep, "Asleep", "bad"],
     [T0.afraid, "Afraid", "bad"], [T0.paralyzed, "Paralysed", "bad"], [T0.slow, "Slowed", "bad"],
+    [T0.cut, "Bleeding", "bad"], [T0.stun, "Stunned", "bad"], [T0.halluc, "Seeing things", "bad"], [p.food >= 10000, "Full", "good"],
     [p.bonus.burden, "Burdened", "bad"], [food, food, "bad"], [p.recall, "Recall", "good"]].filter(c => c[0]);
   const xpNext = expNeeded(p, p.lvl + 1), xpPrev = p.lvl > 1 ? expNeeded(p, p.lvl) : 0;
   $("status").innerHTML = `<div class="who">${pic(heroImage(), "face")}<div><b>${esc(p.name)}</b><small>Level ${p.lvl} ${esc(titleOf(p))}</small></div></div>
@@ -136,8 +137,8 @@ function drawHud(){
   // the target
   const tg = target && mons.includes(target) && sensed(target) ? target : null;
   $("target").hidden = !tg;
-  if (tg) $("target").innerHTML = `<div class="ct">${pic(creatureImage(tg.K), "big")}<div><b>${esc(cap(tg.K.name))}</b><small>${healthWord(tg)}${tg.sleep > 0 ? ", asleep" : ""}${tg.afraid ? ", afraid" : ""} · ${dist(tg.x, tg.y, player.x, player.y)} away</small></div></div>
-    <div class="meter hp"><i><s style="width:${100 * Math.max(0, tg.hp) / tg.mhp}%"></s></i></div><div class="ln">${esc(tg.K.desc)}</div>${recall(tg.K).slice(1, 4).map(s => `<div class="ln dim">${esc(s)}</div>`).join("")}`;
+  if (tg) $("target").innerHTML = `<div class="ct">${pic(creatureImage(looksLike(tg)), "big")}<div><b>${esc(cap(looksLike(tg).name))}</b><small>${healthWord(tg)}${tg.sleep > 0 ? ", asleep" : ""}${tg.afraid ? ", afraid" : ""} · ${dist(tg.x, tg.y, player.x, player.y)} away</small></div></div>
+    <div class="meter hp"><i><s style="width:${100 * Math.max(0, tg.hp) / tg.mhp}%"></s></i></div><div class="ln">${esc(looksLike(tg).desc)}</div>${recall(looksLike(tg)).slice(1, 4).map(s => `<div class="ln dim">${esc(s)}</div>`).join("")}`;
   // messages: this turn's bright, older ones fading
   const fresh = msgs.length, last = log.slice(-6);
   $("log").innerHTML = last.map((s, k) => `<div class="${k >= last.length - fresh ? "new" : ""}" style="opacity:${k >= last.length - fresh ? 1 : 0.35 + 0.1 * k}">${esc(s)}</div>`).join("");
@@ -346,11 +347,11 @@ function helpDialog(){
   const modern = [["Arrow keys", "move; into a monster attacks, into a door opens"], ["Two arrows", "move diagonally (or numpad, Home, End, PgUp, PgDn)"], ["Shift + arrow", "run"],
     ["A", "attack the target: melee, or fire / throw if it is further"], ["S", "cast the readied spell"], ["D", "drink the best-fitting healing potion"], ["W", "grab: pick up, stairs, shop"],
     ["Q / Shift+Q", "ready the next / previous spell"], ["E", "eat"], ["R", "rest"], ["F", "refill your lantern, or a fresh torch"], ["Tab / Shift+Tab", "next / previous target"],
-    ["Space", "wait a turn"], ["1 to 0", "use a hotbar slot"], ["I C B J M", "Pack, Character, Book, Journal, Map"], ["P", "show or hide the panel"], ["L", "look"], ["Esc", "close, or the menu"]];
+    ["Space", "wait a turn and search"], ["T", "dig in a direction (walking into rubble or a vein digs it)"], ["1 to 0", "use a hotbar slot"], ["I C B J M", "Pack, Character, Book, Journal, Map"], ["P", "show or hide the panel"], ["L", "look"], ["Esc", "close, or the menu"]];
   const ro = keySet === "roguelike";
   const classic = [[ro ? "hjklyubn" : "Arrows / numpad", "move (Shift runs)"], ["g or ,", "pick up"], ["i  e", "pack, equipment"], ["w  " + (ro ? "T" : "t") + "  d", "wear, take off, drop"],
     ["E  q  r", "eat, drink, read"], ["a  " + (ro ? "Z" : "u") + "  z", "aim a wand, use a staff, zap a rod"], ["F", "fill lantern"], ["f  v  I", "fire, throw, inspect"], ["m or p  S", "cast or pray, study"],
-    [">  <", "stairs"], ["R  " + (ro ? "." : ". or 5"), "rest, wait"], [(ro ? "x" : "l") + "  C", "look, character"], ["Tab", "next target"], ["Esc", "menu"]];
+    [">  <", "stairs"], ["R  " + (ro ? ". s" : ". 5 s"), "rest, wait and search"], [ro ? "#" : "T", "dig in a direction"], [(ro ? "x" : "l") + "  C", "look, character"], ["Tab", "next target"], ["Esc", "menu"]];
   openDialog({ title: "Keys · " + KEYSETS[keySet], cols: [(keySet === "modern" ? modern : classic).map(([a, b]) => ({ html: `<kbd>${esc(a)}</kbd> ${esc(b)}` }))], side: false, onBack: closeDialog, note: "Change the key set in the menu" });
 }
 

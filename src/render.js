@@ -85,6 +85,7 @@ function drawWorld(t, dt){
   const shown = i => title ? lit(i) : mem[i];
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (shown(idx(x, y))) ctx.drawImage(tileImage(L, x, y, depth), x * TS, y * TS);
   if (title) return lightOverlay(x0, y0, x1, y1, lit, title);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){ const i = idx(x, y); if (L.trapSeen[i] && L.trap[i] && mem[i]) ctx.drawImage(trapImage(TRAPS[L.trap[i] - 1]), x * TS, y * TS); }
   const bob = n => Math.round(Math.sin(t / 260 + n) * 0.6);
   for (const f of floor){ const i = idx(f.x, f.y); if (!visible(i) && !f.seen) continue;
     ctx.drawImage(itemIcon(f.it), f.x * TS + 2, f.y * TS + 2 + (visible(i) ? bob(f.x) : 0), 12, 12); }
@@ -123,7 +124,7 @@ function label(x, y, s, col, size = 0.8, centre = false){
 const MIMICS = new Map();
 const mimicImage = K => memo(MIMICS, K.mimic, () => icon({ cat: K.mimic }, K.mimic === "potion" ? [0.5, 0.75, 1] : [1, 0.8, 0.3]));
 function figure(m, t, how){
-  const a = posOf(m), K = m.K, S = (K && K.size) || 1, img = m === player ? heroImage() : K.mimic && !m.revealed ? mimicImage(K) : creatureImage(K);
+  const a = posOf(m), K = m.K, S = (K && K.size) || 1, img = m === player ? heroImage() : K.mimic && !m.revealed ? mimicImage(K) : creatureImage(looksLike(m));
   let ox = 0, oy = Math.round(Math.sin(t / 260 + (m === player ? 0 : m.x * 3)) * 0.6);
   if (a.lunge){ const k = Math.sin(Math.PI * (1 - a.lunge.t / 0.16)) * 5; ox = a.lunge.dx * k; oy += a.lunge.dy * k; }
   const px = Math.round(a.x * TS + ox), py = Math.round(a.y * TS + oy), W = Math.round(TS * S), X = px - (W - TS) / 2, Y = py - (W - TS);   // big ones grow upward from their feet
@@ -181,7 +182,7 @@ function drawMinimap(c, s, focus){
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
     const i = idx(x, y), o = 4 * (y * w + x); if (!mem[i]) continue;
     const t = L.tiles[i], v = visible(i);
-    const col = t === T.DOWN || t === T.UP ? [240, 240, 240] : t === T.SHOP ? [240, 200, 90] : t === T.DOOR || t === T.OPEN ? [170, 110, 50] : opaque(t) ? [96, 92, 110] : v ? [70, 66, 58] : [40, 40, 52];
+    const col = t === T.DOWN || t === T.UP ? [240, 240, 240] : t === T.SHOP ? [240, 200, 90] : t === T.DOOR || t === T.OPEN ? [170, 110, 50] : L.trap[i] && L.trapSeen[i] ? [220, 90, 200] : t === T.MAGMA_T || t === T.QUARTZ_T ? [200, 170, 60] : opaque(t) ? [96, 92, 110] : v ? [70, 66, 58] : [40, 40, 52];
     d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
   }
   for (const f of floor) if (f.seen || visible(idx(f.x, f.y))){ const o = 4 * (f.y * w + f.x); d[o] = 90; d[o + 1] = 170; d[o + 2] = 255; d[o + 3] = 255; }

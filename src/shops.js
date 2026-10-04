@@ -3,7 +3,7 @@
 // come later as an option). A keeper marks prices up by their greed; Charisma moves both buying and selling prices.
 const SHOPS = [
   { name: "General Store", keeper: "Odda the Provisioner", greed: 1.1, rgb: [1.3, 1.1, 0.6], size: [12, 16], always: ["torch", "ration", "oil"],
-    sells: ["ration", "jerky", "biscuit", "honeycake", "torch", "lantern", "oil", "cloak", "furcloak", "dart", "arrow", "shot", "bolt", "sling"],
+    sells: ["ration", "jerky", "biscuit", "honeycake", "torch", "lantern", "oil", "cloak", "furcloak", "dart", "arrow", "shot", "bolt", "sling", "shovel", "pick"],
     buys: ["food", "light", "flask", "cloak", "ammo", "dart"], hello: ["Need anything for the road, dear?", "Torches, food and oil: all you need down there.", "Mind you come back."] },
   { name: "Armoury", keeper: "Bram Ironside", greed: 1.2, rgb: [0.8, 0.85, 1.1], size: [10, 14], cats: ["body", "shield", "head", "hands", "feet"], maxDepth: 14,
     buys: ["body", "shield", "head", "hands", "feet", "cloak"], hello: ["Good steel saves lives.", "Try it on. It's the only way to know.", "Dents are extra."] },
@@ -13,7 +13,7 @@ const SHOPS = [
     sells: ["hbook1", "hbook2", "heal", "bigheal", "pclear", "ppoisoncure", "sbless", "schant", "suncurse", "srecall", "mace", "flail", "morningstar", "warhammer"],
     buys: ["potion", "scroll", "book"], hello: ["May your light never fail.", "The flame keeps watch over all of us.", "Rest here a while, if you need."] },
   { name: "Alchemist", keeper: "Thorne Vialkeeper", greed: 1.3, rgb: [0.7, 1.2, 0.8], size: [10, 15], always: ["heal", "sident", "srecall"],
-    sells: ["heal", "bigheal", "pfire", "pcold", "pinfra", "phero", "pspeed", "sident", "slight", "sphase", "smap", "sobj", "smon", "sfood", "srecall", "senchhit", "senchdam", "senchac", "stele"],
+    sells: ["heal", "bigheal", "pfire", "pcold", "pinfra", "phero", "pspeed", "sident", "slight", "sphase", "smap", "sobj", "smon", "sfood", "srecall", "senchhit", "senchdam", "senchac", "stele", "sfind"],
     buys: ["potion", "scroll"], hello: ["Don't touch the green ones.", "Every bottle has a story. Some of them explode.", "Read the label. Then read it again."] },
   { name: "Magic Shop", keeper: "Maelis of the Blue Door", greed: 1.4, rgb: [0.8, 0.7, 1.4], size: [8, 12],
     always: ["abook1"], sells: ["abook1", "abook2", "wmissile", "wsleep", "wslow", "wconf", "wstink", "wlight", "wmud", "tlight", "tdetmon", "tdetobj", "tcure", "rillum", "rlight", "robj",

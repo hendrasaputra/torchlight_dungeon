@@ -25,7 +25,9 @@ const byHeat = m => !m.K.cold && !m.K.invis && infra() > 0 && inFov[idx(m.x, m.y
 const seesMon = m => !hiddenMimic(m) && ((visible(idx(m.x, m.y)) && (!m.K.invis || seeInvis())) || byHeat(m));
 const sensed = m => seesMon(m) || m.det === turnNo;   // seen, or found by detection this turn
 const monName = K => K.unique ? K.name : "the " + K.name, aName = K => K.unique ? K.name : (/^[aeiou]/i.test(K.name) ? "an " : "a ") + K.name;
-const theName = m => seesMon(m) ? monName(m.K) : "it";
+// Hallucinating, you see each monster as some other kind, and a different one every turn.
+const looksLike = m => m.K && player.t && player.t.halluc > 0 ? MONSTERS[(m.x * 31 + m.y * 17 + turnNo) % MONSTERS.length] : m.K;
+const theName = m => seesMon(m) ? monName(looksLike(m)) : "it";
 
 /* ---------- saved preferences and high scores ---------- */
 const store = prefs("torchlightDungeons.v1.", "Torchlight Dungeons"), scores = scoreTable(store);   // src/lib.js
@@ -70,6 +72,7 @@ function recalc(){
   if (t.bless){ b.hit += 10; b.ac += 5; }
   if (t.hero) b.hit += 12;
   if (t.berserk){ b.hit += 12; b.ac -= 10; }
+  if (t.stun) b.hit -= 15;
   if (t.resFire) b.res.add("fire");
   if (t.resCold) b.res.add("cold");
   if (t.infra) b.infra += 3;
@@ -112,8 +115,9 @@ function newLevel(d){
   const boss = MON.morrowgloom;   // the Lantern-Eater waits at 2,500 ft, and sometimes deeper
   if (d >= boss.depth && !uniqueGone(boss) && (d === boss.depth || rng.chance(0.3))) spawnMonster(false, boss, freeSpot(25));
   for (let k = 0, n = 8 + rng.int(6); k < n; k++) dropAt(freeSpot(0), rng.chance(0.35) ? { k: "gold", n: rng.range(8, 25) * d } : loot(d));
-  updateSight();
+  updateSight(); digging = null;
   say(d === 1 && from === 0 ? "You enter the dungeon at 50 ft. Your torch hisses in the damp air." : "You are now at " + feet(d) + " ft.");
+  levelFeeling(d);
 }
 const depthName = d => d ? feet(d) + " ft" : "the town";
 
@@ -207,9 +211,11 @@ function tryMove(dx, dy){
   const x = player.x + dx, y = player.y + dy, i = idx(x, y), t = L.tiles[i], m = monAt(x, y);
   if (m === player) return false;   // no direction
   if (m) return attack(m);
+  if (workAt(x, y)) return work(x, y);
   if (t === T.DOOR){ L.tiles[i] = T.OPEN; say("You open the door."); return true; }
-  if (!passable(t)){ say(t <= T.WALL ? "There is a wall in the way." : "Something is in the way."); return false; }
+  if (!passable(t)){ say(t <= T.WALL || t >= T.RUBBLE ? "There is a wall in the way." : "Something is in the way."); return false; }
   player.x = x; player.y = y;
+  if (L.trap[i]){ springTrap(i); if (state !== "play" || player.x !== x || player.y !== y || pendingLevel !== null) return true; }
   for (const f of itemsAt(x, y)) if (f.it.k === "gold"){ player.gold += f.it.n; say("You find " + f.it.n + " gold pieces."); floor.splice(floor.indexOf(f), 1); }
   const here = itemsAt(x, y);
   if (here.length === 1) say("You see " + nameOf(here[0].it) + ".");
@@ -306,6 +312,107 @@ function takeStairs(down){
   newLevel(depth + (down ? 1 : -1));
   return "level";
 }
+/* ---------- digging, locked doors, searching and traps (phase 8) ---------- */
+// Walking into rubble, a vein, a locked or stuck door or a trap you know of works at it, turn after turn (work);
+// T digs into plain rock too. Each of these is one turn here; repeatWork keeps at it until it is done or you are
+// disturbed.
+const RUBBLE_RGB = [0.55, 0.5, 0.45];
+const digPower = () => player.stats.str + Math.max(0, ...[player.eq.weapon, ...player.inv].filter(Boolean).map(it => ITEM[it.k].dig || 0));
+const trapAt = i => L.trap[i] ? TRAPS[L.trap[i] - 1] : null;
+const aTrap = Tr => (/^[aeiou]/.test(Tr.name) ? "an " : "a ") + Tr.name;
+let digging = null;   // the cell being dug, and how far along
+// Is there work to do at (x, y): something to dig (granite only when asked), a lock, or a known trap?
+function workAt(x, y, granite){
+  const i = idx(x, y), t = L.tiles[i];
+  if (monAt(x, y) || depth === 0) return false;
+  return (rocky(t) && (t !== T.WALL || granite)) || (t === T.DOOR && L.lock[i] !== 0) || (!!L.trap[i] && !!L.trapSeen[i]) || (t === T.SECRET && granite);
+}
+function work(x, y){
+  const i = idx(x, y), t = L.tiles[i];
+  if (t === T.DOOR) return L.lock[i] > 0 ? pickLock(i) : bashDoor(i);
+  if (L.trap[i] && L.trapSeen[i]) return disarm(i);
+  if (t === T.SECRET){ foundDoor(i); return true; }   // digging at it shows it for what it is
+  if (!rocky(t)){ say("There is nothing to dig there."); return false; }
+  if (!digging || digging.i !== i){ digging = { i, done: 0 }; say(t === T.RUBBLE ? "You start clearing the rubble." : "You start digging."); }
+  const P = digPower(); digging.done += rng.range(P >> 1, Math.ceil(P * 1.5));
+  if (digging.done < HARDNESS[t]) return true;
+  digging = null; L.tiles[i] = T.FLOOR; burst(x, y, RUBBLE_RGB, 10);
+  say(t === T.RUBBLE ? "You have cleared the rubble." : "You have dug through the rock.");
+  if (t === T.MAGMA_T || t === T.QUARTZ_T){ dropAt(i, { k: "gold", n: rng.range(10, 30) * depth * (t === T.QUARTZ_T ? 2 : 1) }); floor[floor.length - 1].seen = true; say("You have found something!"); }
+  else if (t === T.RUBBLE && rng.chance(0.08)){ dropAt(i, loot(depth)); floor[floor.length - 1].seen = true; say("You have found something in the rubble!"); }
+  return true;
+}
+function repeatWork(x, y, granite){
+  disturbed = false;
+  for (let n = 0; n < 200 && state === "play" && !disturbed && workAt(x, y, granite) && dist(x, y, player.x, player.y) === 1; n++){
+    if (n && mons.some(m => m.K && seesMon(m) && !m.K.still)) break;
+    if (!act(() => work(x, y))) break;
+  }
+}
+// T: dig in a direction, through anything but the town and the dungeon's edge.
+function tunnelKey(){
+  if (depth === 0){ msgs = []; say("The townsfolk would not thank you for digging up their town."); return; }
+  aimText = "Dig. Arrows: a direction · Esc: cancel"; refreshUI();
+  aiming = (tx, ty) => { const x = player.x + Math.sign(tx - player.x), y = player.y + Math.sign(ty - player.y);
+    if (workAt(x, y, true) && !L.trap[idx(x, y)]) repeatWork(x, y, true); else say("There is nothing to dig there."); return false; };
+}
+function pickLock(i){
+  if (rng.int(100) < Math.max(5, Math.min(95, skillOf(player, "disarm") + 10 - L.lock[i] * 5))){ L.lock[i] = 0; L.tiles[i] = T.OPEN; say("You have picked the lock."); gainExp(1); }
+  else say("You failed to pick the lock.");
+  return true;
+}
+function bashDoor(i){
+  if (rng.int(100) < Math.max(5, Math.min(90, 20 + statMod(player.stats.str) * 6 + player.lvl))){ L.lock[i] = 0; L.tiles[i] = T.OPEN; say("The door crashes open!"); burst(i % MW, Math.floor(i / MW), WOOD, 5); }
+  else say("The door is stuck fast.");
+  return true;
+}
+function foundDoor(i){ L.tiles[i] = T.DOOR; mem[i] = 1; say("You have found a secret door."); disturbed = true; }
+// Looks for hidden doors and traps next to you, each found with the given chance (a percentage).
+function search(chance){
+  if (player.t.blind || player.t.confused || player.t.halluc) chance /= 2;
+  for (const k of [1, 2, 3, 4, 6, 7, 8, 9]){
+    const [dx, dy] = DIRS[k], i = idx(player.x + dx, player.y + dy);
+    if (L.tiles[i] === T.SECRET && rng.int(100) < chance) foundDoor(i);
+    if (L.trap[i] && !L.trapSeen[i] && rng.int(100) < chance){ L.trapSeen[i] = 1; mem[i] = 1; say("You have found " + aTrap(trapAt(i)) + "."); disturbed = true; }
+  }
+  return true;
+}
+const waitAndSearch = () => search(skillOf(player, "search"));
+function disarm(i){
+  const Tr = trapAt(i);
+  if (rng.int(100) < Math.max(5, Math.min(95, skillOf(player, "disarm") + 10 - Tr.depth * 2))){ L.trap[i] = 0; say("You have disarmed the " + Tr.name + "."); gainExp(Tr.depth); return true; }
+  if (rng.chance(0.25)){ say("You set off the " + Tr.name + "!"); springTrap(i); return true; }
+  say("You failed to disarm the " + Tr.name + ".");
+  return true;
+}
+// A dart can be dodged; armour helps.
+const dart = (what, fn) => { if (rng.int(100) < Math.min(60, 10 + armour())){ say("A small dart barely misses you."); return; } say("A small dart hits you!"); hurt(rng.dice("1d4"), what); if (state === "play") fn(); };
+const drainTrap = k => () => { if (saves() || player.base[k] <= 3) return say("You feel a numbness that passes."); player.base[k]--; recalc(); say(k === "str" ? "You feel weaker." : "You feel clumsier."); };
+const TRAP_FX = {
+  pit: () => { say("You fall into a pit!"); hurt(rng.dice("2d6"), "a pit"); },
+  spiked: () => { say("You fall into a spiked pit!"); hurt(rng.dice("2d8"), "a spiked pit"); if (state === "play" && rng.chance(0.5)){ say("You are impaled!"); addTimer("cut", 5 + rng.int(10)); } },
+  trapdoor: () => { say("You fall through a trapdoor!"); hurt(rng.dice("2d8"), "a trapdoor"); pendingLevel = depth + 1; },
+  needle: () => { say("A small needle pricks you!"); hurt(rng.dice("1d4"), "a poison needle"); if (state === "play" && !player.bonus.res.has("poison")) setTimer("poison", 10 + rng.int(20)); },
+  sleepgas: () => { say("A white mist surrounds you!"); FX.sleep(); },
+  dazegas: () => { say("A swirl of coloured gas surrounds you!"); setTimer("confused", 10 + rng.int(15)); },
+  alarm: () => { say("A shrill bell rings out!"); for (const m of mons) if (m.K) m.sleep = 0; },
+  slowdart: () => dart("a dart", () => setTimer("slow", 15 + rng.int(20))),
+  weakdart: () => dart("a dart", drainTrap("str")), clumsydart: () => dart("a dart", drainTrap("dex")),
+  flash: () => { say("There is a blinding flash!"); flashes.push({ x: player.x, y: player.y, t: 0.5, t0: 0.5, rgb: ELEM_RGB.light }); if (!player.bonus.res.has("light")) setTimer("blind", 10 + rng.int(20)); },
+  telerune: () => { say("The rune flares, and the world lurches!"); teleportPlayer(60); },
+  rockfall: () => { say("Rocks fall from the ceiling!"); burst(player.x, player.y, RUBBLE_RGB, 14); shove(player.x, player.y, 3); hurt(rng.dice("2d6"), "falling rocks");
+    if (state === "play"){ addTimer("stun", 5 + rng.int(10)); knockOut(); } L.trap[idx(player.x, player.y)] = 0; },
+  firerune: () => { say("Flames erupt around you!"); flashes.push({ x: player.x, y: player.y, t: 0.5, t0: 0.5, rgb: ELEM_RGB.fire }); elemHurt({ K: { depth } }, rng.dice("4d6"), "fire", "a fire rune"); },
+  acidspray: () => { say("You are sprayed with acid!"); elemHurt({ K: { depth } }, rng.dice("4d6"), "acid", "an acid sprayer"); },
+  summonrune: () => { say("Shapes rise out of the rune!"); summonNear(MONSTERS.filter(K => !K.town && !K.unique && !K.boss && K.depth <= depth + 2), 2 + rng.int(3)); L.trap[idx(player.x, player.y)] = 0; }
+};
+function springTrap(i){ L.trapSeen[i] = 1; mem[i] = 1; disturbed = true; TRAP_FX[trapAt(i).id](); }
+// On arrival: a feeling for how dangerous the level's monsters are for its depth.
+function levelFeeling(d){
+  const danger = mons.reduce((s, m) => s + (m.K ? Math.max(0, m.K.depth - d) + (m.K.unique ? 8 : 0) + (m.K.boss ? 30 : 0) : 0), 0);
+  say(danger > 40 ? "Your torch gutters as if afraid. Something terrible waits here." : danger > 20 ? "The air is thick with menace." : danger > 10 ? "You have a bad feeling about this level."
+    : danger > 4 ? "Something stirs in the dark." : "The level feels still and quiet.");
+}
 function takeOne(it){ if (--it.n <= 0) player.inv.splice(player.inv.indexOf(it), 1); }
 // Using an item teaches you its kind when you could tell what it did; otherwise it is marked {tried}.
 function learn(it, noticed){
@@ -391,8 +498,10 @@ const TIMERS = { fast: ["You feel yourself moving faster!", "You feel yourself s
   infra: ["Your eyes begin to tingle.", "Your eyes stop tingling."], protEvil: ["You feel safe from evil!", "You no longer feel safe from evil."], poison: ["You are poisoned!", "You are no longer poisoned."],
   confused: ["You are confused!", "You feel less confused now."], blind: ["You are blind!", "You can see again."], asleep: ["You fall asleep.", "You wake up."],
   afraid: ["You are terrified!", "You feel bolder now."], paralyzed: ["You are paralysed!", "You can move again."], slow: ["You feel yourself moving slower!", "You feel yourself speed up."],
-  seeInv: ["Your eyes feel very sharp.", "Your eyes feel less sharp."] };
+  seeInv: ["Your eyes feel very sharp.", "Your eyes feel less sharp."], cut: ["You have been cut.", "Your wound has closed."], stun: ["You reel from the blow.", "Your head clears."],
+  halluc: ["The walls start to breathe and the shadows grin at you.", "The world settles back into its proper shapes."] };
 function setTimer(k, n){ const was = player.t[k] > 0; player.t[k] = Math.max(player.t[k] || 0, n); if (!was) say(TIMERS[k][0]); recalc(); return true; }
+function addTimer(k, n){ const was = player.t[k] > 0; player.t[k] = (player.t[k] || 0) + n; if (!was) say(TIMERS[k][0]); recalc(); }   // wounds and stuns add up
 function clearTimer(k){ if (!(player.t[k] > 0)) return false; player.t[k] = 0; say(TIMERS[k][1]); recalc(); return true; }
 const resists = m => rng.int(100) < 10 + 3 * m.K.depth;   // monsters save against sleep, slowing, confusion and fear
 function hurtMon(m, dmg, elem, msg, delay){
@@ -460,14 +569,15 @@ function allInView(what){
   return n > 0;
 }
 const FX = {
-  heal: c => { player.hp = Math.min(player.mhp, player.hp + rng.dice(c.K.dice) + (c.power || 0)); say(player.hp >= player.mhp ? "You feel very good." : "You feel better."); return true; },
-  healFull: () => { player.hp = player.mhp; for (const k of ["poison", "confused", "blind"]) clearTimer(k); say("You feel wonderful!"); return true; },
+  heal: c => { player.hp = Math.min(player.mhp, player.hp + rng.dice(c.K.dice) + (c.power || 0)); clearTimer("cut"); say(player.hp >= player.mhp ? "You feel very good." : "You feel better."); return true; },
+  healFull: () => { player.hp = player.mhp; for (const k of ["poison", "confused", "blind", "cut", "stun", "halluc"]) clearTimer(k); say("You feel wonderful!"); return true; },
   mana: c => { player.mana = Math.min(player.mmana, player.mana + c.K.amount); say("Your mind feels clearer."); return true; },
   fast: () => setTimer("fast", 20 + rng.int(25)), hero: () => { clearTimer("afraid"); return setTimer("hero", 25 + rng.int(25)); },
   seeInvis: () => setTimer("seeInv", 50 + rng.int(50)),
   berserk: () => { clearTimer("afraid"); player.hp = Math.min(player.mhp, player.hp + Math.ceil(player.mhp * 0.3)); return setTimer("berserk", 25 + rng.int(25)); },
   resFire: () => setTimer("resFire", 20 + rng.int(20)), resCold: () => setTimer("resCold", 20 + rng.int(20)), infra: () => setTimer("infra", 100 + rng.int(100)),
-  cure: () => { let any = false; for (const k of ["poison", "confused", "blind"]) any = clearTimer(k) || any; if (!any) say("You feel healthy."); return true; },
+  cure: () => { let any = false; for (const k of ["poison", "confused", "blind", "stun", "halluc"]) any = clearTimer(k) || any; if (!any) say("You feel healthy."); return true; },
+  halluc: () => setTimer("halluc", 50 + rng.int(100)),
   curePoison: () => clearTimer("poison"),
   sleep: () => { if (player.bonus.freeAct){ say("You feel drowsy for a moment, but it passes."); return true; } return setTimer("asleep", 4 + rng.int(4)); },
   poison: () => setTimer("poison", 10 + rng.int(10)), confuse: () => setTimer("confused", 10 + rng.int(10)), blind: () => setTimer("blind", 30 + rng.int(30)),
@@ -503,6 +613,10 @@ const FX = {
   enchHit: () => enchant(weapon(), "tohit"), enchDam: () => enchant(weapon(), "todam"),
   enchAc: () => { const worn = ["body", "shield", "cloak", "head", "hands", "feet"].map(s => player.eq[s]).filter(Boolean); return enchant(worn.length ? rng.pick(worn) : null, "toac"); },
   bless: () => setTimer("bless", 12 + rng.int(12)), chant: () => setTimer("bless", 24 + rng.int(24)),
+  findTraps: () => { let n = 0;
+    for (let y = player.y - 15; y <= player.y + 15; y++) for (let x = player.x - 25; x <= player.x + 25; x++){ if (x < 0 || y < 0 || x >= MW || y >= MH) continue; const i = idx(x, y);
+      if (L.trap[i] && !L.trapSeen[i]){ L.trapSeen[i] = 1; mem[i] = 1; n++; } if (L.tiles[i] === T.SECRET){ L.tiles[i] = T.DOOR; mem[i] = 1; n++; } }
+    say(n ? "You sense hidden doors and traps around you." : "You sense no hidden doors or traps."); return n > 0; },
   satisfy: () => { player.food = Math.max(player.food, 10000); say("You feel full."); return true; },
   monConf: () => { player.t.confHit = 1; say("Your hands begin to glow."); return true; },
   slumber: () => { let n = 0; for (const m of mons) if (m.K && dist(m.x, m.y, player.x, player.y) <= 1 && !resists(m)){ m.sleep = 500; n++; } if (n) say("The monsters next to you fall asleep."); return n > 0; },
@@ -528,8 +642,9 @@ const FX = {
     const { path, wall } = lineToWall(c.tx, c.ty, 25); missile(path, "acid", 60);
     if (!wall) return false;
     const i = idx(wall[0], wall[1]);
-    if (L.tiles[i] !== T.WALL){ say("The wall resists."); return true; }
-    L.tiles[i] = T.FLOOR; say("The wall turns into mud!");
+    if (!rocky(L.tiles[i])){ say("The wall resists."); return true; }
+    const was = L.tiles[i]; L.tiles[i] = T.FLOOR; say("The wall turns into mud!");
+    if (was === T.MAGMA_T || was === T.QUARTZ_T){ dropAt(i, { k: "gold", n: rng.range(10, 30) * depth * (was === T.QUARTZ_T ? 2 : 1) }); say("You have found something!"); }
     later.push({ t: path.length / 60, fn: () => burst(wall[0], wall[1], [0.55, 0.5, 0.45], 9) });
     return true;
   }
@@ -556,7 +671,8 @@ function shake(r, wipe){
       L.tiles[i] = rng.chance(0.5) ? T.WALL : T.FLOOR; L.lit[i] = 0; roomLight[3 * i] = roomLight[3 * i + 1] = roomLight[3 * i + 2] = 0; mem[i] = 0;
     } else {
       if (!rng.chance(0.3) || m || itemsAt(x, y).length) continue;
-      L.tiles[i] = opaque(t) ? T.FLOOR : T.WALL;
+      if (t === T.DOOR || t === T.OPEN || t === T.SECRET) continue;
+      L.tiles[i] = opaque(t) ? T.FLOOR : rng.chance(0.6) ? T.RUBBLE : T.WALL;
     }
     if (inFov[i] === turnNo && fallen++ < 30) later.push({ t: rng.next() * 0.3, fn: () => burst(x, y, [0.55, 0.5, 0.45], 3) });
   }
@@ -695,7 +811,7 @@ function castSpell(S, quick){
   if (player.t.blind || player.t.confused){ say(player.t.blind ? "You cannot see to read your book!" : "You are too confused."); return false; }
   const go = (tx, ty) => {
     player.mana -= S.mana;
-    if (rng.int(100) < spellFail(S, player)){ say(holy ? "You lose your concentration." : "You failed to get the spell off!"); return true; }
+    if (rng.int(100) < spellFail(S, player) + (player.t.stun ? 25 : 0)){ say(holy ? "You lose your concentration." : "You failed to get the spell off!"); return true; }
     // a spell grows with its caster: power is added to bolts, beams, balls and healing (items stay as they are)
     FX[S.fx]({ K: S, tx, ty, power: player.lvl });
     if (S.also) FX[S.also]({ K: S, tx, ty, power: player.lvl });
@@ -752,9 +868,13 @@ function everyTurn(){
   if (!player.bonus.slowDigest || player.turns % 2) player.food--;
   if (player.food === 2000) say("You are getting hungry.");
   if (player.food === 1000) say("You are getting weak from hunger.");
+  if (player.food === 500) say("You feel faint from hunger.");
   if (player.food === 0) say("You are starving!");
+  if (player.food < 500 && !(player.t.paralyzed > 0) && rng.int(15) === 0){ player.t.paralyzed = 1 + rng.int(4); say("You faint from the lack of food."); disturbed = true; }
   if (player.food < 0 && player.food % 10 === 0) hurt(1, "starvation");
+  if (depth > 0) search(skillOf(player, "notice") / 4);   // now and then you notice something without looking
   if (player.t.poison > 0) hurt(1, "poison");
+  if (player.t.cut > 0 && state === "play") hurt(player.t.cut > 20 ? 2 : 1, "bleeding");
   if (player.recall > 0 && --player.recall === 0){
     pendingLevel = depth > 0 ? 0 : Math.max(1, player.maxDepth);
     say(depth > 0 ? "You feel yourself yanked upwards!" : "You feel yourself yanked downwards!");
@@ -823,7 +943,7 @@ function monsterTurn(m){
   let best = null, bestD = away ? -1 : 1e9;
   for (const k of [1, 2, 3, 4, 6, 7, 8, 9]){
     const [dx, dy] = DIRS[k], x = m.x + dx, y = m.y + dy, t = L.tiles[idx(x, y)];
-    if (!(passable(t) || t === T.DOOR || (t === T.WALL && (K.passWall || K.killWall))) || (monAt(x, y) && !(x === player.x && y === player.y))) continue;
+    if (!(passable(t) || t === T.DOOR || (rocky(t) && (K.passWall || K.killWall))) || (monAt(x, y) && !(x === player.x && y === player.y))) continue;
     const nd = Math.hypot(x - tx, y - ty);
     if (away ? nd > bestD : nd < bestD){ bestD = nd; best = [x, y]; }
   }
@@ -832,12 +952,15 @@ function monsterTurn(m){
 function step(m, x, y){
   const i = idx(x, y), t = L.tiles[i], K = m.K;
   if (x === player.x && y === player.y) return m.afraid ? null : monsterAttack(m);
-  if (t === T.DOOR){ L.tiles[i] = T.OPEN; if (visible(i)) say("A door opens."); return; }
+  if (t === T.DOOR){   // a locked or stuck door holds it up for a while
+    if (L.lock[i] && rng.int(4)){ return; }
+    L.lock[i] = 0; L.tiles[i] = T.OPEN; if (visible(i)) say("A door opens."); return;
+  }
   if (monAt(x, y)) return;
-  if (t === T.WALL && K.killWall && depth > 0){   // it tunnels: the rock breaks into rubble behind it
+  if (rocky(t) && K.killWall && depth > 0){   // it tunnels: the rock breaks into rubble behind it
     L.tiles[i] = T.FLOOR;
-    if (inFov[i] === turnNo){ burst(x, y, [0.55, 0.5, 0.45], 6); if (seesMon(m)) say(cap(monName(K)) + " tunnels through the rock."); else say("You hear grinding rock."); }
-  } else if (!passable(t) && !(t === T.WALL && K.passWall)) return;
+    if (inFov[i] === turnNo){ burst(x, y, RUBBLE_RGB, 6); if (seesMon(m)) say(cap(monName(looksLike(m))) + " tunnels through the rock."); else say("You hear grinding rock."); }
+  } else if (!passable(t) && !(rocky(t) && K.passWall)) return;
   m.x = x; m.y = y;
   if (hiddenMimic(m)) m.revealed = true;
 }
@@ -860,7 +983,7 @@ function elemHurt(m, dmg, elem, by){
 }
 const ELEMS = new Set(["fire", "cold", "elec", "acid", "poison", "dark", "light"]);
 function monsterAttack(m){
-  const K = m.K, name = seesMon(m) ? cap(monName(K)) : "It", L_ = lore(K), by = aName(K);
+  const K = m.K, name = seesMon(m) ? cap(monName(looksLike(m))) : "It", L_ = lore(K), by = aName(K);
   if (hiddenMimic(m)){ m.revealed = true; say("The " + { gold: "pile of gold", potion: "potion", scroll: "scroll" }[K.mimic] + " was " + aName(K) + "!"); }
   fxLunge(m, player); if (!liveTarget() && seesMon(m)) target = m;
   lastFoe = K;
@@ -875,9 +998,17 @@ function monsterAttack(m){
     say(name + " " + verb + (dmg || effect ? " you." : "."));
     if (ELEMS.has(effect)) return elemHurt(m, dmg, effect, by);
     if (dmg) hurt(dmg, by);
+    if (state === "play" && dmg) blowCrit(verb, dmg);
     if (state === "play" && effect) blowEffect(m, effect, name);
   });
 }
+// A blow that is big next to your health can leave a bleeding wound or leave you reeling, by how it lands.
+function blowCrit(verb, dmg){
+  if (dmg < 3 || rng.int(100) >= Math.min(40, dmg * 100 / player.mhp)) return;
+  if (/claw|cut|slash|gore|pierce|bite|rake|stab|lash|sting/.test(verb)) addTimer("cut", Math.ceil(dmg / 2));
+  else if (/hit|crush|slam|bash|butt|punch|kick|slap|pound|smash|batter|club/.test(verb)){ addTimer("stun", 2 + (dmg >> 1)); knockOut(); }
+}
+function knockOut(){ if (player.t.stun > 40 && !(player.t.paralyzed > 0)){ player.t.paralyzed = 2 + rng.int(3); say("You are knocked senseless!"); } }
 function blowEffect(m, effect, name){
   const K = m.K, p = player;
   if (effect === "confuse"){ if (!saves()) setTimer("confused", 3 + rng.int(4)); }
@@ -983,7 +1114,7 @@ let resting = false;
 function run(dx, dy){
   if (state !== "play") return;
   disturbed = false;
-  const open = (x, y) => passable(L.tiles[idx(x, y)]) && !monAt(x, y);
+  const open = (x, y) => passable(L.tiles[idx(x, y)]) && !monAt(x, y) && !(L.trap[idx(x, y)] && L.trapSeen[idx(x, y)]);
   for (let n = 0; n < 200 && state === "play" && !disturbed; n++){
     if (mons.some(m => m.K && seesMon(m) && !m.K.still)) break;
     if (!open(player.x + dx, player.y + dy)){
@@ -1006,7 +1137,7 @@ function rest(){
   disturbed = false; resting = true;
   for (let n = 0; n < 1000 && state === "play" && !disturbed && (player.hp < player.mhp || player.mana < player.mmana); n++){
     if (mons.some(m => m.K && seesMon(m))){ say("You cannot rest with monsters nearby."); break; }
-    act(() => true);
+    act(waitAndSearch);
   }
   resting = false;
 }
@@ -1070,7 +1201,7 @@ function cycleTarget(d){
   if (!list.length){ target = null; say("There are no monsters in sight."); return; }
   const i = list.indexOf(liveTarget());
   target = list[i < 0 ? (d > 0 ? 0 : list.length - 1) : (i + d + list.length) % list.length];
-  say("Target: " + target.K.name + (target.sleep > 0 ? " (asleep)" : "") + ".");
+  say("Target: " + looksLike(target).name + (target.sleep > 0 ? " (asleep)" : "") + ".");
 }
 function useHot(k){   // 1 to 0: a hotbar slot holds a kind of item, or a spell
   const e = player.hot[k]; msgs = [];
@@ -1087,7 +1218,7 @@ function look(){
   const seen = mons.filter(m => m.K && seesMon(m)), tg = liveTarget();
   msgs = [];
   if (!seen.length) say("You see no monsters.");
-  for (const m of tg ? [tg] : seen.slice(0, 4)) say("You see " + aName(m.K) + (byHeat(m) ? " (by its body heat)" : "") + (m.sleep > 0 ? " (asleep)" : "") + ", " + healthWord(m) + ". " + m.K.desc);
+  for (const m of tg ? [tg] : seen.slice(0, 4)) say("You see " + aName(looksLike(m)) + (byHeat(m) ? " (by its body heat)" : "") + (m.sleep > 0 ? " (asleep)" : "") + ", " + healthWord(m) + ". " + looksLike(m).desc);
 }
 
 /* ---------- a new character: race, class, stats and name ---------- */
@@ -1228,6 +1359,8 @@ function goDir(dx, dy, shift){
   if ((!dx && !dy) || state !== "play" || dlg) return;
   if (aiming) return aimAt(dx, dy);
   if (shift) return run(dx, dy);
+  const x = player.x + dx, y = player.y + dy;
+  if (!player.t.confused && workAt(x, y) && !L.trap[idx(x, y)]) return repeatWork(x, y);   // dig or work the lock until done; a trap gets one try per step
   act(() => tryMove(dx, dy));
 }
 const cancelAim = () => { aiming = null; msgs = []; say("Never mind."); };
@@ -1262,7 +1395,8 @@ function onKey(e){
     const keys = { a: attackKey, s: spellKey, d: drinkKey, w: grabKey, e: eatKey, r: rest, f: fuelKey, l: look, p: togglePanel,
       i: () => openTab("pack"), c: () => openTab("char"), b: () => openTab("book"), j: () => openTab("journal"), m: () => openTab("map"), "?": helpDialog };
     if (lk === "q"){ done(); return nextSpell(e.shiftKey ? -1 : 1); }
-    if (k === " "){ done(); return act(() => true); }
+    if (k === " "){ done(); return act(waitAndSearch); }
+    if (lk === "t"){ done(); return tunnelKey(); }
     if (keys[lk]){ done(); return keys[lk](); }
     if (k === ">" || k === "<"){ done(); return act(() => takeStairs(k === ">")); }
     return;
@@ -1288,7 +1422,8 @@ function onKey(e){
   else if (k === "m" || k === "p") castDialog();
   else if (k === "S") study();
   else if (k === "R") rest();
-  else if (k === "." || (!ro && (k === "5" || e.code === "Numpad5"))) act(() => true);
+  else if (k === "." || k === "s" || (!ro && (k === "5" || e.code === "Numpad5"))) act(waitAndSearch);
+  else if (k === (ro ? "#" : "T")) tunnelKey();
   else if (k === (ro ? "x" : "l")) look();
   else if (k === "C") openTab("char");
   else if (k === "?") helpDialog();

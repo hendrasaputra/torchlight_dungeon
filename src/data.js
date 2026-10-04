@@ -17,6 +17,17 @@ const MONSTERS = [
   { id: "brawler", town: true, name: "dockside brawler", glyph: "p", rgb: [0.85, 0.6, 0.35], depth: 0, rarity: 2, speed: 0, hp: "3d6", ac: 3, exp: 1, evil: true,
     blows: [["1d4", "punches"]], desc: "Spoiling for a fight, and not fussy about with whom." }
 ];
+// Traps (phase 8): hidden in the floor until searched for or noticed. depth: the shallowest level it is laid on;
+// rgb: its colour once found. What each does is in game.js (TRAP_FX).
+const TRAPS = [
+  ["pit", "pit", 1, [0.45, 0.4, 0.35]], ["needle", "poison needle", 1, [0.5, 0.9, 0.3]], ["trapdoor", "trapdoor", 2, [0.6, 0.45, 0.3]],
+  ["sleepgas", "sleeping gas vent", 2, [0.6, 0.6, 0.9]], ["alarm", "alarm plate", 3, [0.9, 0.85, 0.5]], ["slowdart", "slowing dart", 3, [0.5, 0.6, 0.8]],
+  ["spiked", "spiked pit", 4, [0.7, 0.7, 0.75]], ["dazegas", "dazing gas vent", 4, [0.85, 0.5, 0.85]], ["flash", "blinding flash", 5, [1.0, 1.0, 0.75]],
+  ["telerune", "wandering rune", 6, [0.8, 0.6, 1.0]], ["weakdart", "weakening dart", 6, [0.75, 0.4, 0.4]], ["rockfall", "loose ceiling", 7, [0.55, 0.5, 0.45]],
+  ["clumsydart", "numbing dart", 8, [0.4, 0.7, 0.7]], ["firerune", "fire rune", 8, [1.0, 0.45, 0.15]], ["acidspray", "acid sprayer", 10, [0.5, 1.0, 0.3]],
+  ["summonrune", "summoning rune", 12, [0.9, 0.3, 0.6]]
+].map(([id, name, depth, rgb]) => ({ id, name, depth, rgb }));
+
 // Experience needed for each character level, and the depth in feet shown to the player.
 const expFor = lvl => Math.round(8 * Math.pow(lvl - 1, 2.1));
 const feet = depth => depth * 50;

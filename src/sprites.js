@@ -80,6 +80,31 @@ function stairsTile(th, down, under){
   if (down) p.rect(3, 13, 10, 3, "#08070a");
   return p.c;
 }
+// Phase 8: rubble lies on the floor; veins are rock in their own colours, with gold in the rich ones.
+const VEINS = { magma: { mortar: [0.12, 0.07, 0.06], top: [0.24, 0.12, 0.09], brick: [0.5, 0.28, 0.22], speck: [1.0, 0.5, 0.2] },
+  quartz: { mortar: [0.28, 0.28, 0.33], top: [0.4, 0.4, 0.46], brick: [0.78, 0.78, 0.84], speck: [1, 1, 1] } };
+function veinTile(th, front, mask, gold){
+  const p = pix(); p.g.drawImage(front ? wallFace(th, 1) : wallTop(th, mask), 0, 0);
+  for (let i = 0; i < 5; i++) p.px(2 + ((hash(i, mask, 7) * 12) | 0), (front ? 5 : 2) + ((hash(mask, i, 8) * 10) | 0), hex(th.speck));
+  if (gold) for (const [x, y] of [[4, 6], [10, 9], [7, 12], [12, 5]]){ p.rect(x, y, 2, 1, "#f0c040"); p.px(x, y - 1, "#fff2a0"); }
+  return p.c;
+}
+function rubbleTile(th, under){
+  const p = pix(); p.g.drawImage(under, 0, 0);
+  const q = pix();
+  for (const [x, y, r] of [[5, 10, 3], [10, 11, 3], [8, 6, 3], [3, 6, 2], [12, 6, 2], [7, 12, 2]]){ q.disc(x, y, r, hex(th.brick, 0.75 + hash(x, y) * 0.3)); q.px(x - 1, y - r + 1, hex(th.brick, 1.25)); }
+  q.outline(); p.g.drawImage(q.c, 0, 0); return p.c;
+}
+const TRAP_PICS = new Map();
+const trapImage = Tr => memo(TRAP_PICS, Tr.id, () => {   // a found trap, drawn over the floor
+  const p = pix(), col = hex(Tr.rgb), id = Tr.id;
+  if (/pit|trapdoor/.test(id)){ p.rect(3, 4, 10, 9, "#0a080c"); p.rect(3, 4, 10, 1, "#3a3238");
+    if (id === "trapdoor") for (let x = 4; x < 12; x += 3) p.rect(x, 5, 2, 7, hex(WOOD, 0.7));
+    if (id === "spiked") for (let x = 4; x < 12; x += 2){ p.px(x, 9, "#ccd"); p.px(x, 10, "#99a"); } }
+  else if (/rune/.test(id)){ for (let a = 0; a < 24; a++) p.px(8 + Math.round(Math.cos(a / 3.82) * 5), 8 + Math.round(Math.sin(a / 3.82) * 4), col); p.disc(8, 8, 1, col); p.px(8, 8, "#fff"); }
+  else { p.rect(4, 5, 8, 7, "#2c2a30"); p.rect(4, 5, 8, 1, "#4a464e"); p.disc(8, 8, 1, col); }
+  return p.outline().c;
+});
 function grassTile(v){
   const p = pix(); p.rect(0, 0, TS, TS, hex(TOWN.grass, 0.9 + hash(v, 1) * 0.15));
   for (let i = 0; i < 14; i++){ const x = (hash(i, v, 5) * TS) | 0, y = (hash(v, i, 6) * TS) | 0; p.px(x, y, hex(TOWN.grass, 1.35)); p.px(x, y + 1, hex(TOWN.grass, 0.7)); }
@@ -123,7 +148,7 @@ const TILE_CACHE = new Map();
 // The picture for map cell (x, y). wallAt(x, y) says whether a neighbour is wall-like.
 function tileImage(L, x, y, depth){
   const i = y * MW + x, t = L.tiles[i], v = (hash(x, y) * 4) | 0, below = y + 1 < MH ? L.tiles[i + MW] : T.EDGE;
-  const wallish = (xx, yy) => xx < 0 || yy < 0 || xx >= MW || yy >= MH || L.tiles[yy * MW + xx] <= T.WALL || L.tiles[yy * MW + xx] === T.SHOP;
+  const wallish = (xx, yy) => { if (xx < 0 || yy < 0 || xx >= MW || yy >= MH) return true; const u = L.tiles[yy * MW + xx]; return u <= T.WALL || u === T.SHOP || u >= T.MAGMA; };
   const mask = () => (wallish(x, y - 1) ? 0 : 1) | (wallish(x + 1, y) ? 0 : 2) | (wallish(x - 1, y) ? 0 : 8);
   if (L.town){
     const near = Math.abs(y - L.street) <= 1, ground = () => near ? memo(TILE_CACHE, "cob" + v, () => cobbleTile(v)) : memo(TILE_CACHE, "grass" + v, () => grassTile(v));
@@ -140,12 +165,16 @@ function tileImage(L, x, y, depth){
   }
   const name = themeFor(depth), th = THEMES[name], k = (s, f) => memo(TILE_CACHE, name + s, f);
   const face = n => k("face" + n, () => wallFace(th, n));
-  if (t <= T.WALL) return below > T.WALL && below !== T.DOOR ? face(v & 1) : k("top" + mask(), () => wallTop(th, mask()));
+  const front = !(below <= T.WALL || below === T.DOOR || below >= T.MAGMA);   // open floor below: the wall shows its face
+  if (t <= T.WALL || t === T.SECRET) return front ? face(v & 1) : k("top" + mask(), () => wallTop(th, mask()));
+  if (t >= T.MAGMA){ const kind = t === T.MAGMA || t === T.MAGMA_T ? "magma" : "quartz", gold = t === T.MAGMA_T || t === T.QUARTZ_T, m = front ? 0 : mask();
+    return k(kind + gold + front + m, () => veinTile(VEINS[kind], front, m, gold)); }
   if (t === T.DOOR) return k("door", () => doorTile(face(0), false));
   if (t === T.OPEN) return k("open", () => doorTile(face(0), true));
   const fl = n => k("floor" + n, () => floorTile(th, n));
   if (t === T.DOWN) return k("down", () => stairsTile(th, true, fl(0)));
   if (t === T.UP) return k("up", () => stairsTile(th, false, fl(0)));
+  if (t === T.RUBBLE) return k("rubble" + (v & 1), () => rubbleTile(th, fl(v)));
   return fl(v);
 }
 
@@ -199,6 +228,8 @@ function weaponArt(R, k, dy, big){
   if (!k) return;
   const steel = hex([0.82, 0.85, 0.92]), dark = hex([0.45, 0.32, 0.2]), x = 1 - big;
   if (/staff|pike|spear|lance|glaive|halberd|trident|scythe/.test(k)){ R(x + 1, 1 + dy, 1, 14, dark); if (!/staff/.test(k)) R(x, 0 + dy, 3, 3, steel); return; }
+  if (/shovel/.test(k)){ R(x + 1, 3 + dy, 1, 9, dark); R(x, 0 + dy, 3, 4, steel); return; }
+  if (/pick|mattock/.test(k)){ R(x + 1, 3 + dy, 1, 9, dark); R(x - 1, 2 + dy, 5, 1, steel); R(x - 1, 3 + dy, 1, 1, steel); R(x + 3, 3 + dy, 1, 1, steel); return; }
   if (/axe/.test(k)){ R(x + 1, 3 + dy, 1, 9, dark); R(x, 2 + dy, 3, 4, steel); return; }
   if (/mace|hammer|maul|club|star|flail/.test(k)){ R(x + 1, 4 + dy, 1, 7, dark); R(x, 2 + dy, 3, 3, /club/.test(k) ? dark : steel); return; }
   const long = /two|headsman|bastard|long|broad/.test(k) ? 9 : 6;
