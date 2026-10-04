@@ -1,5 +1,7 @@
 # Torchlight Dungeons
 
+![Torchlight Dungeons: an adventurer with a torch in a pixel-art dungeon, a goblin at the edge of the light](cartridges/torchlight-dungeons-v2.jpg)
+
 A turn-based dungeon crawl after Moria (Robert Koeneke, 1983), for the web. You carry a torch down into an endless
 dungeon below the town of Lanternhollow: everything is drawn in code-made pixel art, lit only by what your light,
 the lit rooms and glowing things reach. All of the game's content is original.

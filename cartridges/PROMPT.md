@@ -15,6 +15,9 @@ characters. Since phase 6 the game is drawn in code-made pixel art; the prompt b
 
 ## Pixel art (phase 10)
 
+`torchlight-dungeons-v2.png` was made from this prompt (the original); `torchlight-dungeons-v2.jpg` is a 1024 px copy
+for the README and link previews (`og:image` in `src/head.html`).
+
 > Scene: crisp 16-bit style pixel art, a three-quarter top-down view of a dark stone dungeon. A lone adventurer in a
 > padded jerkin, short sword in one hand, holds up a flickering torch; its warm orange light spills over flagstone
 > floor tiles and the brick faces of the walls nearby, and fades softly into black. Remembered corridors beyond the
