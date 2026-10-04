@@ -7,7 +7,8 @@ function prefs(prefix, label){
     get(k, d = null){ try { const v = localStorage.getItem(prefix + k); return v === null ? d : v; } catch (e){ return d; } },
     set(k, v){ try { localStorage.setItem(prefix + k, v); return true; } catch (e){ console.warn(label + ": could not save " + k, e); return false; } },
     getJSON(k, d){ const v = this.get(k); if (v === null) return d; try { return JSON.parse(v); } catch (e){ console.warn(label + ": saved " + k + " unreadable, using defaults", e); return d; } },
-    setJSON(k, v){ return this.set(k, JSON.stringify(v)); }
+    setJSON(k, v){ return this.set(k, JSON.stringify(v)); },
+    del(k){ try { localStorage.removeItem(prefix + k); } catch (e){ console.warn(label + ": could not remove " + k, e); } }
   };
 }
 // A saved top-n list. add() returns the new entry's rank (0 is best) and whether saving worked.

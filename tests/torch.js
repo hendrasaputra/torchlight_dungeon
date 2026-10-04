@@ -1,8 +1,8 @@
 // Checks for Torchlight Dungeons' rules. Run: node tests/torch.js
 // Loads the game's logic files without a browser: random numbers, sight and light, turns, levels and data.
 const fs = require("fs"), vm = require("vm"), path = require("path");
-const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "sprites.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
-const G = vm.runInNewContext(files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, reachable, T, TRAPS, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
+const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "save.js", "sprites.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
+const G = vm.runInNewContext(files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
 
 let failed = 0;
 const check = (name, ok, detail) => { console.log((ok ? "ok    " : "FAIL  ") + name + (detail ? "  (" + detail + ")" : "")); if (!ok) failed++; };
@@ -219,6 +219,26 @@ const { MW, MH, T } = G;
     }
   }
   check("100 levels: traps on floor and of their depth, locks only on closed doors", !bad, bad || `${secret} secret doors, ${locked} locks, ${veins} vein cells, ${traps} traps`);
+}
+
+{ // phase 9: save games
+  const rng = new G.RNG(99), know = G.newKnowledge(rng), d = 20, L = G.generateLevel(rng, d);
+  const player = { name: "Tess", race: "human", cls: "delver", lvl: 12, x: L.rooms[0].cells[0] % MW, y: Math.floor(L.rooms[0].cells[0] / MW), stats: { str: 14 }, base: { str: 14 }, t: { cut: 3 },
+    know, inv: [G.rollItem(d, rng, know), G.rollItem(d, rng, know)], eq: { weapon: G.makeItem("longsword", d, rng, know) }, hot: Array(10).fill(null), slain: {}, bonus: { res: new Set(["fire"]) } };
+  const mons = [player, ...G.MONSTERS.filter(K => !K.town).slice(0, 40).map((K, i) => ({ K, x: i + 5, y: 5, hp: 3, mhp: 9, energy: 50, sleep: i % 3, carry: i ? [] : [G.rollItem(d, rng, know)] }))];
+  const mem = new Uint8Array(MW * MH).fill(1);
+  const g = { player, depth: d, L, mem, mons, floor: [{ x: 3, y: 4, it: G.rollItem(d, rng, know), seen: true }], shops: G.newShops(rng, know), lastTown: 40, wasDay: true, turnNo: 900, log: ["Hello."], rng: rng.s, target: 3 };
+  const a = G.encodeSave(g), back = G.decodeSave(a), b = G.encodeSave(back);
+  check("save, load and save again gives the same file", a === b, Math.round(a.length / 1024) + " KB");
+  check("a save of a full level stays under 200 KB", a.length < 200 * 1024);
+  check("a loaded level has its map, rooms and monsters back", back.L.tiles.every((t, i) => t === L.tiles[i]) && back.L.rooms.length >= 10 && back.mons[0] === back.player && back.mons[5].K === mons[5].K);
+  const town = G.generateTown(new G.RNG(5)), tg = { ...g, depth: 0, L: town, mons: [player] }, tb = G.decodeSave(G.encodeSave(tg));
+  check("a save made in town loads with its shops and ground", tb.L.town && tb.L.shops.length === 6 && tb.L.rooms[0].cells.length > 500 && G.encodeSave(tb) === G.encodeSave(tg));
+  const refused = str => { try { G.decodeSave(str); return ""; } catch (e){ return e.message; } };
+  const bad = [a.slice(0, a.length >> 1), "", "null", "{\"v\":1}", a.replace(/"K":"[a-z]+"/, '"K":"nosuchbeast"'), a.replace(/"tiles":"Uint8Array:[^"]*"/, '"tiles":"Uint8Array:1*5"'),
+    a.replace('"v":' + G.SAVE_VERSION, '"v":' + (G.SAVE_VERSION + 1)), a.replace('"v":' + G.SAVE_VERSION, '"v":0')].map(refused);
+  check("damaged, foreign, newer and unreadably old saves are refused with a message", bad.every(m => m.length > 10), bad.join(" | "));
+  // ponytail: no older save version exists yet; when SAVE_VERSION goes to 2, keep a version 1 save here and check it loads
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");

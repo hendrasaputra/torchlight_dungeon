@@ -41,14 +41,15 @@ Moria's own letter keys and the roguelike set are in the menu (Keys), as is Deta
 - `node tests/torch.js` checks the rules and data; `node tests/balance.js` (add `-v` for detail) fights every
   monster with every class at the level you would expect at its depth.
 - `src/`, by job:
-  - **Rules and data:** `rng.js` random numbers; `fov.js` sight and light; `turn.js` the speed scheduler; `gen.js` levels, rock, doors and the town; `data.js` townsfolk and traps; `bestiary.js` the dungeon's monsters and combat numbers; `items.js` items, flavours and names; `shops.js` shops and prices; `chars.js` peoples, callings, stats and skills; `spells.js` magic.
+  - **Rules and data:** `rng.js` random numbers; `fov.js` sight and light; `turn.js` the speed scheduler; `gen.js` levels, rock, doors and the town; `data.js` townsfolk and traps; `bestiary.js` the dungeon's monsters and combat numbers; `items.js` items, flavours and names; `shops.js` shops and prices; `chars.js` peoples, callings, stats and skills; `spells.js` magic; `save.js` the save format.
   - **The game:** `game.js` the rules of play and the keys.
   - **The look:** `sprites.js` tiles, figures and icons, drawn by code; `render.js` the map, light, animation and debris; `ui.js` the HTML HUD, panel, dialogs and screens; `head.html` the page markup and styles.
   - **Helpers:** `lib.js` preferences, high scores, resizing and the frame loop.
 - `cartridges/` holds the cover art and its prompt.
 
-Everything is saved in the browser's localStorage under `torchlightDungeons.v1.` (keys, panel, detail, high
-scores and monster recall). Nothing is sent anywhere. There are no save games yet: that is phase 9.
+Everything is saved in the browser's localStorage under `torchlightDungeons.v1.`: three character slots, keys,
+panel, detail, high scores with character dumps, and monster recall. Nothing is sent anywhere. The game saves itself
+as you play; the menu exports a character to a file, and Characters imports one.
 
 ## Licence
 

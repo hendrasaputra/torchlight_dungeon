@@ -29,15 +29,18 @@ Still to decide or do (not done here):
 
 ## State of the game
 
-Phases 0 to 8 of [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md) are done; its Progress table says what each phase built
-and what it left out. Next is **phase 9, save games** (levels now also hold `lock`, `trap` and `trapSeen` arrays to
-save), then phase 10 (sound, help, options and polish).
+Phases 0 to 9 of [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md) are done; its Progress table says what each phase built
+and what it left out. Next is **phase 10**: sound, help, options and polish.
+
+Saves are versioned (`SAVE_VERSION` in `src/save.js`). Any change to what a save holds (a new field the game needs, a
+renamed item or monster id, a new flavoured item kind, which old saves have no flavour for) needs the version raised
+and a step in `MIGRATIONS`, with an old save kept in `tests/torch.js` to prove it still loads.
 
 Known gaps and bugs:
 
 - Plurals of names already ending in "s" are wrong: "2 Sandalses", "3 Hymnses" (`plural()` in `src/items.js`).
 - Prices are fixed (no haggling) and there is no home to store things in.
-- No save games (phase 9) and no sound (phase 10).
+- No sound yet (phase 10).
 - Monsters do not fight each other. Monster recall is kept across characters in localStorage.
 - No person has yet played a full game to the boss. The bots die at 200 to 450 ft without cheating, and
   `tests/balance.js` rates every depth band as winnable, but that is expected values, not play.

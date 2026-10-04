@@ -335,13 +335,36 @@ const KEYSETS = { modern: "Modern (arrows + A S D W)", original: "Classic (Moria
 function menuDialog(){
   const rows = [
     { label: "Resume", select: closeDialog },
-    { label: state === "play" ? "New character" : "Start", select: () => { closeDialog(); startCreate(); } },
+    { label: "Characters", right: "continue or start", select: slotDialog },
     { label: "Keys", right: KEYSETS[keySet] + "  ‹ ›", adjust: d => { const ks = Object.keys(KEYSETS); keySet = ks[(ks.indexOf(keySet) + ks.length + d) % ks.length]; store.set("keymap", keySet); menuDialog(); }, select: () => rows[2].adjust(1) },
     { label: "Side panel", right: (panelOn ? "Shown" : "Hidden") + " (P)", select: () => { togglePanel(); menuDialog(); } },
     { label: "Help", select: helpDialog },
-    { label: "Detail", right: ["", "Standard", "Fine", "Finest"][DETAIL] + "  ‹ ›", adjust: d => { DETAIL = (DETAIL + d + 2) % 3 + 1; store.set("detail", DETAIL); renderLayout(); menuDialog(); }, select: () => rows[5].adjust(1) }
+    { label: "Detail", right: ["", "Standard", "Fine", "Finest"][DETAIL] + "  ‹ ›", adjust: d => { DETAIL = (DETAIL + d + 2) % 3 + 1; store.set("detail", DETAIL); renderLayout(); menuDialog(); }, select: () => rows[5].adjust(1) },
+    { label: "Hall of fame", select: fameDialog },
+    ...(state === "play" ? [{ label: "Export this character to a file", select: () => { closeDialog(); exportSave(); } }, { label: "Character dump", right: "a text file", select: () => { closeDialog(); download(player.name + ".txt", characterDump()); } },
+      { label: "Save and quit", select: () => { saveGame(); closeDialog(); toTitle(); } }] : [])
   ];
-  openDialog({ title: state === "play" ? "Paused" : "Menu", cols: [rows], side: false, note: "This early version does not save", at: dlg && dlg.title.match(/Paused|Menu/) ? dlg.at : [0] });
+  openDialog({ title: state === "play" ? "Paused" : "Menu", cols: [rows], side: false, note: state === "play" ? "Your game saves itself as you play" : "", at: dlg && dlg.title.match(/Paused|Menu/) ? dlg.at : [0] });
+}
+// The three save slots: continue a character, or start one in an empty slot.
+function slotDialog(){
+  saveGame();
+  const info = [1, 2, 3].map(slotInfo);
+  const rows = info.map((s, k) => ({ label: "Slot " + (k + 1) + ": " + (s || "empty"), right: !s ? "New character" : k + 1 === slot && state === "play" ? "Playing" : /^unreadable/.test(s) ? "" : "Continue",
+    off: /^unreadable/.test(s), select: () => { closeDialog(); if (!s){ newSlot = k + 1; startCreate(); } else if (!(k + 1 === slot && state === "play")) loadGame(k + 1); } }));
+  rows.push({ label: "Import a character from a file", select: () => { closeDialog(); importSave(); } });
+  if (info.some(Boolean)) rows.push({ label: "Erase a character", select: eraseDialog });
+  openDialog({ title: "Characters", cols: [rows], side: false, onBack: closeDialog, note: "Each slot holds one character; death erases it" });
+}
+function eraseDialog(){
+  const rows = [1, 2, 3].map(n => [n, slotInfo(n)]).filter(([, s]) => s).map(([n, s]) => ({ label: "Slot " + n + ": " + s, select: () => openDialog({ title: "Erase slot " + n + " for good?", side: false, onBack: slotDialog,
+    cols: [[{ label: "No, keep it", select: slotDialog }, { label: "Yes, erase it", select: () => { store.del(slotKey(n)); if (n === slot && state === "play"){ slot = 0; closeDialog(); toTitle(); } else slotDialog(); } }]] }) }));
+  openDialog({ title: "Erase which character?", cols: [rows], side: false, onBack: slotDialog });
+}
+function noteDialog(title, text){ openDialog({ title, head: `<p>${esc(text)}</p>`, cols: [[{ label: "OK", select: closeDialog }]], side: false }); }
+function fameDialog(){
+  const rows = scores.list.map(s => ({ label: s.score + "  " + (s.name || "") + ", level " + s.lvl + " " + (s.cls || ""), right: s.dump ? "dump" : "", off: !s.dump, select: () => download((s.name || "character") + ".txt", s.dump) }));
+  openDialog({ title: "Hall of fame", cols: [rows.length ? rows : [{ label: "No one yet.", off: true }]], side: false, onBack: menuDialog, note: "Enter saves a character dump" });
 }
 function helpDialog(){
   const modern = [["Arrow keys", "move; into a monster attacks, into a door opens"], ["Two arrows", "move diagonally (or numpad, Home, End, PgUp, PgDn)"], ["Shift + arrow", "run"],
@@ -362,13 +385,13 @@ function drawScreen(){
   el.hidden = false;
   if (state === "title"){
     el.innerHTML = `<div class="titlecard"><h1>Torchlight<span>Dungeons</span></h1><p class="dim">A dungeon crawl after Moria</p>
-      <p class="blink">Press Enter to begin</p><p class="dim">Early version: no saves yet. Esc opens the menu.</p>
+      <p class="blink">Press Enter to play</p><p class="dim">Your game saves itself as you play. Esc opens the menu.</p>
       ${scores.list.length ? `<h3>Hall of fame</h3>${scores.list.map((s, k) => `<div class="fame ${k ? "" : "best"}"><b>${s.score}</b> ${esc(s.name || "")} the ${esc(s.race || "")} ${esc(s.cls || "Fighter")}, level ${s.lvl}, ${s.depth} ft, ${esc(s.killer)}</div>`).join("")}` : ""}</div>`;
   } else if (state === "create") drawCreate();
   else if (state === "dead"){
     const T0 = tomb;
     el.innerHTML = `<div class="titlecard tomb"><h1 class="rip">R.I.P.</h1><b>${esc(T0.name)}</b><div>the ${esc(T0.race)} ${esc(T0.cls)}, level ${T0.lvl}</div><div>killed by ${esc(T0.killer)}</div><div>${T0.at === "the town" ? "in the town" : "at " + T0.at}</div>
-      <h3>Score ${T0.score}${T0.best ? " · best!" : ""}</h3><p class="blink">Press Enter for the title</p></div>`;
+      <h3>Score ${T0.score}${T0.best ? " · best!" : ""}</h3><p class="blink">Press Enter for the title</p><p class="dim">D saves a character dump</p></div>`;
   }
 }
 function drawCreate(){

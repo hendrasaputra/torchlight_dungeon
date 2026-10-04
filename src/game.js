@@ -106,11 +106,10 @@ function newLevel(d){
     updateSight();
     say(from > 0 ? "You climb out into the town of Lanternhollow." : "You stand in Lanternhollow, a town above the dungeon. The shops are numbered 1 to 6.");
     say(wasDay ? "It is daytime." : "It is night; the lamps are lit.");
+    saveGame();
     return;
   }
-  // light from lit rooms is fixed for the whole level
-  roomLight.fill(0);
-  for (let i = 0; i < MW * MH; i++) if (L.lit[i]){ roomLight[3 * i] = ROOM_RGB[0]; roomLight[3 * i + 1] = ROOM_RGB[1]; roomLight[3 * i + 2] = ROOM_RGB[2]; }
+  relight();
   for (let k = 0, n = 14 + Math.min(d, 30) + rng.int(8); k < n; k++) spawnMonster(false);
   const boss = MON.morrowgloom;   // the Lantern-Eater waits at 2,500 ft, and sometimes deeper
   if (d >= boss.depth && !uniqueGone(boss) && (d === boss.depth || rng.chance(0.3))) spawnMonster(false, boss, freeSpot(25));
@@ -118,6 +117,13 @@ function newLevel(d){
   updateSight(); digging = null;
   say(d === 1 && from === 0 ? "You enter the dungeon at 50 ft. Your torch hisses in the damp air." : "You are now at " + feet(d) + " ft.");
   levelFeeling(d);
+  saveGame();
+}
+// Light from lit rooms is fixed for the level (spells change L.lit as they go); the town's comes from the sky.
+function relight(){
+  if (depth === 0) return lightTown();
+  roomLight.fill(0);
+  for (let i = 0; i < MW * MH; i++) if (L.lit[i]){ roomLight[3 * i] = ROOM_RGB[0]; roomLight[3 * i + 1] = ROOM_RGB[1]; roomLight[3 * i + 2] = ROOM_RGB[2]; }
 }
 const depthName = d => d ? feet(d) + " ft" : "the town";
 
@@ -859,6 +865,7 @@ function endTurn(){
   }
   if (state !== "play") return;
   if (rng.int(300) === 0) spawnMonster(true);   // the dungeon is never quite empty
+  if (player.turns % 200 === 0) saveGame();
   updateSight();
   for (const m of mons) if (m.K){ const v = seesMon(m); if (v && !m.seen){ disturbed = true; lore(m.K).seen++; } m.seen = v; }
 }
@@ -912,7 +919,8 @@ function die(){
   state = "dead"; stateT = 0; aiming = null; refreshUI();
   if (lastFoe && killer === aName(lastFoe)) lore(lastFoe).deaths++;
   saveLore();
-  const p = player, entry = { score: Math.floor(p.exp) + 100 * p.maxDepth + (p.won ? 10000 : 0), name: p.name, race: race().name, cls: cls().name, lvl: p.lvl, depth: feet(p.maxDepth), killer: killer + (p.won ? " (a winner)" : "") };
+  if (slot) store.del(slotKey(slot)); slot = 0;   // death is for good: the save goes, and the character dump goes to the hall of fame
+  const p = player, entry = { score: Math.floor(p.exp) + 100 * p.maxDepth + (p.won ? 10000 : 0), name: p.name, race: race().name, cls: cls().name, lvl: p.lvl, depth: feet(p.maxDepth), killer: killer + (p.won ? " (a winner)" : ""), dump: characterDump() };
   tomb = { ...entry, best: scores.add(entry).rank === 0, at: depthName(depth) };
   say("You die.");
 }
@@ -1262,7 +1270,7 @@ function begin(){
   player.hot = Array(10).fill(null); player.slain = {}; player.ready = null;
   log = []; msgs = []; killer = ""; tomb = null; cr = null;
   state = "play"; stateT = 0;
-  shops = newShops(rng, player.know); lastTown = 0; depth = 0;
+  shops = newShops(rng, player.know); lastTown = 0; depth = 0; slot = newSlot;
   newLevel(0);
 }
 /* ---------- the title scene: the first level's biggest room, dimly lit, behind the title ---------- */
@@ -1270,6 +1278,64 @@ function titleScene(){
   rng = new RNG(4242); player = { x: 0, y: 0, eq: { light: { k: "torch", fuel: 4000 } }, lvl: 1 }; depth = 1; L = generateLevel(rng, 1); mons = []; floor = []; roomLight.fill(0);
   const r = L.rooms.reduce((a, b) => (b.x1 - b.x0) * (b.y1 - b.y0) > (a.x1 - a.x0) * (a.y1 - a.y0) ? b : a); player.x = r.cx; player.y = r.cy; snapView();
   for (let i = 0; i < MW * MH; i++) if (L.room[i] === r.id){ roomLight[3 * i] = ROOM_RGB[0] * 0.6; roomLight[3 * i + 1] = ROOM_RGB[1] * 0.6; roomLight[3 * i + 2] = ROOM_RGB[2] * 0.6; }
+}
+
+/* ---------- saving: three slots, one character each (save.js packs and checks the file) ---------- */
+let slot = 0, newSlot = 1, saveFailed = false;   // slot: where this character is saved (1 to 3); 0 while there is none
+const slotKey = n => "slot" + n;
+function saveGame(){
+  if (state !== "play" || !slot) return;
+  const ok = store.set(slotKey(slot), encodeSave({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log, rng: rng.s, target: mons.indexOf(target) }));
+  if (!ok && !saveFailed) say("Your game could not be saved: the browser's storage is full or blocked. Export it from the menu to keep it.");
+  saveFailed = !ok;
+}
+// What a slot holds, for the slot list: a line about the character, "" when empty, or why it cannot be loaded.
+function slotInfo(n){
+  const s = store.get(slotKey(n)); if (!s) return "";
+  try { const g = decodeSave(s), p = g.player; return p.name + ", level " + p.lvl + " " + RACE[p.race].name + " " + CLASS[p.cls].name + ", " + depthName(g.depth); }
+  catch (e){ return "unreadable: " + e.message; }
+}
+function loadGame(n){
+  let g; try { g = decodeSave(store.get(slotKey(n))); } catch (e){ return noteDialog("Slot " + n, e.message); }
+  ({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log } = g);
+  rng = new RNG(g.rng); target = mons[g.target] || null; slot = n;
+  msgs = []; killer = ""; tomb = null; cr = null; aiming = null; pendingLevel = null; digging = null; parts = []; floats = []; shots = []; flashes = []; later = [];
+  seenAt.fill(0); inFov.fill(0);
+  state = "play"; stateT = 0; recalc(); relight(); updateSight(); snapView();
+  say("Welcome back, " + player.name + ". You are " + (depth ? "at " : "in ") + depthName(depth) + ".");
+}
+function download(name, text){
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: name.endsWith(".txt") ? "text/plain" : "application/json" }));
+  a.download = name.replace(/[^\w.-]+/g, "_"); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function exportSave(){ saveGame(); const s = store.get(slotKey(slot)); if (s) download(player.name + "-torchlight.json", s); else noteDialog("Export", "There is no saved game to export."); }
+// A save from a file goes into the first empty slot, once it has been checked.
+function importSave(){
+  const input = document.createElement("input"); input.type = "file"; input.accept = ".json,application/json";
+  input.onchange = async () => {
+    const text = await input.files[0].text();
+    try { decodeSave(text); } catch (e){ return noteDialog("Import", e.message); }
+    const n = [1, 2, 3].find(k => !store.get(slotKey(k)));
+    if (!n) return noteDialog("Import", "All three slots are taken. Erase a character first.");
+    if (!store.set(slotKey(n), text)) return noteDialog("Import", "The browser's storage is full or blocked, so the save could not be kept.");
+    slotDialog();
+  };
+  input.click();
+}
+// A plain-text record of the character, like Moria's.
+function characterDump(){
+  const p = player, spells = knownSpells().map(S => S.name);
+  return ["Torchlight Dungeons: character dump", "",
+    p.name + " the " + race().name + " " + cls().name + " (" + titleOf(p) + ")",
+    "Level " + p.lvl + ", " + Math.floor(p.exp) + " experience. Health " + Math.max(0, p.hp) + "/" + p.mhp + (p.mmana ? ", mana " + p.mana + "/" + p.mmana : "") + ". Gold " + p.gold + ".",
+    "Now " + (depth ? "at " : "in ") + depthName(depth) + "; deepest " + feet(p.maxDepth) + " ft. " + p.turns + " turns, " + p.kills + " kills." + (p.won ? " Slew Morrowgloom." : ""),
+    ...(killer ? ["Killed by " + killer + "."] : []), "",
+    "Stats: " + STATS.map(k => STAT_NAMES[k] + " " + p.stats[k]).join(", "),
+    "Skills: " + SKILLS.map(k => SKILL_NAMES[k] + " " + skillOf(p, k)).join(", "), "",
+    "Equipment:", ...SLOTS.filter(s => p.eq[s]).map(s => "  " + SLOT_NAMES[s] + ": " + nameOf(p.eq[s])), "",
+    "Pack:", ...p.inv.map((it, i) => "  " + String.fromCharCode(97 + i) + ") " + nameOf(it)), "",
+    ...(spells.length ? [(cls().realm === "holy" ? "Prayers: " : "Spells: ") + spells.join(", "), ""] : []),
+    "Last messages:", ...log.slice(-20).map(s => "  " + s), ""].join("\n");
 }
 
 /* ---------- shops: buying, and selling, which tells you what a thing was (the screens are in ui.js) ---------- */
@@ -1371,7 +1437,8 @@ function onKey(e){
   if (state === "create") return createKey(e);
   if (state === "title" || state === "dead"){
     if (k === "Escape"){ e.preventDefault(); return menuDialog(); }
-    if (k === "Enter" || k === " "){ e.preventDefault(); if (state === "title") startCreate(); else if (stateT > 1) toTitle(); }
+    if (k === "Enter" || k === " "){ e.preventDefault(); if (state === "title") slotDialog(); else if (stateT > 1) toTitle(); }
+    if (state === "dead" && k.toLowerCase() === "d"){ e.preventDefault(); download(tomb.name + ".txt", tomb.dump); }
     return;
   }
   if (panelFocus && panelKey(e)){ e.preventDefault(); return; }
@@ -1443,7 +1510,8 @@ function createKey(e){
 }
 addEventListener("keydown", onKey);
 function toTitle(){ state = "title"; cr = null; aiming = null; target = null; parts = []; titleScene(); refreshUI(); }
-addEventListener("beforeunload", e => { if (state === "play"){ e.preventDefault(); e.returnValue = ""; } });   // nothing is saved yet
+addEventListener("pagehide", saveGame);   // leaving or closing the page
+addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); });   // switching tabs (a phone may never come back)
 
 /* ---------- the loop ---------- */
 function tick(dt, t){
