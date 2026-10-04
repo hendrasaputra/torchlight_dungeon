@@ -31,7 +31,19 @@ const theName = m => seesMon(m) ? monName(looksLike(m)) : "it";
 
 /* ---------- saved preferences and high scores ---------- */
 const store = prefs("torchlightDungeons.v1.", "Torchlight Dungeons"), scores = scoreTable(store);   // src/lib.js
+// Sound (phase 10): effects and two music loops made by audio/torch-sfx.py. Nothing plays before the first key.
+const audio = createAudio({ label: "Torchlight Dungeons", store, sounds: TORCH_SFX, music: TORCH_MUSIC, volume: 0.7, musicGain: 0.35, minGap: 0.06 });
+const sfx = name => audio.play(name);
+const CRY = { rodent: "growl", canine: "growl", bear: "growl", feline: "growl", lizard: "growl", hybrid: "growl", insect: "chitter", spider: "chitter", beetle: "chitter",
+  scorpion: "chitter", centipede: "chitter", skeleton: "moan", ghoul: "moan", mummy: "moan", vampire: "moan", lich: "moan", ghost: "moan", bat: "screech", bird: "screech",
+  dragon: "roar", drake: "roar", hydra: "roar", giant: "roar", fiend: "roar", golem: "roar", elemental: "roar", goblin: "grunt", person: "grunt", scalekin: "grunt" };
+const cryOf = K => CRY[K.shape || PLAN[K.glyph]] || "squelch";   // the rest (jellies, moulds, worms, eyes, wisps...) squelch
 let keySet = store.get("keymap", "modern");
+// Options in the menu (phase 10); the looks are classes on the page, so the styles in head.html do the work.
+const OPTIONS = { autopickup: "Pick up what you walk over", cbsafe: "Status colours for colour blindness", bigtext: "Larger text" };
+const opt = k => store.get(k) === "1";
+function setOpt(k, on){ store.set(k, on ? "1" : "0"); document.body.classList.toggle(k, on); }
+for (const k of Object.keys(OPTIONS)) document.body.classList.toggle(k, opt(k));
 let DETAIL = Math.max(1, Math.min(3, +store.get("detail", 1) || 1));   // the Detail setting in the menu: smaller sprites, more map   // modern (arrows + A S D W), original (Moria letters) or roguelike
 
 /* ---------- items: names, carrying, and what worn things add ---------- */
@@ -96,7 +108,7 @@ function newLevel(d){
   depth = d; player.maxDepth = Math.max(player.maxDepth, d);
   L = d === 0 ? generateTown(rng) : generateLevel(rng, d);
   mem.fill(0); mons = [player]; floor = []; pendingLevel = null; parts = []; floats = []; shots = []; flashes = []; later = []; target = null;
-  const at = L.spot(); player.x = at % MW; player.y = Math.floor(at / MW);
+  const at = L.spot(); player.x = at % MW; player.y = Math.floor(at / MW); audio.music(d ? "depths" : "town");
   if (d === 0){
     // back from the dungeon: the shops have sold some things and bought in others
     if (from > 0 && player.turns - lastTown > 500) shops.forEach((sh, i) => { sh.stock = restock(sh.stock, SHOPS[i], rng, player.know, 0.5); });
@@ -218,13 +230,14 @@ function tryMove(dx, dy){
   if (m === player) return false;   // no direction
   if (m) return attack(m);
   if (workAt(x, y)) return work(x, y);
-  if (t === T.DOOR){ L.tiles[i] = T.OPEN; say("You open the door."); return true; }
+  if (t === T.DOOR){ L.tiles[i] = T.OPEN; say("You open the door."); sfx("door"); return true; }
   if (!passable(t)){ say(t <= T.WALL || t >= T.RUBBLE ? "There is a wall in the way." : "Something is in the way."); return false; }
-  player.x = x; player.y = y;
+  player.x = x; player.y = y; sfx("step");
   if (L.trap[i]){ springTrap(i); if (state !== "play" || player.x !== x || player.y !== y || pendingLevel !== null) return true; }
-  for (const f of itemsAt(x, y)) if (f.it.k === "gold"){ player.gold += f.it.n; say("You find " + f.it.n + " gold pieces."); floor.splice(floor.indexOf(f), 1); }
+  for (const f of itemsAt(x, y)) if (f.it.k === "gold"){ player.gold += f.it.n; say("You find " + f.it.n + " gold pieces."); sfx("gold"); floor.splice(floor.indexOf(f), 1); }
   const here = itemsAt(x, y);
-  if (here.length === 1) say("You see " + nameOf(here[0].it) + ".");
+  if (here.length && opt("autopickup")) pickUp();   // with the option on, picking up comes free with the step
+  else if (here.length === 1) say("You see " + nameOf(here[0].it) + ".");
   else if (here.length > 1) say("You see several items here.");
   if (t === T.SHOP) openShop(L.shopAt[i]);
   if (t === T.DOWN) say("There is a staircase down here.");
@@ -251,7 +264,7 @@ function attack(m){
     damage(m, dmg, verb + name + ".");
     return true;
   }
-  say("You miss " + name + "."); fxFloat(m.x, m.y, "miss", [0.7, 0.7, 0.8]);
+  say("You miss " + name + "."); sfx("miss"); fxFloat(m.x, m.y, "miss", [0.7, 0.7, 0.8]);
   return true;
 }
 function damage(m, dmg, msg, delay = 0){   // returns true if it died
@@ -264,7 +277,7 @@ function damage(m, dmg, msg, delay = 0){   // returns true if it died
   return false;
 }
 function kill(m, name, delay = 0){
-  say("You have slain " + name + ".");
+  say("You have slain " + name + "."); sfx("kill");
   mons.splice(mons.indexOf(m), 1); player.kills++; player.slain[m.K.id] = (player.slain[m.K.id] || 0) + 1; lore(m.K).kills++; saveLore();
   if (target === m) target = null;
   gainExp(m.K.exp * m.K.depth / player.lvl);
@@ -285,7 +298,7 @@ function gainExp(e){
     const before = titleOf(player);
     player.lvl++; const up = levelHp(player, rng); player.mhp += up; player.hp += up;
     player.mmana = maxMana(player);
-    say("Welcome to level " + player.lvl + "." + (titleOf(player) !== before ? " You are now a " + titleOf(player) + "." : ""));
+    sfx("levelup"); say("Welcome to level " + player.lvl + "." + (titleOf(player) !== before ? " You are now a " + titleOf(player) + "." : ""));
     const n = player.spells && learnable(player, books()).length;
     if (n) say("You can learn " + n + " new " + realmWord() + (n > 1 ? "s" : "") + ". Press S to study.");
   }
@@ -314,7 +327,7 @@ function pickUp(){
 function takeStairs(down){
   const t = L.tiles[idx(player.x, player.y)];
   if (t !== (down ? T.DOWN : T.UP)){ say("There is no staircase " + (down ? "down" : "up") + " here."); return false; }
-  say(down ? "You descend the stairs." : "You climb the stairs.");
+  say(down ? "You descend the stairs." : "You climb the stairs."); sfx("stairs");
   newLevel(depth + (down ? 1 : -1));
   return "level";
 }
@@ -340,9 +353,9 @@ function work(x, y){
   if (t === T.SECRET){ foundDoor(i); return true; }   // digging at it shows it for what it is
   if (!rocky(t)){ say("There is nothing to dig there."); return false; }
   if (!digging || digging.i !== i){ digging = { i, done: 0 }; say(t === T.RUBBLE ? "You start clearing the rubble." : "You start digging."); }
-  const P = digPower(); digging.done += rng.range(P >> 1, Math.ceil(P * 1.5));
+  const P = digPower(); digging.done += rng.range(P >> 1, Math.ceil(P * 1.5)); sfx("dig");
   if (digging.done < HARDNESS[t]) return true;
-  digging = null; L.tiles[i] = T.FLOOR; burst(x, y, RUBBLE_RGB, 10);
+  digging = null; L.tiles[i] = T.FLOOR; burst(x, y, RUBBLE_RGB, 10); sfx("rubble");
   say(t === T.RUBBLE ? "You have cleared the rubble." : "You have dug through the rock.");
   if (t === T.MAGMA_T || t === T.QUARTZ_T){ dropAt(i, { k: "gold", n: rng.range(10, 30) * depth * (t === T.QUARTZ_T ? 2 : 1) }); floor[floor.length - 1].seen = true; say("You have found something!"); }
   else if (t === T.RUBBLE && rng.chance(0.08)){ dropAt(i, loot(depth)); floor[floor.length - 1].seen = true; say("You have found something in the rubble!"); }
@@ -363,23 +376,24 @@ function tunnelKey(){
     if (workAt(x, y, true) && !L.trap[idx(x, y)]) repeatWork(x, y, true); else say("There is nothing to dig there."); return false; };
 }
 function pickLock(i){
-  if (rng.int(100) < Math.max(5, Math.min(95, skillOf(player, "disarm") + 10 - L.lock[i] * 5))){ L.lock[i] = 0; L.tiles[i] = T.OPEN; say("You have picked the lock."); gainExp(1); }
+  if (rng.int(100) < Math.max(5, Math.min(95, skillOf(player, "disarm") + 10 - L.lock[i] * 5))){ L.lock[i] = 0; L.tiles[i] = T.OPEN; say("You have picked the lock."); sfx("unlock"); gainExp(1); }
   else say("You failed to pick the lock.");
   return true;
 }
 function bashDoor(i){
+  sfx("bash");
   if (rng.int(100) < Math.max(5, Math.min(90, 20 + statMod(player.stats.str) * 6 + player.lvl))){ L.lock[i] = 0; L.tiles[i] = T.OPEN; say("The door crashes open!"); burst(i % MW, Math.floor(i / MW), WOOD, 5); }
   else say("The door is stuck fast.");
   return true;
 }
-function foundDoor(i){ L.tiles[i] = T.DOOR; mem[i] = 1; say("You have found a secret door."); disturbed = true; }
+function foundDoor(i){ L.tiles[i] = T.DOOR; mem[i] = 1; say("You have found a secret door."); sfx("found"); disturbed = true; }
 // Looks for hidden doors and traps next to you, each found with the given chance (a percentage).
 function search(chance){
   if (player.t.blind || player.t.confused || player.t.halluc) chance /= 2;
   for (const k of [1, 2, 3, 4, 6, 7, 8, 9]){
     const [dx, dy] = DIRS[k], i = idx(player.x + dx, player.y + dy);
     if (L.tiles[i] === T.SECRET && rng.int(100) < chance) foundDoor(i);
-    if (L.trap[i] && !L.trapSeen[i] && rng.int(100) < chance){ L.trapSeen[i] = 1; mem[i] = 1; say("You have found " + aTrap(trapAt(i)) + "."); disturbed = true; }
+    if (L.trap[i] && !L.trapSeen[i] && rng.int(100) < chance){ L.trapSeen[i] = 1; mem[i] = 1; say("You have found " + aTrap(trapAt(i)) + "."); sfx("found"); disturbed = true; }
   }
   return true;
 }
@@ -412,7 +426,7 @@ const TRAP_FX = {
   acidspray: () => { say("You are sprayed with acid!"); elemHurt({ K: { depth } }, rng.dice("4d6"), "acid", "an acid sprayer"); },
   summonrune: () => { say("Shapes rise out of the rune!"); summonNear(MONSTERS.filter(K => !K.town && !K.unique && !K.boss && K.depth <= depth + 2), 2 + rng.int(3)); L.trap[idx(player.x, player.y)] = 0; }
 };
-function springTrap(i){ L.trapSeen[i] = 1; mem[i] = 1; disturbed = true; TRAP_FX[trapAt(i).id](); }
+function springTrap(i){ sfx("trap"); L.trapSeen[i] = 1; mem[i] = 1; disturbed = true; TRAP_FX[trapAt(i).id](); }
 // On arrival: a feeling for how dangerous the level's monsters are for its depth.
 function levelFeeling(d){
   const danger = mons.reduce((s, m) => s + (m.K ? Math.max(0, m.K.depth - d) + (m.K.unique ? 8 : 0) + (m.K.boss ? 30 : 0) : 0), 0);
@@ -432,6 +446,7 @@ function learn(it, noticed){
 }
 function useItem(it, how, quick){
   const K = ITEM[it.k];
+  if (how === "eat" || how === "quaff" || how === "read") sfx({ eat: "eat", quaff: "drink", read: "read" }[how]);
   if (how === "eat"){
     player.food = Math.min(15000, player.food + (K.food || 0)); takeOne(it);
     if (K.effect) learn(it, FX[K.effect]({ K, it })); else say("That tastes good.");
@@ -519,6 +534,7 @@ function hurtMon(m, dmg, elem, msg, delay){
 function missile(path, elem, speed = 40){   // the visible flight of a bolt, and its flash where it stops
   if (!path.length) return 0;
   const rgb = ELEM_RGB[elem] || ELEM_RGB.arcane, end = path[path.length - 1], delay = path.length / speed;
+  sfx(TORCH_SFX[elem] ? elem : elem ? "dark" : "arcane");   // life-draining sounds dark
   shots.push({ path, t: 0, speed, glyph: elem === "elec" ? "~" : "*", rgb: rgb.map(v => v * 1.8), light: rgb });
   later.push({ t: delay, fn: () => { flashes.push({ x: end[0], y: end[1], t: 0.35, t0: 0.35, rgb }); burst(end[0], end[1], rgb, 3); } });
   return delay;
@@ -665,6 +681,7 @@ function sendAway(m){
 }
 // Walls fall and floors heave within r cells: the stone breaks into rubble that tumbles (physics), then settles.
 function shake(r, wipe){
+  sfx("rubble");
   let fallen = 0;
   for (let y = player.y - r; y <= player.y + r; y++) for (let x = player.x - r; x <= player.x + r; x++){
     if (x < 1 || y < 1 || x >= MW - 1 || y >= MH - 1 || Math.hypot(x - player.x, (y - player.y) * 1.6) > r || (x === player.x && y === player.y)) continue;
@@ -817,8 +834,9 @@ function castSpell(S, quick){
   if (player.t.blind || player.t.confused){ say(player.t.blind ? "You cannot see to read your book!" : "You are too confused."); return false; }
   const go = (tx, ty) => {
     player.mana -= S.mana;
-    if (rng.int(100) < spellFail(S, player) + (player.t.stun ? 25 : 0)){ say(holy ? "You lose your concentration." : "You failed to get the spell off!"); return true; }
+    if (rng.int(100) < spellFail(S, player) + (player.t.stun ? 25 : 0)){ say(holy ? "You lose your concentration." : "You failed to get the spell off!"); sfx("fizzle"); return true; }
     // a spell grows with its caster: power is added to bolts, beams, balls and healing (items stay as they are)
+    if (!S.aim) sfx(S.elem || (holy ? "light" : "arcane"));   // aimed ones sound as they fly
     FX[S.fx]({ K: S, tx, ty, power: player.lvl });
     if (S.also) FX[S.also]({ K: S, tx, ty, power: player.lvl });
     if (!player.cast.includes(S.id)){ player.cast.push(S.id); gainExp(spellLevel(S, cls()) * 2); }   // the first casting teaches you something
@@ -867,7 +885,7 @@ function endTurn(){
   if (rng.int(300) === 0) spawnMonster(true);   // the dungeon is never quite empty
   if (player.turns % 200 === 0) saveGame();
   updateSight();
-  for (const m of mons) if (m.K){ const v = seesMon(m); if (v && !m.seen){ disturbed = true; lore(m.K).seen++; } m.seen = v; }
+  for (const m of mons) if (m.K){ const v = seesMon(m); if (v && !m.seen){ disturbed = true; lore(m.K).seen++; if (depth) sfx(cryOf(m.K)); } m.seen = v; }
 }
 let disturbed = false, pendingLevel = null;
 function everyTurn(){
@@ -916,7 +934,7 @@ function hurt(n, by){
   if (player.hp <= 0){ killer = by; die(); }
 }
 function die(){
-  state = "dead"; stateT = 0; aiming = null; refreshUI();
+  state = "dead"; stateT = 0; aiming = null; refreshUI(); sfx("death"); audio.music(null);
   if (lastFoe && killer === aName(lastFoe)) lore(lastFoe).deaths++;
   saveLore();
   if (slot) store.del(slotKey(slot)); slot = 0;   // death is for good: the save goes, and the character dump goes to the hall of fame
@@ -962,7 +980,7 @@ function step(m, x, y){
   if (x === player.x && y === player.y) return m.afraid ? null : monsterAttack(m);
   if (t === T.DOOR){   // a locked or stuck door holds it up for a while
     if (L.lock[i] && rng.int(4)){ return; }
-    L.lock[i] = 0; L.tiles[i] = T.OPEN; if (visible(i)) say("A door opens."); return;
+    L.lock[i] = 0; L.tiles[i] = T.OPEN; if (visible(i)){ say("A door opens."); sfx("door"); } return;
   }
   if (monAt(x, y)) return;
   if (rocky(t) && K.killWall && depth > 0){   // it tunnels: the rock breaks into rubble behind it
@@ -1003,7 +1021,7 @@ function monsterAttack(m){
     if (effect === "steal") return stealGold(m, name, verb);
     if (effect === "stealItem") return stealItem(m, name, verb);
     let dmg = rng.dice(dice);
-    say(name + " " + verb + (dmg || effect ? " you." : "."));
+    say(name + " " + verb + (dmg || effect ? " you." : ".")); if (dmg) sfx("hurt");
     if (ELEMS.has(effect)) return elemHurt(m, dmg, effect, by);
     if (dmg) hurt(dmg, by);
     if (state === "play" && dmg) blowCrit(verb, dmg);
@@ -1300,7 +1318,7 @@ function loadGame(n){
   ({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log } = g);
   rng = new RNG(g.rng); target = mons[g.target] || null; slot = n;
   msgs = []; killer = ""; tomb = null; cr = null; aiming = null; pendingLevel = null; digging = null; parts = []; floats = []; shots = []; flashes = []; later = [];
-  seenAt.fill(0); inFov.fill(0);
+  seenAt.fill(0); inFov.fill(0); audio.music(depth ? "depths" : "town");
   state = "play"; stateT = 0; recalc(); relight(); updateSight(); snapView();
   say("Welcome back, " + player.name + ". You are " + (depth ? "at " : "in ") + depthName(depth) + ".");
 }
@@ -1430,7 +1448,9 @@ function goDir(dx, dy, shift){
   act(() => tryMove(dx, dy));
 }
 const cancelAim = () => { aiming = null; msgs = []; say("Never mind."); };
+addEventListener("pointerdown", () => audio.unlock());
 function onKey(e){
+  audio.unlock();   // browsers allow sound only after the player does something
   if (e.metaKey || (e.ctrlKey && e.key !== "p") || e.altKey) return;
   const k = e.key;
   if (dlg){ e.preventDefault(); return dialogKey(e); }
@@ -1509,7 +1529,7 @@ function createKey(e){
   if (d){ e.preventDefault(); crKey(d); refreshUI(); }
 }
 addEventListener("keydown", onKey);
-function toTitle(){ state = "title"; cr = null; aiming = null; target = null; parts = []; titleScene(); refreshUI(); }
+function toTitle(){ audio.music(null); state = "title"; cr = null; aiming = null; target = null; parts = []; titleScene(); refreshUI(); }
 addEventListener("pagehide", saveGame);   // leaving or closing the page
 addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); });   // switching tabs (a phone may never come back)
 

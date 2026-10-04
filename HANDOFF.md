@@ -25,12 +25,14 @@ Still to decide or do (not done here):
   push, and turn on GitHub Pages from `main` (the page is `index.html`).
 - **Saved data does not carry over.** localStorage belongs to a domain, so players' keys, high scores and monster
   recall from games.hendrasaputra.com will not appear on the new domain. The keys keep the same names.
-- **The cover art** shows the old ASCII look; the game is pixel art since phase 6.
+- **The cover art** shows the old ASCII look; `cartridges/PROMPT.md` now has a prompt for the pixel-art look.
 
 ## State of the game
 
-Phases 0 to 9 of [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md) are done; its Progress table says what each phase built
-and what it left out. Next is **phase 10**: sound, help, options and polish.
+All ten phases of [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md) are done; its Progress table says what each phase built
+and what it left out. What is left needs a person: listening to the sounds (`audio/torch/*.mp3`; change them in
+`audio/torch-sfx.py`, run it, then `./build.sh`), making the pixel-art cover from `cartridges/PROMPT.md`, and
+playing a full game from the town to the boss to tune the balance.
 
 Saves are versioned (`SAVE_VERSION` in `src/save.js`). Any change to what a save holds (a new field the game needs, a
 renamed item or monster id, a new flavoured item kind, which old saves have no flavour for) needs the version raised
@@ -40,7 +42,7 @@ Known gaps and bugs:
 
 - Plurals of names already ending in "s" are wrong: "2 Sandalses", "3 Hymnses" (`plural()` in `src/items.js`).
 - Prices are fixed (no haggling) and there is no home to store things in.
-- No sound yet (phase 10).
+- Prices are fixed: haggling (open question 1 in the plan) was not built. There are no "-more-" prompts.
 - Monsters do not fight each other. Monster recall is kept across characters in localStorage.
 - No person has yet played a full game to the boss. The bots die at 200 to 450 ft without cheating, and
   `tests/balance.js` rates every depth band as winnable, but that is expected values, not play.

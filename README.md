@@ -14,6 +14,8 @@ Play it at [dungeon.hensap.id](https://dungeon.hensap.id).
 - Hunger, bleeding, stuns and hallucination; 16 hidden traps; secret, locked and stuck doors; rubble and veins
   of magma and quartz to dig, some with gold; a feeling for each level's danger.
 - A character panel, item cards, a hotbar, a minimap. Keyboard only.
+- Synthesised sound effects and music, saved games in three slots, and options for auto-pickup, colour-blind-safe
+  status colours and larger text.
 
 The plan, its phases and its ground rules are in [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md). It started as a
 cartridge in the [ASCII BaseCommander](https://github.com/hendrasaputra/asciibasecommander) arcade and moved
@@ -44,11 +46,13 @@ Moria's own letter keys and the roguelike set are in the menu (Keys), as is Deta
   - **Rules and data:** `rng.js` random numbers; `fov.js` sight and light; `turn.js` the speed scheduler; `gen.js` levels, rock, doors and the town; `data.js` townsfolk and traps; `bestiary.js` the dungeon's monsters and combat numbers; `items.js` items, flavours and names; `shops.js` shops and prices; `chars.js` peoples, callings, stats and skills; `spells.js` magic; `save.js` the save format.
   - **The game:** `game.js` the rules of play and the keys.
   - **The look:** `sprites.js` tiles, figures and icons, drawn by code; `render.js` the map, light, animation and debris; `ui.js` the HTML HUD, panel, dialogs and screens; `head.html` the page markup and styles.
-  - **Helpers:** `lib.js` preferences, high scores, resizing and the frame loop.
+  - **Helpers:** `lib.js` preferences, high scores, sound, resizing and the frame loop; `audio-data.js` the sounds (generated).
+- `audio/torch-sfx.py` makes the sounds and music (needs numpy and ffmpeg): it writes `audio/torch/*.mp3` to listen
+  to and `src/audio-data.js` for the build. Run it, then `./build.sh`.
 - `cartridges/` holds the cover art and its prompt.
 
 Everything is saved in the browser's localStorage under `torchlightDungeons.v1.`: three character slots, keys,
-panel, detail, high scores with character dumps, and monster recall. Nothing is sent anywhere. The game saves itself
+panel, detail, sound, options, high scores with character dumps, and monster recall. Nothing is sent anywhere. The game saves itself
 as you play; the menu exports a character to a file, and Characters imports one.
 
 ## Licence

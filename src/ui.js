@@ -321,7 +321,7 @@ function studyDialog(can){ openDialog({ title: "Study which spell?", cols: [can.
 
 /* ---------- shops ---------- */
 let shopNow = -1;
-function openShop(i){ const S = SHOPS[i]; msgs = []; say("You enter the " + S.name + ". " + S.keeper + ": \"" + rng.pick(S.hello) + "\""); shopNow = i; shopDialog(i, 0, [0, 0]); }
+function openShop(i){ const S = SHOPS[i]; msgs = []; sfx("shop"); say("You enter the " + S.name + ". " + S.keeper + ": \"" + rng.pick(S.hello) + "\""); shopNow = i; shopDialog(i, 0, [0, 0]); }
 function shopDialog(i, c, at){
   const S = SHOPS[i], stock = shops[i].stock, cha = player.stats.cha;
   const buyRows = stock.map(it => ({ item: it, html: esc(cap(shopName(it))), right: buyPrice(it, S, cha) + " g", off: buyPrice(it, S, cha) > player.gold, select: () => { buy(i, it); shopDialog(i, 0, dlg.at); } }));
@@ -340,6 +340,9 @@ function menuDialog(){
     { label: "Side panel", right: (panelOn ? "Shown" : "Hidden") + " (P)", select: () => { togglePanel(); menuDialog(); } },
     { label: "Help", select: helpDialog },
     { label: "Detail", right: ["", "Standard", "Fine", "Finest"][DETAIL] + "  ‹ ›", adjust: d => { DETAIL = (DETAIL + d + 2) % 3 + 1; store.set("detail", DETAIL); renderLayout(); menuDialog(); }, select: () => rows[5].adjust(1) },
+    { label: "Sound", right: (audio.muted ? "Off" : "On") + "  ‹ ›", adjust: () => { audio.toggleMute(); menuDialog(); }, select: () => { audio.toggleMute(); menuDialog(); } },
+    { label: "Music", right: (audio.musicOn ? "On" : "Off") + "  ‹ ›", adjust: () => { audio.toggleMusic(); menuDialog(); }, select: () => { audio.toggleMusic(); menuDialog(); } },
+    ...Object.entries(OPTIONS).map(([k, label]) => ({ label, right: (opt(k) ? "On" : "Off") + "  ‹ ›", adjust: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); }, select: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); } })),
     { label: "Hall of fame", select: fameDialog },
     ...(state === "play" ? [{ label: "Export this character to a file", select: () => { closeDialog(); exportSave(); } }, { label: "Character dump", right: "a text file", select: () => { closeDialog(); download(player.name + ".txt", characterDump()); } },
       { label: "Save and quit", select: () => { saveGame(); closeDialog(); toTitle(); } }] : [])
@@ -375,7 +378,15 @@ function helpDialog(){
   const classic = [[ro ? "hjklyubn" : "Arrows / numpad", "move (Shift runs)"], ["g or ,", "pick up"], ["i  e", "pack, equipment"], ["w  " + (ro ? "T" : "t") + "  d", "wear, take off, drop"],
     ["E  q  r", "eat, drink, read"], ["a  " + (ro ? "Z" : "u") + "  z", "aim a wand, use a staff, zap a rod"], ["F", "fill lantern"], ["f  v  I", "fire, throw, inspect"], ["m or p  S", "cast or pray, study"],
     [">  <", "stairs"], ["R  " + (ro ? ". s" : ". 5 s"), "rest, wait and search"], [ro ? "#" : "T", "dig in a direction"], [(ro ? "x" : "l") + "  C", "look, character"], ["Tab", "next target"], ["Esc", "menu"]];
-  openDialog({ title: "Keys · " + KEYSETS[keySet], cols: [(keySet === "modern" ? modern : classic).map(([a, b]) => ({ html: `<kbd>${esc(a)}</kbd> ${esc(b)}` }))], side: false, onBack: closeDialog, note: "Change the key set in the menu" });
+  const guide = [["The aim", "Go down. Morrowgloom the Lantern-Eater waits at 2,500 ft; the dungeon goes on below it."], ["Light", "Your torch burns down. F lights a fresh one or fills a lantern with oil. In the dark you see very little."],
+    ["Food", "Eat (E) when you are hungry. Go too long and you grow weak, then faint, then starve."], ["Unknown things", "Potions and scrolls look different every game. Try them, read Identify, or sell one: the keeper tells you what it was."],
+    ["The town", "Walk into a numbered door to shop. A scroll of Word of Recall takes you between the town and your deepest level."],
+    ["Magic", "Casters need their book in the pack. When you can learn more, open the Book (B) to study."],
+    ["Hidden things", "Space waits and searches for secret doors and traps. Walk into a known trap to disarm it, and into a locked door to pick it."],
+    ["Digging", "Walk into rubble or a vein of magma or quartz to dig it; T digs plain rock. A shovel or pick in your pack helps."],
+    ["Saving", "The game saves as you play. Death is for good: the save is erased and the hall of fame keeps your story."]];
+  openDialog({ title: "Help · " + KEYSETS[keySet], heads: ["Keys", "How to play"], cols: [(keySet === "modern" ? modern : classic).map(([a, b]) => ({ html: `<kbd>${esc(a)}</kbd> ${esc(b)}` })),
+    guide.map(([a, b]) => ({ html: `<b class="gold">${esc(a)}</b><br><span class="dim">${esc(b)}</span>` }))], side: false, wide: true, onBack: closeDialog, note: "Change the key set in the menu" });
 }
 
 /* ---------- title, a new character, and the tombstone ---------- */

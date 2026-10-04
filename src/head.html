@@ -38,6 +38,10 @@ img.px.big { width: 48px; height: 48px; } img.px.face { width: 40px; height: 40p
 .facts { display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px; } .gold { color: var(--gold); } .bad { color: #ff7a5a; }
 .chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; } .chips em { font-style: normal; font-size: 11px; padding: 1px 5px; border-radius: 3px; }
 .chips .good { background: #234a2c; color: #b8f0b0; } .chips .bad { background: #5a2420; color: #ffc0b0; }
+/* options: status colours that do not rely on red and green, and larger text */
+body.cbsafe .chips .good { background: #1f3a5c; color: #c4dcff; } body.cbsafe .chips .bad { background: #5c4410; color: #ffe0a0; }
+body.cbsafe .chips .good::before { content: "▲ "; } body.cbsafe .chips .bad::before { content: "▼ "; } body.cbsafe .bad { color: #ffb030; }
+body.bigtext #ov > *, body.bigtext #panel, body.bigtext #dlg > .box, body.bigtext #screen > * { zoom: 1.2; }
 #minibox { right: 10px; top: 10px; width: 240px; }
 #mini { width: 240px; height: 132px; image-rendering: pixelated; border: 2px solid var(--edge); border-radius: 6px; display: block; background: #07060b; }
 #target { margin-top: 6px; background: #0c0b12d8; border: 2px solid var(--gold); border-radius: 6px; padding: 8px; }
