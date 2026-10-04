@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rulers and heroes · The Lore of Torchlight</title><meta name="color-scheme" content="light">
+<meta property="og:image" content="https://dungeon.hensap.id/cartridges/torchlight-dungeons-v2.jpg">
+<link rel="icon" href="../favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>/* The Lore of Torchlight: a fantasy rulebook look. Parchment, two columns, red small-caps headings, drop caps,
+   tinted tables and notes, stat blocks with copper bars. Built into every page by lore/build.js. */
+:root {
+  --parchment: #eee5ce; --paper: #f7f0dc; --ink: #211b15; --dim: #5c5043; --red: #58180d; --red-2: #9c2b1b;
+  --gold: #c9ad6a; --note: #e0e5c1; --row: #e9e2c8; --stat: #fdf1dc; --copper: #e69a28; --night: #16120e;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  margin: 0; color: var(--ink); font: 16px/1.6 "Libre Baskerville", Georgia, "Times New Roman", serif;
+  background: var(--night) radial-gradient(ellipse at top, #2a2018 0, var(--night) 70%) fixed;
+}
+a { color: var(--red-2); }
+header {
+  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 10px 24px; background: #120e0bee; border-bottom: 2px solid var(--gold); backdrop-filter: blur(4px);
+}
+header .brand { font: 800 18px "Cinzel", serif; color: #f0d88c; text-decoration: none; letter-spacing: .04em; }
+header nav { display: flex; flex-wrap: wrap; gap: 4px 14px; flex: 1; }
+header nav a, header .play { font: 600 12.5px "Cinzel", serif; color: #d9c79a; text-decoration: none; letter-spacing: .05em; }
+header nav a[aria-current] { color: #fff; border-bottom: 2px solid var(--copper); }
+header .play { color: var(--copper); }
+
+/* the page itself */
+main {
+  max-width: 1120px; margin: 28px auto; padding: 44px 56px 56px; background-color: var(--parchment);
+  background-image: radial-gradient(ellipse at 20% 10%, #fff8e6 0, #fff8e600 40%), radial-gradient(ellipse at 90% 90%, #d9c9a2 0, #d9c9a200 45%),
+    repeating-linear-gradient(0deg, #00000005 0 1px, transparent 1px 3px);
+  box-shadow: 0 0 0 1px #00000033, 0 18px 60px #000000aa; border-radius: 2px;
+}
+.flow { columns: 2 300px; column-gap: 40px; }
+h1, h2, h3, h4 { font-family: "Cinzel", serif; color: var(--red); font-weight: 800; break-after: avoid; }
+h1 { column-span: all; font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
+h2 { column-span: all; font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
+h3 { font-size: 19px; margin: 22px 0 6px; border-bottom: 1px solid var(--gold); }
+p { margin: 0 0 12px; text-align: justify; hyphens: auto; }
+p.intro { column-span: all; text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
+p.first::first-letter {
+  float: left; font: 800 64px/0.82 "Cinzel", serif; color: var(--red); padding: 6px 8px 0 0;
+}
+ul, ol { margin: 0 0 12px; padding-left: 22px; } li { margin: 0 0 6px; }
+code { font: 13px ui-monospace, Menlo, monospace; background: #00000010; padding: 1px 4px; border-radius: 2px; }
+hr.rule { column-span: all; border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
+
+/* tables: full width, tinted rows */
+table { column-span: all; width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
+th { font: 800 13px "Cinzel", serif; color: var(--red); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--gold); }
+td { padding: 7px 10px; vertical-align: top; }
+tbody tr:nth-child(odd) { background: var(--row); }
+td:first-child { font-weight: 700; white-space: nowrap; }
+.\31 0-illustrations td:first-child, .\30 8-bestiary td:nth-child(2) { white-space: normal; }
+
+/* notes: the green boxes of a rulebook */
+blockquote {
+  break-inside: avoid; margin: 8px 0 18px; padding: 14px 18px; background: var(--note); font-size: 14.5px;
+  border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); box-shadow: 0 2px 8px #0002;
+}
+
+/* illustrations: a drawn picture, or a placeholder frame until it exists */
+figure { margin: 6px 0 18px; break-inside: avoid; }
+figure.cover { column-span: all; margin: 0 auto 26px; max-width: 520px; }
+figure.cover img { width: 100%; display: block; box-shadow: 0 8px 26px #0007; border: 6px solid var(--paper); }
+.plates { break-inside: avoid; }
+.plates.nmany { column-span: all; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
+.plates.nmany figure { margin: 0; }
+figure.art.wide { column-span: all; }
+.art img, .art .slot { width: 100%; aspect-ratio: var(--ratio); display: block; object-fit: cover; }
+.art img { border: 1px solid #0006; box-shadow: 0 4px 14px #0004; }
+.art.style-A img, .art.style-B img { filter: sepia(.08) contrast(1.02); mix-blend-mode: multiply; }
+.art .slot {
+  display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 18px; text-align: center; color: var(--dim);
+  border: 2px dashed #8a7458; outline: 1px solid #8a745855; outline-offset: -8px; font-size: 13px; line-height: 1.45;
+  background: repeating-linear-gradient(45deg, #00000008 0 2px, transparent 2px 7px), repeating-linear-gradient(-45deg, #00000006 0 2px, transparent 2px 7px), var(--paper);
+}
+.art .slot b { font: 800 14px "Cinzel", serif; color: var(--red); letter-spacing: .06em; }
+.art .slot small { font: 11px ui-monospace, Menlo, monospace; color: #8a7458; }
+.plates.nmany .slot { font-size: 11.5px; padding: 12px; }
+.plates.nmany .slot span { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* stat blocks for the named monsters */
+aside.stat {
+  break-inside: avoid; margin: 6px 0 16px; padding: 10px 14px 8px; background: var(--stat); font: 14px/1.45 "Libre Baskerville", serif;
+  border-top: 5px solid var(--copper); border-bottom: 5px solid var(--copper); box-shadow: 0 0 0 1px #0002, 0 3px 10px #0003;
+}
+aside.stat h4 { margin: 0; font-size: 18px; color: var(--red); }
+aside.stat > i { display: block; color: var(--dim); font-size: 13px; margin-bottom: 4px; }
+aside.stat hr { border: 0; height: 3px; margin: 6px 0; background: linear-gradient(90deg, var(--red-2), var(--red-2) 60%, transparent); }
+aside.stat p { margin: 0 0 3px; text-align: left; color: var(--red); }
+aside.stat p b { color: var(--red); } aside.stat p { color: #3a2a1c; } aside.stat p b { margin-right: 4px; }
+
+footer {
+  max-width: 1120px; margin: 0 auto 40px; padding: 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  font: 600 14px "Cinzel", serif;
+}
+footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c5c; font: italic 12px "Libre Baskerville", serif; }
+
+@media (max-width: 760px){
+  header { position: static; padding: 8px 16px; gap: 8px; } header nav { order: 3; flex-basis: 100%; }
+  main { margin: 0; padding: 26px 16px 36px; columns: 1; border-radius: 0; }
+  h1 { font-size: 32px; } h2 { font-size: 22px; }
+  table { display: block; overflow-x: auto; font-size: 13.5px; } td:first-child { white-space: normal; }
+  p { text-align: left; } footer { padding: 0 16px; }
+}
+@media print {
+  body { background: none; } header, footer { display: none; } main { box-shadow: none; margin: 0; max-width: none; }
+}
+</style></head>
+<body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html" aria-current="page">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
+<main class="07-rulers-and-heroes"><h1>Rulers and heroes</h1>
+<div class="flow">
+<p class="intro"><i>Draft. The Lamp Kings of Aurenhold, the Keepers, the founders of Lanternhollow, and the heroes whose names are on the artifacts. Fallen heroes who became monsters are in <a href="08-bestiary.html">Bestiary</a>; they are cross-referenced here.</i></p>
+</div>
+<h2>The First Keeper</h2>
+<div class="flow">
+<div class="plates n1"><figure class="art wide style-B" style="--ratio:16/9"><div class="slot"><b>Illustration to come</b><span>Caedra, an old woman with a lantern, descending a crystal stair into darkness, every ring above her lit.</span><small>art/moment-sealing.png · style B</small></div></figure></div>
+<p class="first"><b>Caedra</b> (about 2620 to 2100 BH, if the dates are right, which would make her over five hundred years old; the Order says the flame kept her). A lamplighter from the coast who walked into the Breath with a lantern and came out knowing what was below. She founded the Order of the Lamp, planned the Lampway, and spent her long life building it. At the end she carried her lantern down to the Ring of Glass, lit every ring on the way, and did not come back.</p>
+<p>She is the only Lampwarden ever to hold the rank <i>Lamp of the Deep</i>. Her lantern was later found in the Ring of Forges, still burning, which is either a miracle or a mystery. (Open question: see <a href="index.html">Contents</a>.)</p>
+</div>
+<h2>The Lamp Kings of Aurenhold</h2>
+<div class="flow">
+<div class="plates nmany"><figure class="art  style-A" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>The Crown of Aurenhold, a plain gold circlet with lamp-shaped points, resting on a fiend's dice table.</span><small>art/item-crown.png · style A</small></div></figure><figure class="art  style-A" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>A tomb king, a mummified ruler on a stone throne with a cold, dead lamp in his lap, his Marrow Guard skeletons standing in rows.</span><small>art/family-tomb-kings.png · style A</small></div></figure></div>
+<p>Twenty-six kings and queens over about 1,700 years. Each was crowned by the Keepers and sworn to keep the Oil Tithe flowing down the Lampway, and each was buried in the Ring of Rest with a lamp, as a warden in death. A selection:</p>
+<table><thead><tr><th>Ruler</th><th>Reign (approx.)</th><th>Remembered for</th></tr></thead><tbody><tr><td><b>Aldren the Kindler</b></td><td>2090–2041 BH</td><td>First king. Took the Keepers' condition and made it the kingdom's law: the Oil Tithe.</td></tr><tr><td><b>Hollis the Mason</b></td><td>1910–1862 BH</td><td>Built the Hollow Gate and the lamplighters' road through the rings.</td></tr><tr><td><b>Aenne the Generous</b></td><td>1760–1722 BH</td><td>Gave the Collegium of Sparks its charter and its first house.</td></tr><tr><td><b>Queen Tamsin the Wise</b></td><td>1520–1471 BH</td><td>Had the great Mirror made that showed the rings below. Ruled through the best years of the kingdom.</td></tr><tr><td><b>Corran the Stern</b></td><td>1305–1270 BH</td><td>Raised the Marrow Guard to stand watch in the Ring of Rest.</td></tr><tr><td><b>Halde the Twice-Crowned</b></td><td>1180–1141 BH</td><td>Lost the throne to a cousin, won it back, and spent both reigns fighting over it.</td></tr><tr><td><b>Merrow the Proud</b></td><td>1012–981 BH</td><td>Spent the Oil Tithe on a war with the hill clans. The beginning of the Long Dusk.</td></tr><tr><td><b>Oswy the Faithful</b></td><td>668–640 BH</td><td>Went down himself to relight his fathers' lamps and drowned when the river broke into the Ring of Rest. Now <b>the Drowned King</b>.</td></tr><tr><td><b>Ysmer the Last</b></td><td>431–412 BH</td><td>Staked the kingdom on a game of dice with Duke Ashvane and lost. Fled; no one knows where he died, or if.</td></tr></tbody></table>
+<p><b>Princess Lisette</b>, Oswy's granddaughter, never reigned. Her betrothed, a captain of the Marrow Guard, went down to the Ring of Rest and did not return; on her wedding day she went down after him in her wedding dress. She is <b>the Pale Bride</b>.</p>
+<p><i>Note for the game:</i> the Lamp Kings in the crypts are its <b>tomb kings</b>, its <b>mummified priests</b> were their Keepers, and the <b>skeleton knights</b> were the Marrow Guard.</p>
+</div>
+<h2>The Keepers after the Fall</h2>
+<div class="flow">
+<ul><li><b>Brother Anselm Dimm</b> (around 410 BH), who sealed the Hollow Gate and led the last Keepers to the hill temple.</li><li><b>Mother Orla of the Tarrow</b> (around 30 YH), who came to the miners' camp to warn them what they were digging, was laughed at, and stayed anyway to found the temple in Lanternhollow.</li><li><b>Sister Vesper</b> (fell 911 YH), the Keeper who put out the temple's lamps (see the bestiary).</li><li><b>Sister Ilvane</b> (now), senior Keeper and keeper of the Eternal Lamp. She sent out the call of 1206 YH.</li></ul>
+</div>
+<h2>The founders of Lanternhollow</h2>
+<div class="flow">
+<ul><li><b>Marla Tunnick</b> (0 YH), the prospector who found the glow crystals and named the camp. Her statue in the square holds a lantern that the lamplighters keep lit.</li><li><b>The first council</b> of Lanternhollow: a miner, a Stonekin mason, a Burrowfolk grandmother, a Tinkerling lampmaker and a Keeper. The council still has those five seats by custom.</li><li><b>Councillor Pell Arran</b> (640 YH), who wrote the Delving Charter after the Collapse and saved the town by turning it into a delvers' town.</li></ul>
+</div>
+<h2>Heroes of song</h2>
+<div class="flow">
+<p>These are the names behind the game's six artifacts, and the stories delvers tell at the Last Lamp inn.</p>
+<ul><li><b>Ithrel Silverstring</b>, Sylvan archer (around 1150 BH). Strung <b>Starfall</b> with silver drawn from starlight caught in a Greenroof bowl, and shot a shade off the Ring of Stone's walls from three hundred paces. Every generation of Sylvan archers who comes to Lanternhollow comes by her promise.</li><li><b>Dame Orsolya Vell</b>, Oathknight (around 300 BH). Carried <b>Embersong</b>, forged for the Order by the Ashborn at the Anvil of the Pact, into the Ring of Rest after the Fall and cut her way to the tomb of Aldren the Kindler to relight his lamp. The blade came back without her.</li><li><b>Thane Gorran Deephall</b>, Stonekin (around 2400 BH). Cut the Ring of Stone's great halls and wore the <b>Stonehelm of the Deep Halls</b>, carved from one block of the first stone that held light. The Deephall clans want it back.</li><li><b>&quot;Nobody&quot; Quill</b>, Delver (around 700 YH). The only delver ever to rob Brassle &amp; Vane's vault (before it fell), in the <b>Mantle of Quiet Steps</b>. The Quiet Hand counts her as its founder, and denies she ever existed.</li><li><b>Wren Hallow</b>, Burrowfolk runner (around 1200 BH). Carried word of a failing ring from the Ring of Glass to the surface in a single night, wearing the <b>Band of Swift Feet</b>; the ring was relit in time. The band makes the world seem slow; Wren said it also made the world seem lonely.</li><li><b>Caedra</b>, whose lantern is the <b>Lantern of the First Keeper</b>.</li></ul>
+</div>
+<h2>Fallen heroes</h2>
+<div class="flow">
+<p>Some of the Deep's named monsters were heroes, or something like it, once. Their stories are in the bestiary: the Drowned King (King Oswy), the Pale Bride (Princess Lisette), Sister Vesper (a Keeper), Skarth the Unsleeping (a Collegium scholar), Grimsby Coldhand (a Collegium master), Ysolde of the Ashes (a mage who freed herself), Rimeheart (a Cragborn's frozen cousin) and Ironjaw (a guardian with nothing left to guard).</p>
+</div></main>
+<footer><a href="06-callings.html">‹ Callings</a><span class="draft">A draft · generated from lore/*.md</span><a href="08-bestiary.html">Bestiary ›</a></footer></body></html>

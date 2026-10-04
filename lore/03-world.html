@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The world above · The Lore of Torchlight</title><meta name="color-scheme" content="light">
+<meta property="og:image" content="https://dungeon.hensap.id/cartridges/torchlight-dungeons-v2.jpg">
+<link rel="icon" href="../favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>/* The Lore of Torchlight: a fantasy rulebook look. Parchment, two columns, red small-caps headings, drop caps,
+   tinted tables and notes, stat blocks with copper bars. Built into every page by lore/build.js. */
+:root {
+  --parchment: #eee5ce; --paper: #f7f0dc; --ink: #211b15; --dim: #5c5043; --red: #58180d; --red-2: #9c2b1b;
+  --gold: #c9ad6a; --note: #e0e5c1; --row: #e9e2c8; --stat: #fdf1dc; --copper: #e69a28; --night: #16120e;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  margin: 0; color: var(--ink); font: 16px/1.6 "Libre Baskerville", Georgia, "Times New Roman", serif;
+  background: var(--night) radial-gradient(ellipse at top, #2a2018 0, var(--night) 70%) fixed;
+}
+a { color: var(--red-2); }
+header {
+  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 10px 24px; background: #120e0bee; border-bottom: 2px solid var(--gold); backdrop-filter: blur(4px);
+}
+header .brand { font: 800 18px "Cinzel", serif; color: #f0d88c; text-decoration: none; letter-spacing: .04em; }
+header nav { display: flex; flex-wrap: wrap; gap: 4px 14px; flex: 1; }
+header nav a, header .play { font: 600 12.5px "Cinzel", serif; color: #d9c79a; text-decoration: none; letter-spacing: .05em; }
+header nav a[aria-current] { color: #fff; border-bottom: 2px solid var(--copper); }
+header .play { color: var(--copper); }
+
+/* the page itself */
+main {
+  max-width: 1120px; margin: 28px auto; padding: 44px 56px 56px; background-color: var(--parchment);
+  background-image: radial-gradient(ellipse at 20% 10%, #fff8e6 0, #fff8e600 40%), radial-gradient(ellipse at 90% 90%, #d9c9a2 0, #d9c9a200 45%),
+    repeating-linear-gradient(0deg, #00000005 0 1px, transparent 1px 3px);
+  box-shadow: 0 0 0 1px #00000033, 0 18px 60px #000000aa; border-radius: 2px;
+}
+.flow { columns: 2 300px; column-gap: 40px; }
+h1, h2, h3, h4 { font-family: "Cinzel", serif; color: var(--red); font-weight: 800; break-after: avoid; }
+h1 { column-span: all; font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
+h2 { column-span: all; font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
+h3 { font-size: 19px; margin: 22px 0 6px; border-bottom: 1px solid var(--gold); }
+p { margin: 0 0 12px; text-align: justify; hyphens: auto; }
+p.intro { column-span: all; text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
+p.first::first-letter {
+  float: left; font: 800 64px/0.82 "Cinzel", serif; color: var(--red); padding: 6px 8px 0 0;
+}
+ul, ol { margin: 0 0 12px; padding-left: 22px; } li { margin: 0 0 6px; }
+code { font: 13px ui-monospace, Menlo, monospace; background: #00000010; padding: 1px 4px; border-radius: 2px; }
+hr.rule { column-span: all; border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
+
+/* tables: full width, tinted rows */
+table { column-span: all; width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
+th { font: 800 13px "Cinzel", serif; color: var(--red); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--gold); }
+td { padding: 7px 10px; vertical-align: top; }
+tbody tr:nth-child(odd) { background: var(--row); }
+td:first-child { font-weight: 700; white-space: nowrap; }
+.\31 0-illustrations td:first-child, .\30 8-bestiary td:nth-child(2) { white-space: normal; }
+
+/* notes: the green boxes of a rulebook */
+blockquote {
+  break-inside: avoid; margin: 8px 0 18px; padding: 14px 18px; background: var(--note); font-size: 14.5px;
+  border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); box-shadow: 0 2px 8px #0002;
+}
+
+/* illustrations: a drawn picture, or a placeholder frame until it exists */
+figure { margin: 6px 0 18px; break-inside: avoid; }
+figure.cover { column-span: all; margin: 0 auto 26px; max-width: 520px; }
+figure.cover img { width: 100%; display: block; box-shadow: 0 8px 26px #0007; border: 6px solid var(--paper); }
+.plates { break-inside: avoid; }
+.plates.nmany { column-span: all; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
+.plates.nmany figure { margin: 0; }
+figure.art.wide { column-span: all; }
+.art img, .art .slot { width: 100%; aspect-ratio: var(--ratio); display: block; object-fit: cover; }
+.art img { border: 1px solid #0006; box-shadow: 0 4px 14px #0004; }
+.art.style-A img, .art.style-B img { filter: sepia(.08) contrast(1.02); mix-blend-mode: multiply; }
+.art .slot {
+  display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 18px; text-align: center; color: var(--dim);
+  border: 2px dashed #8a7458; outline: 1px solid #8a745855; outline-offset: -8px; font-size: 13px; line-height: 1.45;
+  background: repeating-linear-gradient(45deg, #00000008 0 2px, transparent 2px 7px), repeating-linear-gradient(-45deg, #00000006 0 2px, transparent 2px 7px), var(--paper);
+}
+.art .slot b { font: 800 14px "Cinzel", serif; color: var(--red); letter-spacing: .06em; }
+.art .slot small { font: 11px ui-monospace, Menlo, monospace; color: #8a7458; }
+.plates.nmany .slot { font-size: 11.5px; padding: 12px; }
+.plates.nmany .slot span { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* stat blocks for the named monsters */
+aside.stat {
+  break-inside: avoid; margin: 6px 0 16px; padding: 10px 14px 8px; background: var(--stat); font: 14px/1.45 "Libre Baskerville", serif;
+  border-top: 5px solid var(--copper); border-bottom: 5px solid var(--copper); box-shadow: 0 0 0 1px #0002, 0 3px 10px #0003;
+}
+aside.stat h4 { margin: 0; font-size: 18px; color: var(--red); }
+aside.stat > i { display: block; color: var(--dim); font-size: 13px; margin-bottom: 4px; }
+aside.stat hr { border: 0; height: 3px; margin: 6px 0; background: linear-gradient(90deg, var(--red-2), var(--red-2) 60%, transparent); }
+aside.stat p { margin: 0 0 3px; text-align: left; color: var(--red); }
+aside.stat p b { color: var(--red); } aside.stat p { color: #3a2a1c; } aside.stat p b { margin-right: 4px; }
+
+footer {
+  max-width: 1120px; margin: 0 auto 40px; padding: 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  font: 600 14px "Cinzel", serif;
+}
+footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c5c; font: italic 12px "Libre Baskerville", serif; }
+
+@media (max-width: 760px){
+  header { position: static; padding: 8px 16px; gap: 8px; } header nav { order: 3; flex-basis: 100%; }
+  main { margin: 0; padding: 26px 16px 36px; columns: 1; border-radius: 0; }
+  h1 { font-size: 32px; } h2 { font-size: 22px; }
+  table { display: block; overflow-x: auto; font-size: 13.5px; } td:first-child { white-space: normal; }
+  p { text-align: left; } footer { padding: 0 16px; }
+}
+@media print {
+  body { background: none; } header, footer { display: none; } main { box-shadow: none; margin: 0; max-width: none; }
+}
+</style></head>
+<body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html" aria-current="page">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
+<main class="03-world"><h1>The world above</h1>
+<div class="flow">
+<figure class="art wide style-C" style="--ratio:16/9"><div class="slot"><b>Illustration to come</b><span>Lanternhollow at dusk: a walled timber town on old stone ruins, every street lit with lamps, delvers in the market buying torches and rope.</span><small>art/place-lanternhollow.png · style C</small></div></figure>
+<p class="intro"><i>Draft. The game only shows Lanternhollow; everything else here is background that items, monsters and townsfolk can mention.</i></p>
+</div>
+<h2>The Hollowmark</h2>
+<div class="flow">
+<p class="first">The <b>Hollowmark</b> is a bowl of low, stony hills ringed by higher mountains: the <b>Crag Roots</b> to the north, where the Cragborn live and the giants of the deep families come from, and the long dark line of the <b>Greenroof</b> forest to the west, home of the Sylvan. A cold river, the <b>Tarrow</b>, runs out of the hills to the south and east towards the coast. Under the middle of the bowl lies the Lampway, and over its mouth lie the ruins of Aurenhold and the town of Lanternhollow.</p>
+<p>The land is poor for farming. In the old kingdom, people said that was because the Breath had soured it; now they say it is because everyone who can dig would rather dig down.</p>
+</div>
+<h2>Lanternhollow</h2>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-C" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>The Eternal Lamp on the temple altar in Lanternhollow, its flame slightly smaller than its old soot mark, Sister Ilvane watching it anxiously.</span><small>art/item-eternal-lamp.png · style C</small></div></figure></div>
+<p>A walled town of a few thousand on the ruins' southern edge, built of old Aurenhold stone and new timber. It exists to supply the delvers and to buy what they bring back. The game's town is its market square: a main street with the six licensed shops, a few houses, lamp posts, and the stairs down to the Hollow Gate.</p>
+<p><b>The lamps.</b> Lanternhollow keeps more lamps than any town its size, and lights them all night. After the Night of Open Doors (612 YH) the council made it law. Lamplighters are paid from the delving licences, and putting out a public lamp is a crime punished like theft. At night the lamp posts and shop doorways are the brightest things in the hills, which is exactly the point.</p>
+<p><b>The shops</b> (the game's six), each with a licensed keeper:</p>
+<table><thead><tr><th>Shop</th><th>Keeper</th><th>Notes for the lore</th></tr></thead><tbody><tr><td>1 General Store</td><td>Odda the Provisioner</td><td>A Burrowfolk grandmother who has outfitted three generations of delvers and remembers which ones came back. Calls everyone &quot;dear&quot;.</td></tr><tr><td>2 Armoury</td><td>Bram Ironside</td><td>A Stonekin smith from the Deephall clans. His family's mark is on half the old armour found in the Ring of Stone.</td></tr><tr><td>3 Weaponsmith</td><td>Kessa Edgewright</td><td>A human ex-delver who lost two fingers on the Maul-Wyrm's level and decided she liked forging better.</td></tr><tr><td>4 Temple</td><td>Sister Ilvane</td><td>Senior Keeper of the town temple and the keeper of the Eternal Lamp. The first to notice the Guttering.</td></tr><tr><td>5 Alchemist</td><td>Thorne Vialkeeper</td><td>A Tinkerling chemist. Every bottle is labelled in his own cipher, which is why delvers never know what a potion is until they try it.</td></tr><tr><td>6 Magic Shop</td><td>Maelis of the Blue Door</td><td>The Blue Door has been open since 112 YH and has always had a Maelis behind the counter. Maelis does not discuss this.</td></tr></tbody></table>
+<p><b>The townsfolk.</b> Wandering peddlers selling bent spoons as relics of Aurenhold; stray mutts who know which delvers drop crusts; revellers celebrating someone's safe return (or someone's estate); cutpurses who would rather rob a delver on the way down than risk the dungeon; dockside brawlers from the Tarrow barges. None of them go below.</p>
+<p><b>Day and night.</b> By day the sun crosses the bowl of hills and the buildings throw long shadows. At night there is faint moonlight and the lamps. Old people say the dark is &quot;thicker&quot; in Lanternhollow than anywhere else, and that is true: Morrowgloom's hunger pulls a little at every light near the Lampway.</p>
+<p><b>Word of Recall.</b> The scroll and the prayer that bring a delver home from the deepest ring they have reached work because of the Eternal Lamp. A Keeper's blessing ties the reader's own small share of the Fire to it, and the Lamp pulls them home, then later back to the same depth. If the Eternal Lamp ever went out, no one could be recalled.</p>
+</div>
+<h2>The ruins of Aurenhold</h2>
+<div class="flow">
+<div class="plates n1"><figure class="art wide style-A" style="--ratio:16/9"><div class="slot"><b>Illustration to come</b><span>The Hollow Gate: a great arched door under a collapsed dome in the ruins of Aurenhold, lamp-posts with no lamps on either side, a lone delver with a torch at the threshold.</span><small>art/place-hollow-gate.png · style A</small></div></figure></div>
+<p>North of the town walls, the old capital is a field of broken towers, sunken streets and lamp-posts with no lamps. The Hollow Gate stands at its heart under a collapsed dome. Most of the ruins were stripped for building stone during the Glow Rush. Delvers who cannot afford a licence sometimes dig in the ruins instead and find old coins, Collegium lecture notes, and the occasional thing that should not be there.</p>
+</div>
+<h2>Neighbours</h2>
+<div class="flow">
+<ul><li><b>The Greenroof.</b> The Sylvan forest to the west, older than Aurenhold. The Sylvan keep starlight in their high groves and send their best archers to Lanternhollow in every generation, by an old promise from Starfall's day.</li><li><b>The Crag Roots.</b> The northern mountains. The Cragborn live along their roots in great stone steads; the hill, frost, fire and storm giants of the deep are their distant cousins, who went down when the Lampway was dug and never came back up.</li><li><b>The Deephalls.</b> The Stonekin's own halls in the mountains east of the Hollowmark. Their clans built the Lampway's upper rings and still argue about who owes whom for it.</li><li><b>The Tarrow towns.</b> River towns to the south, mostly human. They buy glow crystals, Lanternhollow lanterns and whatever comes up from the Deep, and they send up food, oil and fortune-seekers in return.</li><li><b>The coast.</b> Where the human lamplighter Caedra came from. The coastal cities keep a small chapel of the Lamp each and send their failed priests to Lanternhollow, where there is always work.</li></ul>
+</div></main>
+<footer><a href="02-timeline.html">‹ Timeline</a><span class="draft">A draft · generated from lore/*.md</span><a href="04-the-lampway.html">The Lampway ›</a></footer></body></html>

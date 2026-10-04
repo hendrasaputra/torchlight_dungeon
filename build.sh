@@ -7,3 +7,4 @@ cd "$(dirname "$0")"
       src/sprites.js src/game.js src/render.js src/ui.js
   echo "</script>"; echo "</body></html>"; } > index.html
 echo "Built index.html"
+node lore/build.js   # the lore's web pages, from lore/*.md

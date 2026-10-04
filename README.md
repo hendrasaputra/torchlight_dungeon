@@ -6,7 +6,8 @@ A turn-based dungeon crawl after Moria (Robert Koeneke, 1983), for the web. You 
 dungeon below the town of Lanternhollow: everything is drawn in code-made pixel art, lit only by what your light,
 the lit rooms and glowing things reach. All of the game's content is original.
 
-Play it at [dungeon.hensap.id](https://dungeon.hensap.id).
+Play it at [dungeon.hensap.id](https://dungeon.hensap.id), and read the lore of its world at
+[dungeon.hensap.id/lore](https://dungeon.hensap.id/lore/).
 
 - 8 peoples and 6 callings, rolled or point-bought stats, 8 skills, 40 character levels.
 - About 200 kinds of item, with flavours to identify, special kinds and artifacts; 12 equipment slots shown on a
@@ -52,6 +53,8 @@ Moria's own letter keys and the roguelike set are in the menu (Keys), as is Deta
 - `audio/torch-sfx.py` makes the sounds and music (needs numpy and ffmpeg): it writes `audio/torch/*.mp3` to listen
   to and `src/audio-data.js` for the build. Run it, then `./build.sh`.
 - `cartridges/` holds the cover art and its prompt.
+- `lore/` holds the world's lore as Markdown; `lore/build.js` (run by `./build.sh`) turns it into the rulebook-style
+  pages, with stat blocks from the game's data and the illustrations from `lore/art/` (web copies in `lore/art/web/`).
 
 Everything is saved in the browser's localStorage under `torchlightDungeons.v1.`: three character slots, keys,
 panel, detail, sound, options, high scores with character dumps, and monster recall. Nothing is sent anywhere. The game saves itself

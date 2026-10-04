@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magic, devices and artifacts · The Lore of Torchlight</title><meta name="color-scheme" content="light">
+<meta property="og:image" content="https://dungeon.hensap.id/cartridges/torchlight-dungeons-v2.jpg">
+<link rel="icon" href="../favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>/* The Lore of Torchlight: a fantasy rulebook look. Parchment, two columns, red small-caps headings, drop caps,
+   tinted tables and notes, stat blocks with copper bars. Built into every page by lore/build.js. */
+:root {
+  --parchment: #eee5ce; --paper: #f7f0dc; --ink: #211b15; --dim: #5c5043; --red: #58180d; --red-2: #9c2b1b;
+  --gold: #c9ad6a; --note: #e0e5c1; --row: #e9e2c8; --stat: #fdf1dc; --copper: #e69a28; --night: #16120e;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  margin: 0; color: var(--ink); font: 16px/1.6 "Libre Baskerville", Georgia, "Times New Roman", serif;
+  background: var(--night) radial-gradient(ellipse at top, #2a2018 0, var(--night) 70%) fixed;
+}
+a { color: var(--red-2); }
+header {
+  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 10px 24px; background: #120e0bee; border-bottom: 2px solid var(--gold); backdrop-filter: blur(4px);
+}
+header .brand { font: 800 18px "Cinzel", serif; color: #f0d88c; text-decoration: none; letter-spacing: .04em; }
+header nav { display: flex; flex-wrap: wrap; gap: 4px 14px; flex: 1; }
+header nav a, header .play { font: 600 12.5px "Cinzel", serif; color: #d9c79a; text-decoration: none; letter-spacing: .05em; }
+header nav a[aria-current] { color: #fff; border-bottom: 2px solid var(--copper); }
+header .play { color: var(--copper); }
+
+/* the page itself */
+main {
+  max-width: 1120px; margin: 28px auto; padding: 44px 56px 56px; background-color: var(--parchment);
+  background-image: radial-gradient(ellipse at 20% 10%, #fff8e6 0, #fff8e600 40%), radial-gradient(ellipse at 90% 90%, #d9c9a2 0, #d9c9a200 45%),
+    repeating-linear-gradient(0deg, #00000005 0 1px, transparent 1px 3px);
+  box-shadow: 0 0 0 1px #00000033, 0 18px 60px #000000aa; border-radius: 2px;
+}
+.flow { columns: 2 300px; column-gap: 40px; }
+h1, h2, h3, h4 { font-family: "Cinzel", serif; color: var(--red); font-weight: 800; break-after: avoid; }
+h1 { column-span: all; font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
+h2 { column-span: all; font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
+h3 { font-size: 19px; margin: 22px 0 6px; border-bottom: 1px solid var(--gold); }
+p { margin: 0 0 12px; text-align: justify; hyphens: auto; }
+p.intro { column-span: all; text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
+p.first::first-letter {
+  float: left; font: 800 64px/0.82 "Cinzel", serif; color: var(--red); padding: 6px 8px 0 0;
+}
+ul, ol { margin: 0 0 12px; padding-left: 22px; } li { margin: 0 0 6px; }
+code { font: 13px ui-monospace, Menlo, monospace; background: #00000010; padding: 1px 4px; border-radius: 2px; }
+hr.rule { column-span: all; border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
+
+/* tables: full width, tinted rows */
+table { column-span: all; width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
+th { font: 800 13px "Cinzel", serif; color: var(--red); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--gold); }
+td { padding: 7px 10px; vertical-align: top; }
+tbody tr:nth-child(odd) { background: var(--row); }
+td:first-child { font-weight: 700; white-space: nowrap; }
+.\31 0-illustrations td:first-child, .\30 8-bestiary td:nth-child(2) { white-space: normal; }
+
+/* notes: the green boxes of a rulebook */
+blockquote {
+  break-inside: avoid; margin: 8px 0 18px; padding: 14px 18px; background: var(--note); font-size: 14.5px;
+  border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); box-shadow: 0 2px 8px #0002;
+}
+
+/* illustrations: a drawn picture, or a placeholder frame until it exists */
+figure { margin: 6px 0 18px; break-inside: avoid; }
+figure.cover { column-span: all; margin: 0 auto 26px; max-width: 520px; }
+figure.cover img { width: 100%; display: block; box-shadow: 0 8px 26px #0007; border: 6px solid var(--paper); }
+.plates { break-inside: avoid; }
+.plates.nmany { column-span: all; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
+.plates.nmany figure { margin: 0; }
+figure.art.wide { column-span: all; }
+.art img, .art .slot { width: 100%; aspect-ratio: var(--ratio); display: block; object-fit: cover; }
+.art img { border: 1px solid #0006; box-shadow: 0 4px 14px #0004; }
+.art.style-A img, .art.style-B img { filter: sepia(.08) contrast(1.02); mix-blend-mode: multiply; }
+.art .slot {
+  display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 18px; text-align: center; color: var(--dim);
+  border: 2px dashed #8a7458; outline: 1px solid #8a745855; outline-offset: -8px; font-size: 13px; line-height: 1.45;
+  background: repeating-linear-gradient(45deg, #00000008 0 2px, transparent 2px 7px), repeating-linear-gradient(-45deg, #00000006 0 2px, transparent 2px 7px), var(--paper);
+}
+.art .slot b { font: 800 14px "Cinzel", serif; color: var(--red); letter-spacing: .06em; }
+.art .slot small { font: 11px ui-monospace, Menlo, monospace; color: #8a7458; }
+.plates.nmany .slot { font-size: 11.5px; padding: 12px; }
+.plates.nmany .slot span { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* stat blocks for the named monsters */
+aside.stat {
+  break-inside: avoid; margin: 6px 0 16px; padding: 10px 14px 8px; background: var(--stat); font: 14px/1.45 "Libre Baskerville", serif;
+  border-top: 5px solid var(--copper); border-bottom: 5px solid var(--copper); box-shadow: 0 0 0 1px #0002, 0 3px 10px #0003;
+}
+aside.stat h4 { margin: 0; font-size: 18px; color: var(--red); }
+aside.stat > i { display: block; color: var(--dim); font-size: 13px; margin-bottom: 4px; }
+aside.stat hr { border: 0; height: 3px; margin: 6px 0; background: linear-gradient(90deg, var(--red-2), var(--red-2) 60%, transparent); }
+aside.stat p { margin: 0 0 3px; text-align: left; color: var(--red); }
+aside.stat p b { color: var(--red); } aside.stat p { color: #3a2a1c; } aside.stat p b { margin-right: 4px; }
+
+footer {
+  max-width: 1120px; margin: 0 auto 40px; padding: 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  font: 600 14px "Cinzel", serif;
+}
+footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c5c; font: italic 12px "Libre Baskerville", serif; }
+
+@media (max-width: 760px){
+  header { position: static; padding: 8px 16px; gap: 8px; } header nav { order: 3; flex-basis: 100%; }
+  main { margin: 0; padding: 26px 16px 36px; columns: 1; border-radius: 0; }
+  h1 { font-size: 32px; } h2 { font-size: 22px; }
+  table { display: block; overflow-x: auto; font-size: 13.5px; } td:first-child { white-space: normal; }
+  p { text-align: left; } footer { padding: 0 16px; }
+}
+@media print {
+  body { background: none; } header, footer { display: none; } main { box-shadow: none; margin: 0; max-width: none; }
+}
+</style></head>
+<body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html" aria-current="page">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
+<main class="09-magic-and-artifacts"><h1>Magic, devices and artifacts</h1>
+<div class="flow">
+<p class="intro"><i>Draft. How the game's magic and items fit the world: the two realms and their eight books, why unknown things look different to every delver, who made the wands, staffs and rods, where the special kinds come from, and the six artifacts. The cosmology behind the two realms is in <a href="01-cosmology.html">Cosmology</a>.</i></p>
+</div>
+<h2>The two realms</h2>
+<div class="flow">
+<table><thead><tr><th></th><th>Arcane</th><th>Holy</th></tr></thead><tbody><tr><td>Source</td><td>Starlight: the far sparks of the First Fire</td><td>The carried flame: the ember passed hand to hand</td></tr><tr><td>Taught by</td><td>The Collegium of Sparks</td><td>The Order of the Lamp</td></tr><tr><td>Callings</td><td>Arcanist (all of it); Delver and Wayfinder (some, later)</td><td>Lampwarden (all of it); Oathknight (some, more slowly)</td></tr><tr><td>How it is learned</td><td>Studied: an Arcanist chooses each new spell</td><td>Granted: a prayer is given, not chosen, when the flame thinks you are ready</td></tr><tr><td>Nature</td><td>Cold, exact, indifferent to its use</td><td>Warm, protective, hostile to the dark</td></tr><tr><td>Best against</td><td>Anything, from range</td><td>The undead and the evil, close by</td></tr></tbody></table>
+<p class="first">Both need the book in the pack. Arcanists say the book holds the pattern; Keepers say the book holds the promise. Either way, no book, no spell.</p>
+<p><b>Why the first casting teaches you something.</b> A spell is a borrowed light, and the first time you borrow one you learn its weight. <i>In the game: the first cast of each spell gives experience.</i></p>
+<p><b>Why spells fail.</b> Starlight slips from a tired or clumsy mind; the flame does not come to a distracted prayer. A stunned caster fails far more often, because a ringing head can hold neither.</p>
+</div>
+<h3>The arcane books</h3>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-C" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>The eight spell books on a shelf: four blue arcane books (Book of First Sparks, Hidden Ways, Storm and Frost, Deep Sorcery) and four gold holy books (Lamp Psalter, Hymns of the Hearth, Litany of Dawn, Rites of the Unbroken Flame), worn and well loved.</span><small>art/item-spellbooks.png · style C</small></div></figure></div>
+<table><thead><tr><th>Book</th><th>Written</th><th>Notes</th></tr></thead><tbody><tr><td><i>Book of First Sparks</i></td><td>~1700 BH, by the Collegium's founders</td><td>Spark, sensing and stepping. Every Arcanist's first book, unchanged in two thousand years except for the jokes in the margins.</td></tr><tr><td><i>Book of Hidden Ways</i></td><td>~1400 BH</td><td>Frost, slumber, knowing, and <i>Melt Stone</i>, which the Stonekin consider a war crime.</td></tr><tr><td><i>Book of Storm and Frost</i></td><td>~1100 BH, by the Collegium's battle-mages</td><td>Written for war with the hill clans during the Long Dusk, which is why it is mostly about killing things at a distance.</td></tr><tr><td><i>Book of Deep Sorcery</i></td><td>~420 BH, author unknown</td><td><i>Unravel</i>, <i>Mana Storm</i>, <i>Shake the Earth</i>. The Collegium denies writing it. Some say Duke Ashvane left a copy at court.</td></tr></tbody></table>
+</div>
+<h3>The holy books</h3>
+<div class="flow">
+<table><thead><tr><th>Book</th><th>Written</th><th>Notes</th></tr></thead><tbody><tr><td><i>Lamp Psalter</i></td><td>~2550 BH, the first Keepers</td><td>Mend, bless, light the way, feed the hungry, tend the flame. The prayers of people building something in the dark.</td></tr><tr><td><i>Hymns of the Hearth</i></td><td>~1900 BH</td><td>Prayers for the lamplighters of the rings: wards against heat and cold, finding the way, lifting curses.</td></tr><tr><td><i>Litany of Dawn</i></td><td>~640 BH, after the Night the River Rose</td><td>Prayers against the dead: <i>Turn the Dead</i>, <i>Searing Dawn</i>. Written in grief, which may be why they work so well.</td></tr><tr><td><i>Rites of the Unbroken Flame</i></td><td>Caedra's own, the Order says</td><td><i>Holy Word</i>, <i>Banish Evil</i>, <i>Unbroken Flame</i>. Said to be the rites she spoke while lighting the Ring of Glass.</td></tr></tbody></table>
+</div>
+<h2>Why unknown things look different to every delver</h2>
+<div class="flow">
+<p>A potion of Speed is <i>Violet</i> to one delver and <i>Rusty</i> to the next; a scroll's title is a nonsense word that changes from delver to delver; wands are oak or ebony, rings jade or onyx, at random. The Keepers' explanation: the Deep muddles what the eyes see. Morrowgloom's dark sits between a thing and the one looking at it, and shows each delver their own colours, until they <i>know</i> the thing. Once you know what a potion is, you see it truly.</p>
+<p>Practical folk add that nobody in four thousand years of potion-making agreed on colours anyway, and that Thorne Vialkeeper labels everything in his own cipher. Both explanations are true in Lanternhollow. <i>In the game: flavours are shuffled for every new character; drinking, reading, Identify or selling teaches you the kind.</i></p>
+<p><b>Scroll titles</b> are written in <i>spark-script</i>, the Collegium's cipher alphabet, which nobody but the writer can read until the scroll has been used once.</p>
+<p><b>Sensing.</b> An experienced delver can <i>feel</i> whether a blade is blessed or cursed before knowing what it is, the way you feel a draught before you see the open door. <i>In the game: {magical}, {cursed} and the like, sensed on pickup and over time.</i></p>
+</div>
+<h2>Devices</h2>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-A" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>A glow crystal: a rough shard of crystal shining on its own, still half embedded in a broken piece of carved shrine wall.</span><small>art/item-glow-crystal.png · style A</small></div></figure></div>
+<ul><li><b>Wands</b> are cut from woods that grew under starlight (the Greenroof's oak, ash, yew and rowan; ebony from the coast) and charged by the Collegium. Each charge is a borrowed spark; recharging borrows more, and a wand that borrows too much bursts.</li><li><b>Staffs</b> descend from the lamplighters' staffs of the Lampway: long poles that lit, warded and showed the way. The Keepers' staffs heal and light; the darker ones (Summoning, Darkness) were made by people imitating Keepers.</li><li><b>Rods</b> are Tinkerling work: metal (brass, copper, silver) wound around a sliver of glow crystal, which refills the rod slowly with stored light. That is why rods recharge on their own.</li><li><b>Rings and amulets</b> are set with stones from the veins of the Lampway (jade, onyx, opal, garnet). Stones that sat beside a lit shrine for long enough soaked up a blessing. Stones that sat beside the dead soaked up something else: that is where cursed rings come from.</li><li><b>Lights.</b> Torches are pitch and rag. Lanterns are the Lantern Guild's, with oil from the Tarrow towns. A <b>glow crystal</b>, the rarest light, is Lampway lamplight set into stone, cut from a shrine wall, and never goes out. Every glow crystal in the world is a little light taken out of the cage, which the Keepers never let anyone forget.</li><li><b>Digging tools.</b> Shovels and picks from the Glow Rush lie all over the upper workings; Stonekin mattocks are rarer and much better.</li></ul>
+</div>
+<h2>The special kinds</h2>
+<div class="flow">
+<p>Weapons and armour &quot;of&quot; something carry the mark of the people who made them, or of what was done to them.</p>
+<table><thead><tr><th>Kind</th><th>Where it comes from</th></tr></thead><tbody><tr><td><i>of Burning</i>, <i>of Frost</i>, <i>of Storms</i></td><td>Tempered at the Anvil of the Pact in the Ring of Forges (burning), in frost-giant ice (frost), or struck by Collegium lightning (storms).</td></tr><tr><td><i>of Slay Beast</i>, <i>of Slay Undead</i>, <i>of Slay Evil</i></td><td>Blessed by the Order for the Oathknights' hunts: beasts in the Ring of Roots, the dead in the Ring of Rest, fiends below.</td></tr><tr><td><i>(Blessed)</i></td><td>Laid on the Eternal Lamp's altar for a night.</td></tr><tr><td><i>of Warding</i></td><td>A Keeper's ward carved into a blade, for lamplighters who had to go through the rings unescorted.</td></tr><tr><td><i>of Sharpness</i></td><td>Stonekin edge-work: honed on stone that held light.</td></tr><tr><td><i>of Resist Fire</i>, <i>Cold</i>, <i>Acid</i>, <i>Lightning</i>; <i>of Resistance</i></td><td>Ashborn ash-cloth, Tinkerling oilskins and Stonekin plate made for the hazards of each ring.</td></tr><tr><td><i>of Stealth</i></td><td>The Quiet Hand's work, though no one will admit it.</td></tr><tr><td><i>of Speed</i>, <i>of Free Action</i></td><td>Burrowfolk runners' gear from the Age of Lamps, made so messages between the rings could not be held up.</td></tr><tr><td><i>of Seeing</i></td><td>Keeper helms for watching the dark, which can see what hides in it.</td></tr><tr><td><i>of Intellect</i>, <i>of Wisdom</i>, <i>of Might</i>, <i>of Power</i>, <i>of Accuracy</i></td><td>Gifts of old Aurenhold to its champions and scholars.</td></tr></tbody></table>
+</div>
+<h2>The six artifacts</h2>
+<div class="flow">
+</div>
+<h3>Embersong (longsword, around 1,000 ft)</h3>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-A" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>Embersong, a long sword whose blade glows like a coal along its edge, faint heat shimmer above it, an Ashborn forge-mark on the guard.</span><small>art/item-embersong.png · style A</small></div></figure></div>
+<p><i>&quot;Its blade glows like a coal and hums softly.&quot;</i> Forged by Ashborn smiths at the Anvil of the Pact for the Order of the Lamp, in the Age of Lamps. Dame Orsolya Vell carried it into the Ring of Rest after the Fall to relight the tomb of Aldren the Kindler; the blade came back up without her, carried by the river. It burns what it cuts, its bearer does not burn, and it gives a little light of its own. The hum, the Ashborn say, is the forge-song of the Pact, still being sung.</p>
+</div>
+<h3>The Mantle of Quiet Steps (cloak, around 900 ft)</h3>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-A" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>The Mantle of Quiet Steps, a grey hooded cloak whose edges dissolve into shadow, laid over a thief's lockpicks.</span><small>art/item-mantle.png · style A</small></div></figure></div>
+<p><i>&quot;Grey cloth that seems to swallow sound.&quot;</i> The cloak of &quot;Nobody&quot; Quill, the only delver ever to rob the Brassle &amp; Vane vault before it fell. Woven, the Quiet Hand says, from the dust of the shadows it was made among. The Hand claims it as its founding relic, and also denies it.</p>
+</div>
+<h3>The Stonehelm of the Deep Halls (great helm, around 1,250 ft)</h3>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-A" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>The Stonehelm of the Deep Halls, a great helm carved from one block of dark stone, Stonekin clan runes around the brow, a faint glow inside.</span><small>art/item-stonehelm.png · style A</small></div></figure></div>
+<p><i>&quot;Carved from one block of dark stone, and yet light as a cap.&quot;</i> Thane Gorran Deephall's helm, carved from the first stone of the Ring of Stone to hold light. It gives the strength and endurance of the Deephall clans and the sight in the dark of their halls. The Deephall clans want it back, and will be very polite until they get it.</p>
+</div>
+<h3>The Lantern of the First Keeper (lantern, around 1,500 ft)</h3>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-A" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>The Lantern of the First Keeper, a simple old brass lantern with a flame that burns without wick or oil, light rays crosshatched around it.</span><small>art/item-first-lantern.png · style A</small></div></figure></div>
+<p><i>&quot;Its flame never needs oil.&quot;</i> Caedra's lantern, lit from the carried ember, that she took down to light the Ring of Glass in about 2100 BH. It was found two thousand years later in the Ring of Forges, still burning. Song says it is the first lamp of all; the Order's records say she had three before it. Either way, its flame cannot be put out, and the Eternal Lamp in the temple was lit from it.</p>
+</div>
+<h3>Starfall (long bow, around 1,750 ft)</h3>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-A" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>Starfall, a long bow of pale wood strung with a silver string that sparkles, an arrow with a star-shaped head beside it.</span><small>art/item-starfall.png · style A</small></div></figure></div>
+<p><i>&quot;A bow of pale wood strung with silver.&quot;</i> Made by Ithrel Silverstring around 1150 BH, from Greenroof wood that grew under the brightest stars, strung with silver drawn from starlight caught in a Sylvan bowl. It shoots truest in the dark. The Sylvan still send archers to Lanternhollow by Ithrel's promise.</p>
+</div>
+<h3>The Band of Swift Feet (ring of speed, around 2,250 ft)</h3>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-A" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>The Band of Swift Feet, a plain silver ring with motion lines and a trail of tiny footprints around it.</span><small>art/item-swift-band.png · style A</small></div></figure></div>
+<p><i>&quot;A plain silver ring that makes the world seem slow.&quot;</i> Worn by Wren Hallow, the Burrowfolk runner who carried word of a failing ring from the Ring of Glass to the surface in one night, around 1200 BH. It makes its wearer fast and impossible to hold still. Wren said it made the world seem lonely, and gave it back.</p>
+<p><i>(Depths are those the game makes each artifact at, in feet.)</i></p>
+</div>
+<h2>Ideas for the game</h2>
+<div class="flow">
+<p>Places this lore could go, if wanted:</p>
+<ul><li>Item cards could show the &quot;where it comes from&quot; line for special kinds and artifacts.</li><li>The Journal could gain a <b>Lore</b> tab that fills in as you meet things: a page per unique, per ring, per book.</li><li>Level feelings could name the ring (&quot;The stones here were cut by Stonekin hands.&quot;).</li><li>Shopkeepers' greetings could mention the Guttering and the call of 1206 YH.</li><li>Relighting a shrine (a lit room) could become a Lampwarden ability or quest.</li></ul>
+</div></main>
+<footer><a href="08-bestiary.html">‹ Bestiary</a><span class="draft">A draft · generated from lore/*.md</span><a href="10-illustrations.html">Art list ›</a></footer></body></html>

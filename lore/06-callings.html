@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The six callings · The Lore of Torchlight</title><meta name="color-scheme" content="light">
+<meta property="og:image" content="https://dungeon.hensap.id/cartridges/torchlight-dungeons-v2.jpg">
+<link rel="icon" href="../favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>/* The Lore of Torchlight: a fantasy rulebook look. Parchment, two columns, red small-caps headings, drop caps,
+   tinted tables and notes, stat blocks with copper bars. Built into every page by lore/build.js. */
+:root {
+  --parchment: #eee5ce; --paper: #f7f0dc; --ink: #211b15; --dim: #5c5043; --red: #58180d; --red-2: #9c2b1b;
+  --gold: #c9ad6a; --note: #e0e5c1; --row: #e9e2c8; --stat: #fdf1dc; --copper: #e69a28; --night: #16120e;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  margin: 0; color: var(--ink); font: 16px/1.6 "Libre Baskerville", Georgia, "Times New Roman", serif;
+  background: var(--night) radial-gradient(ellipse at top, #2a2018 0, var(--night) 70%) fixed;
+}
+a { color: var(--red-2); }
+header {
+  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 10px 24px; background: #120e0bee; border-bottom: 2px solid var(--gold); backdrop-filter: blur(4px);
+}
+header .brand { font: 800 18px "Cinzel", serif; color: #f0d88c; text-decoration: none; letter-spacing: .04em; }
+header nav { display: flex; flex-wrap: wrap; gap: 4px 14px; flex: 1; }
+header nav a, header .play { font: 600 12.5px "Cinzel", serif; color: #d9c79a; text-decoration: none; letter-spacing: .05em; }
+header nav a[aria-current] { color: #fff; border-bottom: 2px solid var(--copper); }
+header .play { color: var(--copper); }
+
+/* the page itself */
+main {
+  max-width: 1120px; margin: 28px auto; padding: 44px 56px 56px; background-color: var(--parchment);
+  background-image: radial-gradient(ellipse at 20% 10%, #fff8e6 0, #fff8e600 40%), radial-gradient(ellipse at 90% 90%, #d9c9a2 0, #d9c9a200 45%),
+    repeating-linear-gradient(0deg, #00000005 0 1px, transparent 1px 3px);
+  box-shadow: 0 0 0 1px #00000033, 0 18px 60px #000000aa; border-radius: 2px;
+}
+.flow { columns: 2 300px; column-gap: 40px; }
+h1, h2, h3, h4 { font-family: "Cinzel", serif; color: var(--red); font-weight: 800; break-after: avoid; }
+h1 { column-span: all; font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
+h2 { column-span: all; font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
+h3 { font-size: 19px; margin: 22px 0 6px; border-bottom: 1px solid var(--gold); }
+p { margin: 0 0 12px; text-align: justify; hyphens: auto; }
+p.intro { column-span: all; text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
+p.first::first-letter {
+  float: left; font: 800 64px/0.82 "Cinzel", serif; color: var(--red); padding: 6px 8px 0 0;
+}
+ul, ol { margin: 0 0 12px; padding-left: 22px; } li { margin: 0 0 6px; }
+code { font: 13px ui-monospace, Menlo, monospace; background: #00000010; padding: 1px 4px; border-radius: 2px; }
+hr.rule { column-span: all; border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
+
+/* tables: full width, tinted rows */
+table { column-span: all; width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
+th { font: 800 13px "Cinzel", serif; color: var(--red); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--gold); }
+td { padding: 7px 10px; vertical-align: top; }
+tbody tr:nth-child(odd) { background: var(--row); }
+td:first-child { font-weight: 700; white-space: nowrap; }
+.\31 0-illustrations td:first-child, .\30 8-bestiary td:nth-child(2) { white-space: normal; }
+
+/* notes: the green boxes of a rulebook */
+blockquote {
+  break-inside: avoid; margin: 8px 0 18px; padding: 14px 18px; background: var(--note); font-size: 14.5px;
+  border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); box-shadow: 0 2px 8px #0002;
+}
+
+/* illustrations: a drawn picture, or a placeholder frame until it exists */
+figure { margin: 6px 0 18px; break-inside: avoid; }
+figure.cover { column-span: all; margin: 0 auto 26px; max-width: 520px; }
+figure.cover img { width: 100%; display: block; box-shadow: 0 8px 26px #0007; border: 6px solid var(--paper); }
+.plates { break-inside: avoid; }
+.plates.nmany { column-span: all; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
+.plates.nmany figure { margin: 0; }
+figure.art.wide { column-span: all; }
+.art img, .art .slot { width: 100%; aspect-ratio: var(--ratio); display: block; object-fit: cover; }
+.art img { border: 1px solid #0006; box-shadow: 0 4px 14px #0004; }
+.art.style-A img, .art.style-B img { filter: sepia(.08) contrast(1.02); mix-blend-mode: multiply; }
+.art .slot {
+  display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 18px; text-align: center; color: var(--dim);
+  border: 2px dashed #8a7458; outline: 1px solid #8a745855; outline-offset: -8px; font-size: 13px; line-height: 1.45;
+  background: repeating-linear-gradient(45deg, #00000008 0 2px, transparent 2px 7px), repeating-linear-gradient(-45deg, #00000006 0 2px, transparent 2px 7px), var(--paper);
+}
+.art .slot b { font: 800 14px "Cinzel", serif; color: var(--red); letter-spacing: .06em; }
+.art .slot small { font: 11px ui-monospace, Menlo, monospace; color: #8a7458; }
+.plates.nmany .slot { font-size: 11.5px; padding: 12px; }
+.plates.nmany .slot span { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* stat blocks for the named monsters */
+aside.stat {
+  break-inside: avoid; margin: 6px 0 16px; padding: 10px 14px 8px; background: var(--stat); font: 14px/1.45 "Libre Baskerville", serif;
+  border-top: 5px solid var(--copper); border-bottom: 5px solid var(--copper); box-shadow: 0 0 0 1px #0002, 0 3px 10px #0003;
+}
+aside.stat h4 { margin: 0; font-size: 18px; color: var(--red); }
+aside.stat > i { display: block; color: var(--dim); font-size: 13px; margin-bottom: 4px; }
+aside.stat hr { border: 0; height: 3px; margin: 6px 0; background: linear-gradient(90deg, var(--red-2), var(--red-2) 60%, transparent); }
+aside.stat p { margin: 0 0 3px; text-align: left; color: var(--red); }
+aside.stat p b { color: var(--red); } aside.stat p { color: #3a2a1c; } aside.stat p b { margin-right: 4px; }
+
+footer {
+  max-width: 1120px; margin: 0 auto 40px; padding: 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  font: 600 14px "Cinzel", serif;
+}
+footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c5c; font: italic 12px "Libre Baskerville", serif; }
+
+@media (max-width: 760px){
+  header { position: static; padding: 8px 16px; gap: 8px; } header nav { order: 3; flex-basis: 100%; }
+  main { margin: 0; padding: 26px 16px 36px; columns: 1; border-radius: 0; }
+  h1 { font-size: 32px; } h2 { font-size: 22px; }
+  table { display: block; overflow-x: auto; font-size: 13.5px; } td:first-child { white-space: normal; }
+  p { text-align: left; } footer { padding: 0 16px; }
+}
+@media print {
+  body { background: none; } header, footer { display: none; } main { box-shadow: none; margin: 0; max-width: none; }
+}
+</style></head>
+<body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html" aria-current="page">Callings</a><a href="07-rulers-and-heroes.html">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
+<main class="06-callings"><h1>The six callings</h1>
+<div class="flow">
+<p class="intro"><i>Draft. The game's six classes are &quot;callings&quot;, and each has an order, guild or tradition behind it in Lanternhollow. The ten titles each calling has in the game are the ranks of that order.</i></p>
+</div>
+<h2>Sellsword: the Free Companies</h2>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>A scarred sellsword of the Free Companies leaning on a long sword in a rowdy inn called The Last Lamp; behind them a long wall painted with the names of fallen delvers.</span><small>art/calling-sellsword.png · style C</small></div></figure></div>
+<p class="first"><b>Order:</b> the Free Companies of the Hollow, a loose brotherhood of sellswords licensed to delve since the Delving Charter (640 YH). Their hall is a rowdy inn by the Hollow Gate called <i>The Last Lamp</i>.</p>
+<p>Sellswords fight for pay and fight better than anyone (<i>the most hit points and the surest blows; no magic at all</i>). Most are soldiers out of work from the Tarrow towns. The companies keep a roll of the fallen painted on the inn's long wall, and a sellsword's rank is counted in names they have outlived.</p>
+<p><b>Ranks:</b> Recruit, Blade, Veteran, Swordhand, Champion, Warden, Hero, Warlord, Lord of Blades, Unbroken. The last, <i>Unbroken</i>, belongs by custom to the one sellsword who comes back up from the Pit of the Gloam.</p>
+</div>
+<h2>Arcanist: the Collegium of Sparks</h2>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>A young Arcanist of the Collegium of Sparks, ink-stained robes, a battered book open in one hand, a crackling spark of cold starlight jumping from the other hand, in a crooked library of unused rooms.</span><small>art/calling-arcanist.png · style C</small></div></figure></div>
+<p><b>Order:</b> the Collegium of Sparks, founded in Aurenhold around 1700 BH and now a narrow, crooked house in Lanternhollow full of rooms no one uses. It teaches arcane magic, the shaping of starlight (see <a href="01-cosmology.html">Cosmology</a>).</p>
+<p>Arcanists are frail and learn the most spells (<i>the whole arcane realm by level 40</i>), starting with <i>Spark</i>, the first lesson in the <i>Book of First Sparks</i>. The Collegium is proud, argumentative and badly funded. Many of its &quot;runaway apprentices&quot; end up in the Ring of Stone as monsters, and its expelled masters (Grimsby Coldhand, Skarth) are its great shame.</p>
+<p><b>Ranks:</b> Novice, Scribe, Spark-wright, Conjurer, Spellbinder, Thaumaturge, Magister, Arch-scholar, Stormcaller, Archmage.</p>
+</div>
+<h2>Lampwarden: the Order of the Lamp</h2>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>A Lampwarden of the Order of the Lamp in simple robes, a brass lantern held high casting a warm halo, mace at the belt, stepping down a dark stair while shadows recoil from the light.</span><small>art/calling-lampwarden.png · style C</small></div></figure></div>
+<p><b>Order:</b> the Order of the Lamp, founded by Caedra around 2560 BH. It built the Lampway, crowned the Lamp Kings, and has shrunk since the Fall to a single temple in Lanternhollow under Sister Ilvane, which keeps the <b>Eternal Lamp</b> (lit from Caedra's own lantern, they say).</p>
+<p>Lampwardens are the Order's delving keepers. They carry the carried flame (<i>holy magic</i>), their light reaches one step further than anyone's (<i>the light bonus</i>), and they learn every prayer, starting with <i>Mend</i>. Their duty is the old one: go down, relight what has gone out, and keep the dark down. The <i>Lamp Psalter</i> is the Order's oldest prayer book; the <i>Rites of the Unbroken Flame</i> were written by Caedra herself, the Order says.</p>
+<p><b>Ranks:</b> Acolyte, Lamp-bearer, Keeper, Watcher, Warden, Beacon, High Keeper, Lightward, Dawnbringer, Lamp of the Deep. The last has been held by only one person: Caedra.</p>
+</div>
+<h2>Delver: the Quiet Hand</h2>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>A Delver of the Quiet Hand in grey, half in shadow, kneeling at a locked chest with picks, a sleeping monster's huge clawed foot just visible at the edge of the frame.</span><small>art/calling-delver.png · style C</small></div></figure></div>
+<p><b>Order:</b> no one admits to belonging to the Quiet Hand, which is how you know it exists. The Delvers were the original treasure-seekers of the Delving Charter and have always been half-thieves: they go down quietly, take what is valuable and leave what is dangerous asleep.</p>
+<p>Delvers let monsters sleep longer, strike a sleeping one twice as hard (<i>the ambush</i>), and pick up a little arcane magic later, from the Collegium's back door. The <b>Mantle of Quiet Steps</b> is their legend (see <a href="09-magic-and-artifacts.html">Magic & artifacts</a>).</p>
+<p><b>Ranks:</b> Footpad, Cutpurse, Sneak, Prowler, Shadow, Infiltrator, Vaultbreaker, Nightblade, Master Delver, Unseen. &quot;Vaultbreaker&quot; is a nod to Ironjaw's vault, which every Delver dreams of breaking.</p>
+</div>
+<h2>Wayfinder: the Wardens of Roads</h2>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>A Wayfinder of the Wardens of Roads with a sling and a quiver of darts, studying a hand-drawn map that is visibly wrong, at a fork in a mossy cavern with three tunnels.</span><small>art/calling-wayfinder.png · style C</small></div></figure></div>
+<p><b>Order:</b> the Wardens of Roads, the old kingdom's road-keepers and messengers, who mapped the lamplighters' roads through the rings. Today they are scouts and guides who chart each new shape of the Lampway and sell the maps (which are useless the next time, because the rings shift, and Wayfinders know it, and sell them anyway).</p>
+<p>Wayfinders are the best shots (<i>they start with a sling, iron shot and throwing darts</i>) and learn some arcane magic later, and value most the spells that find the way, such as <i>Phase Step</i> and <i>Chart the Depths</i>. Many are Sylvan or Burrowfolk.</p>
+<p><b>Ranks:</b> Trailhand, Scout, Tracker, Pathfinder, Outrider, Hunter, Far-strider, Deepranger, Wayfinder, Warden of Roads.</p>
+</div>
+<h2>Oathknight: the Oath of the Unbroken Flame</h2>
+<div class="flow">
+<div class="plates n1"><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>An Oathknight in worn plate with a lamp sigil, kneeling to swear on a sword before the Eternal Lamp in a small stone temple.</span><small>art/calling-oathknight.png · style C</small></div></figure></div>
+<p><b>Order:</b> the Knights of the Oath, holy warriors who swore, after the Fall, the oath that King Ysmer broke: to keep the dark down <i>at any cost to themselves</i>. They are a small, stern order with a chapter house beside the temple. Many are descendants of the Marrow Guard, which is why so many Marrowkin are Oathknights.</p>
+<p>Oathknights fight nearly as well as a Sellsword and learn prayers more slowly (<i>part-time holy casters</i>). Their dream is to win back the <b>Crown of Aurenhold</b> from Duke Ashvane and end the debt the kingdom fell into.</p>
+<p><b>Ranks:</b> Squire, Sworn, Shieldbearer, Knight, Oathkeeper, Knight-Captain, Lord Protector, Banneret, Paragon, Oathbound.</p>
+</div></main>
+<footer><a href="05-peoples.html">‹ Peoples</a><span class="draft">A draft · generated from lore/*.md</span><a href="07-rulers-and-heroes.html">Rulers & heroes ›</a></footer></body></html>

@@ -18,6 +18,14 @@ flow back into item and monster descriptions, level feelings, book titles and th
 | [07-rulers-and-heroes.md](07-rulers-and-heroes.md) | The Lamp Kings, the Keepers, and the heroes of song |
 | [08-bestiary.md](08-bestiary.md) | A repository of every monster family, the named uniques, and the Lantern-Eater |
 | [09-magic-and-artifacts.md](09-magic-and-artifacts.md) | The two realms, the spell books, flavours, special kinds and the six artifacts |
+| [10-illustrations.md](10-illustrations.md) | A list of 72 illustrations (monsters, peoples, items, places) with prompts in three ink styles |
+
+## The web pages
+
+`node lore/build.js` (also run by `./build.sh`) turns these files into the pages at
+[dungeon.hensap.id/lore](https://dungeon.hensap.id/lore/). Edit the Markdown, never the `.html`. Put each finished
+illustration in `art/` under its name from [10-illustrations.md](10-illustrations.md) and rebuild: the build makes a
+900 px web copy in `art/web/` and the page shows it in place of the placeholder.
 
 ## Ground rules for the lore
 
