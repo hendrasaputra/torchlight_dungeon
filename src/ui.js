@@ -338,8 +338,7 @@ function menuDialog(){
     { label: "Keys", right: KEYSETS[keySet] + "  ‹ ›", adjust: d => { const ks = Object.keys(KEYSETS); keySet = ks[(ks.indexOf(keySet) + ks.length + d) % ks.length]; store.set("keymap", keySet); menuDialog(); }, select: () => rows[2].adjust(1) },
     { label: "Side panel", right: (panelOn ? "Shown" : "Hidden") + " (P)", select: () => { togglePanel(); menuDialog(); } },
     { label: "Help", select: helpDialog },
-    { label: "Display settings", select: () => { location.href = "settings.html"; } },
-    { label: "Back to cartridges", select: () => { location.href = "./"; } }
+    { label: "Detail", right: ["", "Standard", "Fine", "Finest"][DETAIL] + "  ‹ ›", adjust: d => { DETAIL = (DETAIL + d + 2) % 3 + 1; store.set("detail", DETAIL); renderLayout(); menuDialog(); }, select: () => rows[5].adjust(1) }
   ];
   openDialog({ title: state === "play" ? "Paused" : "Menu", cols: [rows], side: false, note: "This early version does not save", at: dlg && dlg.title.match(/Paused|Menu/) ? dlg.at : [0] });
 }

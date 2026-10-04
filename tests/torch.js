@@ -1,7 +1,7 @@
 // Checks for Torchlight Dungeons' rules. Run: node tests/torch.js
 // Loads the game's logic files without a browser: random numbers, sight and light, turns, levels and data.
 const fs = require("fs"), vm = require("vm"), path = require("path");
-const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "sprites.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", "torch", f), "utf8"));
+const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "sprites.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
 const G = vm.runInNewContext(files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, reachable, T, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
 
 let failed = 0;
@@ -102,7 +102,7 @@ const { MW, MH, T } = G;
 }
 
 { // items: every kind of effect exists in the game, names are complete at every depth, flavours are distinct
-  const game = fs.readFileSync(path.join(__dirname, "..", "src", "torch", "game.js"), "utf8");
+  const game = fs.readFileSync(path.join(__dirname, "..", "src", "game.js"), "utf8");
   const missing = G.ITEMS.filter(K => K.effect && !new RegExp("\\b" + K.effect + ": ").test(game)).map(K => K.id + ":" + K.effect);
   check("every item effect has a handler in game.js", !missing.length, missing.join(", "));
   const rng = new G.RNG(11);
@@ -159,7 +159,7 @@ const { MW, MH, T } = G;
 }
 
 { // magic: two realms of 30 in four books; every spell can be cast by someone, and has an effect in the game
-  const game = fs.readFileSync(path.join(__dirname, "..", "src", "torch", "game.js"), "utf8"), has = fx => new RegExp("\\b" + fx + ": ").test(game);
+  const game = fs.readFileSync(path.join(__dirname, "..", "src", "game.js"), "utf8"), has = fx => new RegExp("\\b" + fx + ": ").test(game);
   const realm = r => G.SPELLS.filter(S => S.realm === r);
   check("30 arcane spells and 30 holy prayers, in books 1 to 4", realm("arcane").length === 30 && realm("holy").length === 30 && G.SPELLS.every(S => S.book >= 1 && S.book <= 4));
   check("spell ids are unique", new Set(G.SPELLS.map(S => S.id)).size === G.SPELLS.length);

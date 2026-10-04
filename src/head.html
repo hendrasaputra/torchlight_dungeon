@@ -5,13 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Torchlight Dungeons</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<!-- src/arcade/pad.css goes here (build.sh) -->
+<style>
+/* The page: a header line, then the map and the side panel filling the window. */
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;overscroll-behavior:none}
+body{height:100%;height:100svh;margin:0;display:flex;flex-direction:column;overflow:hidden;-webkit-user-select:none;user-select:none;
+  font:15px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 12px;padding:10px 14px 6px}
+h1{font-size:17px;font-weight:650;margin:0;letter-spacing:-0.01em}
+#hud{font:12px/1.2 ui-monospace,"SF Mono",Menlo,Consolas,monospace;white-space:nowrap}
+#stage{flex:1;position:relative;border:1px solid;border-radius:6px;overflow:hidden;min-height:0}
+#cv{position:absolute;display:block}
+</style>
 <style>
 /* Torchlight's own look: a dark panel and HUD over the code-drawn map (phase 6). Keyboard only. */
 :root { --tbg: #0d0c12; --panel: #1b1824; --edge: #3a3350; --slot: #13111a; --text: #e8e2d4; --dim: #8d86a0; --gold: #e8b830; --hpc: #c8423a; --mpc: #4a7ad8; --xpc: #c89a3a;
   --q-cursed: #d84a3a; --q-magic: #5a9cff; --q-ego: #b46cf0; --q-art: #f0a830; --q-unknown: #77708a; }
 body { background: var(--tbg); color: var(--text); }
-header { color: var(--text); } h1 a { color: var(--text); } #hud { color: var(--dim); }
+header { color: var(--text); } #hud { color: var(--dim); }
 #main { flex: 1; display: flex; gap: 8px; margin: 0 8px 8px; min-height: 0; }
 #stage { margin: 0; flex: 1; border-color: var(--edge); background: #000; font: 13px/1.35 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 #cv { left: 0; top: 0; transform: none; }
@@ -96,7 +107,7 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
 </head>
 <body>
 <header>
-  <h1><a href="./" title="Back to the cartridge shelf">&#8249; Torchlight Dungeons</a></h1>
+  <h1>Torchlight Dungeons</h1>
   <div id="hud">arrows move &middot; A attack &middot; S spell &middot; D drink &middot; W grab &middot; Tab target &middot; I C B J M panel &middot; ? keys &middot; Esc menu</div>
 </header>
 <div id="main">

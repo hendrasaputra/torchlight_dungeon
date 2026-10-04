@@ -4,7 +4,6 @@
 // keeps the rules and the keys. See TORCHLIGHT_PLAN.md for the phases.
 const TORCH_RGB = [1.0, 0.62, 0.3], ROOM_RGB = [0.42, 0.42, 0.47];
 const DIRS = { 1: [-1, 1], 2: [0, 1], 3: [1, 1], 4: [-1, 0], 6: [1, 0], 7: [-1, -1], 8: [0, -1], 9: [1, -1] };
-const DETAIL = Math.max(1, Math.min(3, arcadeSettings().detail | 0 || 1));   // the shared Detail setting: smaller sprites, more map
 let state = "title", stateT = 0;
 let rng = new RNG(Date.now() & 0xffffffff), L = null, depth = 1, player = null, mons = [], floor = [];
 let roomLight = new Float32Array(3 * MW * MH), lightNow = new Float32Array(3 * MW * MH), lightTurn = new Float32Array(3 * MW * MH);
@@ -29,8 +28,9 @@ const monName = K => K.unique ? K.name : "the " + K.name, aName = K => K.unique 
 const theName = m => seesMon(m) ? monName(m.K) : "it";
 
 /* ---------- saved preferences and high scores ---------- */
-const store = prefs("torchlightDungeons.v1.", "Torchlight Dungeons"), scores = scoreTable(store);   // src/arcade.js
-let keySet = store.get("keymap", "modern");   // modern (arrows + A S D W), original (Moria letters) or roguelike
+const store = prefs("torchlightDungeons.v1.", "Torchlight Dungeons"), scores = scoreTable(store);   // src/lib.js
+let keySet = store.get("keymap", "modern");
+let DETAIL = Math.max(1, Math.min(3, +store.get("detail", 1) || 1));   // the Detail setting in the menu: smaller sprites, more map   // modern (arrows + A S D W), original (Moria letters) or roguelike
 
 /* ---------- items: names, carrying, and what worn things add ---------- */
 const nameOf = (it, n) => itemName(it, player.know, n);

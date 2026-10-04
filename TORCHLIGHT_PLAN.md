@@ -12,6 +12,15 @@ The plan runs in ten phases. Phase 1 is the small "Moria-lite" recommended earli
 shelf on its own. Each later phase adds one Moria system and ships as an update, so the game is playable at every
 step.
 
+## Where this lives
+
+Phases 0 to 7 were built inside the ASCII BaseCommander arcade (github.com/hendrasaputra/asciibasecommander), as
+one of its cartridges. In October 2026, after phase 7, the game moved to its own repository and domain. The history
+here keeps the commits that touched the game. Read the older phases' notes with that in mind: "the shelf", the
+shared Settings page, `core.js` and `menu.js` belong to the arcade. Since the move, the game has its own Detail
+setting in its menu, and `src/lib.js` holds the few arcade helpers it still uses (preferences, high scores, the
+resize watcher and the frame loop).
+
 ## Progress
 
 | Phase | State |
@@ -85,8 +94,8 @@ with sound.
 
 ## Architecture
 
-All the code goes under `src/torch/`. `build.sh` joins it into `torchlight-dungeons.html`, after `core.js` and
-`menu.js`, the same way as the other games.
+All the code is in `src/`. `build.sh` joins it into `index.html`, one self-contained page. (Before the move it was
+`src/torch/`, built into the arcade's `torchlight-dungeons.html` after its `core.js` and `menu.js`.)
 
 | File | Contents |
 |---|---|
@@ -451,7 +460,7 @@ level has no way out.
 - **Help:** an in-game command reference and help screen.
 - **Options:** key sets, auto-pickup, "-more-" prompts, haggling, colour-blind-safe status colours, and larger text.
 - **Balance:** a full pass from the town to the final boss.
-- **The shelf:** cartridge art from `CARTRIDGE_PROMPT.md`, and README and PLAN.md entries.
+- **The page:** cover art (prompt in `cartridges/PROMPT.md`), a site icon of its own, and the README.
 
 ## Testing throughout
 

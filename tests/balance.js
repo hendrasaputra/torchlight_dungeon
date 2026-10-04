@@ -5,7 +5,7 @@
 // A fight scores the share of the character's hit points it costs. Above 1 you would usually lose; the check fails
 // if a monster scores over its limit for the middle class (1.4 for most, 2.5 for uniques, 3.5 for the final boss).
 const fs = require("fs"), vm = require("vm"), path = require("path");
-const files = ["rng.js", "data.js", "bestiary.js", "chars.js", "spells.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", "torch", f), "utf8"));
+const files = ["rng.js", "data.js", "bestiary.js", "chars.js", "spells.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
 const G = vm.runInNewContext(files.join("\n") + "\n;({ MONSTERS, CLASSES, RACE, CLASS, finalStats, skillOf, statMod, hitDie, firstHp, maxMana, SPELLS, spellLevel, hitChance, blowChance, boltDice, breathDmg })");
 const avg = s => { const [n, d] = s.split("d").map(Number); return n * (d + 1) / 2; };
 const gain = s => 10 * Math.pow(2, s / 10);
