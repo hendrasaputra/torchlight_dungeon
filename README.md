@@ -17,7 +17,7 @@ Play it at [dungeon.hensap.id](https://dungeon.hensap.id).
 
 The plan, its phases and its ground rules are in [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md). It started as a
 cartridge in the [ASCII BaseCommander](https://github.com/hendrasaputra/asciibasecommander) arcade and moved
-here after phase 7; see [HANDOFF.md](HANDOFF.md).
+here; see [HANDOFF.md](HANDOFF.md).
 
 ## Playing
 

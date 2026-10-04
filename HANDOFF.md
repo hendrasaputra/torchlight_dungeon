@@ -20,8 +20,6 @@ The carve-out commit then made it stand alone:
 
 Still to decide or do (not done here):
 
-- **The arcade repository still has the game.** Remove it from there, or replace its cartridge with a link to the
-  new domain, once this one is live.
 - **Remote and domain.** `origin` is github.com/hendrasaputra/torchlight_dungeon (private; its only commit was a
   LICENSE identical to ours). The domain is dungeon.hensap.id (DNS at Hostinger); `CNAME` holds it. Still to do:
   push, and turn on GitHub Pages from `main` (the page is `index.html`).
