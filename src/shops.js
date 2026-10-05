@@ -20,6 +20,8 @@ const SHOPS = [
       "rprot", "rfire", "rcold", "racc", "rdam", "adigest", "ainfra", "acha"],
     buys: ["wand", "staff", "rod", "ring", "amulet", "book"], hello: ["Everything here does something. Mostly what it should.", "Charges not included. Well, some are.", "Ah, a customer with taste."] }
 ];
+// Calling a dead delver's soul back to the Eternal Lamp: dearer with every level, and again with every time before.
+const soulPrice = (lvl, times = 0) => Math.round(50 * lvl * (1 + lvl / 10) * (1 + times));
 // What an item is worth (in gold), from its kind and what was rolled for it. Cursed or broken things are worth nothing.
 function itemValue(it){
   const K = ITEM[it.k];

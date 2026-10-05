@@ -282,7 +282,7 @@ function drawDialog(){
   el.innerHTML = `<div class="box ${d.wide ? "wide" : ""}"><h2>${esc(d.title)}</h2>${d.head || ""}<div class="cols">${d.cols.map((rows, ci) => `<div class="list">${d.heads ? `<h3>${esc(d.heads[ci])}</h3>` : ""}${rows.map((r, ri) =>
     `<div class="row ${ci === d.c && ri === d.at[ci] ? "sel" : ""} ${r.off ? "off" : ""} ${r.item ? "q-" + quality(r.item) : ""}" data-c="${ci}" data-i="${ri}">${r.item ? itemPic(r.item) : r.spell ? pic(spellPic(r.spell)) : r.icon || ""}<span>${r.html || esc(r.label)}</span>${r.right !== undefined ? `<small>${esc(r.right)}</small>` : ""}</div>`).join("") || `<div class="row off"><span>${esc(d.empty || "Nothing.")}</span></div>`}</div>`).join("")}
     ${d.side !== false ? `<div class="side">${sel && sel.item ? card(sel.item) : sel && sel.spell ? spellCard(sel.spell) : d.sideHtml || ""}</div>` : ""}</div>
-    <div class="note">${esc(d.note || "")}${d.note ? " · " : ""}↑↓ choose${d.cols.length > 1 ? " · ←→ switch" : ""} · Enter select · Esc back</div></div>`;
+    <div class="note">${esc(d.note || "")}${d.note ? " · " : ""}↑↓ choose${d.cols.length > 1 ? " · ←→ switch" : ""} · Enter select${d.noEsc ? "" : " · Esc back"}</div></div>`;
   el.querySelectorAll(".row[data-i]").forEach(r => r.onclick = () => { d.c = +r.dataset.c; d.at[d.c] = +r.dataset.i; const row = d.cols[d.c][d.at[d.c]]; if (row && row.select && !row.off) row.select(); else drawDialog(); });
   const s = el.querySelector(".row.sel"); if (s) s.scrollIntoView({ block: "nearest" });
 }
@@ -386,8 +386,16 @@ function slotDialog(){
 }
 function eraseDialog(){
   const rows = [1, 2, 3].map(n => [n, slotInfo(n)]).filter(([, s]) => s).map(([n, s]) => ({ label: "Slot " + n + ": " + s, select: () => openDialog({ title: "Erase slot " + n + " for good?", side: false, onBack: slotDialog,
-    cols: [[{ label: "No, keep it", select: slotDialog }, { label: "Yes, erase it", select: () => { store.del(slotKey(n)); if (n === slot && state === "play"){ slot = 0; closeDialog(); toTitle(); } else slotDialog(); } }]] }) }));
+    cols: [[{ label: "No, keep it", select: slotDialog }, { label: "Yes, erase it", select: () => { store.del(slotKey(n)); store.del(dyingKey(n)); if (n === slot && state === "play"){ slot = 0; closeDialog(); toTitle(); } else slotDialog(); } }]] }) }));
   openDialog({ title: "Erase which character?", cols: [rows], side: false, onBack: slotDialog });
+}
+// On death, with gold enough: pay to have your soul called back, or let go. There is no Esc: you must choose.
+function soulDialog(price, twist){
+  const p = player, where = depth ? "at " + depthName(depth) : "in the town";
+  openDialog({ title: "Your soul slips away", side: false, onBack: () => {}, noEsc: true,
+    head: (twist ? `<p class="lore gold">${esc(twist)}</p>` : "") + `<p class="lore">Killed by ${esc(killer)} ${where}. Your share of the First Fire rises towards the stars, but the Eternal Lamp in Lanternhollow still holds a thread of it. Sister Ilvane can call you back to the temple for <b class="gold">${price} gold</b>. You have ${p.gold}. Each time it costs more.</p>`,
+    cols: [[{ label: "Restore my soul", right: price + " gold", off: p.gold < price, select: () => { closeDialog(); restoreSoul(price); } }, { label: "Let go", right: "the hall of fame", select: () => { closeDialog(); bury(); } }]],
+    note: "Your save waits on your answer: letting go erases it" });
 }
 function noteDialog(title, text){ openDialog({ title, head: `<p>${esc(text)}</p>`, cols: [[{ label: "OK", select: closeDialog }]], side: false }); }
 function fameDialog(){
@@ -397,19 +405,20 @@ function fameDialog(){
 function helpDialog(){
   const modern = [["Arrow keys", "move; into a monster attacks, into a door opens"], ["Two arrows", "move diagonally (or numpad, Home, End, PgUp, PgDn)"], ["Shift + arrow", "run"],
     ["A", "attack the target: melee, or fire / throw if it is further"], ["S", "cast the readied spell"], ["D", "drink the best-fitting healing potion"], ["W", "grab: pick up, stairs, shop"],
-    ["Q / Shift+Q", "ready the next / previous spell"], ["E", "eat"], ["R", "rest"], ["F", "refill your lantern, or a fresh torch"], ["Tab / Shift+Tab", "next / previous target"],
+    ["Q / Shift+Q", "ready the next / previous spell"], ["E", "eat"], ["R", "rest (in town only)"], ["F", "refill your lantern, or a fresh torch"], ["Tab / Shift+Tab", "next / previous target"],
     ["Space", "wait a turn and search"], ["T", "dig in a direction (walking into rubble or a vein digs it)"], ["1 to 0", "use a hotbar slot"], ["I C B J K M", "Pack, Character, Book, Journal, Lore, Map"], ["P", "show or hide the panel"], ["L", "look"], ["Esc", "close, or the menu"]];
   const ro = keySet === "roguelike";
   const classic = [[ro ? "hjklyubn" : "Arrows / numpad", "move (Shift runs)"], ["g or ,", "pick up"], ["i  e", "pack, equipment"], ["w  " + (ro ? "T" : "t") + "  d", "wear, take off, drop"],
     ["E  q  r", "eat, drink, read"], ["a  " + (ro ? "Z" : "u") + "  z", "aim a wand, use a staff, zap a rod"], ["F", "fill lantern"], ["f  v  I", "fire, throw, inspect"], ["m or p  S", "cast or pray, study"],
-    [">  <", "stairs"], ["R  " + (ro ? ". s" : ". 5 s"), "rest, wait and search"], [ro ? "#" : "T", "dig in a direction"], [(ro ? "x" : "l") + "  C", "look, character"], ["Tab", "next target"], ["Esc", "menu"]];
+    [">  <", "stairs"], ["R  " + (ro ? ". s" : ". 5 s"), "rest (in town only), wait and search"], [ro ? "#" : "T", "dig in a direction"], [(ro ? "x" : "l") + "  C", "look, character"], ["Tab", "next target"], ["Esc", "menu"]];
   const guide = [["The aim", "Go down. Morrowgloom the Lantern-Eater waits at 2,500 ft; the dungeon goes on below it."], ["Light", "Your torch burns down. F lights a fresh one or fills a lantern with oil. In the dark you see very little."],
     ["Food", "Eat (E) when you are hungry. Go too long and you grow weak, then faint, then starve."], ["Unknown things", "Potions and scrolls look different every game. Try them, read Identify, or sell one: the keeper tells you what it was."],
     ["The town", "Walk into a numbered door to shop. A scroll of Word of Recall takes you between the town and your deepest level."],
     ["Magic", "Casters need their book in the pack. When you can learn more, open the Book (B) to study."],
     ["Hidden things", "Space waits and searches for secret doors and traps. Walk into a known trap to disarm it, and into a locked door to pick it."],
     ["Digging", "Walk into rubble or a vein of magma or quartz to dig it; T digs plain rock. A shovel or pick in your pack helps."],
-    ["Saving", "The game saves as you play. Death is for good: the save is erased and the hall of fame keeps your story."],
+    ["Resting", "R rests until you are healed, but only in Lanternhollow: the dark will not let you sleep below. Down there, drink (D) or pray, or climb home."],
+    ["Death", "The game saves as you play. If you die with enough gold, Sister Ilvane can call your soul back to the temple; the price rises with your level and every time. Otherwise death is for good, and the hall of fame keeps your story."],
     ["Guidance", "Sister Ilvane walks a new delver through a first trip, and short key hints show what to press. The menu turns both on or off."]];
   const world = [["The Gloam and the First Fire", "Before the world there was only dark. A first fire burned it back; every light since is a spark of it."],
     ["Morrowgloom", "The last of that dark, trapped under the world at 2,500 ft. It does not think. It only hungers for light, and eats it."],
@@ -425,7 +434,7 @@ function helpDialog(){
 /* ---------- title, a new character, and the tombstone ---------- */
 function drawScreen(){
   const el = $("screen");
-  if (state === "play" || (state === "dead" && stateT < 1)){ el.hidden = true; return; }
+  if (state === "play" || state === "dying" || (state === "dead" && stateT < 1)){ el.hidden = true; return; }
   el.hidden = false;
   if (state === "title"){
     el.innerHTML = `<div class="titlecard"><h1>Torchlight<span>Dungeons</span></h1><p class="dim">A dungeon crawl after Moria</p>
@@ -465,7 +474,7 @@ function drawUI(dt){
   if (uiDirty){
     uiDirty = false;
     drawScreen();
-    const playing = player && player.hot && (state === "play" || state === "dead");
+    const playing = player && player.hot && (state === "play" || state === "dying" || state === "dead");
     $("ov").hidden = !playing;
     if (playing){ drawHud(); drawPanel(); } else $("panel").hidden = true;
     if (dlg) drawDialog();

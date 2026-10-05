@@ -61,7 +61,14 @@ We work from general knowledge of how Moria plays, not from its source. Each dat
 
 - Turn-based play on a grid, with a speed system: fast monsters act more often.
 - Each trip down the stairs makes a new level, and levels are not kept. This also keeps save files small.
-- Permanent death: the save is deleted when the character dies, and a tombstone goes in the hall of fame.
+- Death is serious: when a character dies for good, the save is deleted and a tombstone goes in the hall of fame. The one
+  way back (added after phase 12): a delver who dies with enough gold may pay to have their soul called back to the
+  Eternal Lamp, waking in town at the temple. The price grows with level (`soulPrice` in `shops.js`: 55 gold at level
+  1, 1,000 at 10, 10,000 at 40) and again each time (twice, three times...). The save is kept until the player
+  chooses: restoring carries on from it, and only letting go erases it. While the choice is open the save is marked
+  "soul waiting", so closing the page and loading it again brings the same choice back rather than undoing the death.
+- Resting (R) works only in town: the dark will not let a delver sleep below. Health still comes back slowly on its
+  own down there, and potions and prayers heal as before.
 - A town on the surface; the dungeon below gets deeper and harder.
 - A final boss deep down, with an original design.
 

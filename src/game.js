@@ -896,7 +896,7 @@ function endTurn(){
   if (rng.int(300) === 0) spawnMonster(true);   // the dungeon is never quite empty
   if (player.turns % 200 === 0) saveGame();
   updateSight();
-  for (const m of mons) if (m.K){ const v = seesMon(m); if (v && !m.seen){ disturbed = true; lore(m.K).seen++; if (depth) sfx(cryOf(m.K)); if (m.K.unique) unlockLore("u-" + m.K.id); } m.seen = v; }
+  for (const m of mons) if (m.K){ const v = seesMon(m); if (v && !m.seen){ if (!m.K.town) disturbed = true; lore(m.K).seen++; if (depth) sfx(cryOf(m.K)); if (m.K.unique) unlockLore("u-" + m.K.id); } m.seen = v; }
 }
 let disturbed = false, pendingLevel = null;
 function everyTurn(){
@@ -944,14 +944,39 @@ function hurt(n, by){
   player.hp -= n; disturbed = true; fxHit(player); fxFloat(player.x, player.y, "-" + n, [1, 0.35, 0.3]);
   if (player.hp <= 0){ killer = by; die(); }
 }
+// Death. A delver with enough gold may have their soul called back to the Eternal Lamp (restoreSoul), and their save
+// stays until they choose; it is marked "soul waiting" (slotKey + ".dying", holding the killer), so loading it brings
+// the same choice back instead of undoing the death. Without the gold, or on letting go, they are buried and the save
+// goes (bury).
+const dyingKey = n => slotKey(n) + ".dying";
 function die(){
-  state = "dead"; stateT = 0; aiming = null; refreshUI(); sfx("death"); audio.music(null);
+  aiming = null; sfx("death"); audio.music(null);
+  const price = soulPrice(player.lvl, player.revivals || 0);
+  say("You die.");
+  if (slot && player.gold >= price){ store.set(dyingKey(slot), killer); state = "dying"; stateT = 0; refreshUI(); soulDialog(price); return; }
+  if (slot) say("Calling your soul back would have cost " + price + " gold.");
+  bury();
+}
+function restoreSoul(price){
+  const p = player;
+  p.gold -= price; p.revivals = (p.revivals || 0) + 1; store.del(dyingKey(slot));
+  p.hp = p.mhp; p.mana = p.mmana; p.t = {}; p.food = Math.max(p.food, 3000); p.recall = 0; killer = "";
+  state = "play"; stateT = 0; recalc(); newLevel(0);
+  const door = L.shops[3].door;   // you wake at the temple, beside the Eternal Lamp
+  for (const d of [MW, -MW, 1, -1, MW + 1, MW - 1]){ const i = door + d; if (L.tiles[i] === T.GROUND && !monAt(i % MW, Math.floor(i / MW))){ p.x = i % MW; p.y = Math.floor(i / MW); break; } }
+  updateSight(); snapView(); msgs = []; sfx("light");
+  say("You wake on the cold floor of the temple, beside the Eternal Lamp.");
+  say("Sister Ilvane: \"Not yet, delver. The Lamp held on to you, and it cost you " + price + " gold. It will cost more next time.\"");
+  saveGame();
+}
+function bury(){
+  state = "dead"; stateT = 0; refreshUI();
   if (lastFoe && killer === aName(lastFoe)) lore(lastFoe).deaths++;
   saveLore();
-  if (slot) store.del(slotKey(slot)); slot = 0;   // death is for good: the save goes, and the character dump goes to the hall of fame
+  if (slot){ store.del(slotKey(slot)); store.del(dyingKey(slot)); }
+  slot = 0;   // the save goes, and the character dump goes to the hall of fame
   const p = player, entry = { score: Math.floor(p.exp) + 100 * p.maxDepth + (p.won ? 10000 : 0), name: p.name, race: race().name, cls: cls().name, lvl: p.lvl, depth: feet(p.maxDepth), killer: killer + (p.won ? " (a winner)" : ""), dump: characterDump() };
   tomb = { ...entry, best: scores.add(entry).rank === 0, at: depthName(depth) };
-  say("You die.");
 }
 function monsterTurn(m){
   const K = m.K, d = dist(m.x, m.y, player.x, player.y);
@@ -1170,10 +1195,12 @@ function run(dx, dy){
 }
 function rest(){
   if (state !== "play") return;
+  msgs = [];
+  if (depth > 0){ say("You cannot rest down here: the dark will not let you sleep. Climb back to Lanternhollow to rest."); return; }   // resting is for the town only
   if (player.hp >= player.mhp && player.mana >= player.mmana){ say("You are already fully rested."); return; }
   disturbed = false; resting = true;
   for (let n = 0; n < 1000 && state === "play" && !disturbed && (player.hp < player.mhp || player.mana < player.mmana); n++){
-    if (mons.some(m => m.K && seesMon(m))){ say("You cannot rest with monsters nearby."); break; }
+    if (mons.some(m => m.K && !m.K.town && seesMon(m))){ say("You cannot rest with monsters nearby."); break; }
     act(waitAndSearch);
   }
   resting = false;
@@ -1299,7 +1326,7 @@ function begin(){
   player.hot = Array(10).fill(null); player.slain = {}; player.ready = null; player.lore = Object.fromEntries(LORE_START.map(id => [id, 1]));
   log = []; msgs = []; killer = ""; tomb = null; cr = null;
   state = "play"; stateT = 0;
-  shops = newShops(rng, player.know); lastTown = 0; depth = 0; slot = newSlot;
+  shops = newShops(rng, player.know); lastTown = 0; depth = 0; slot = newSlot; store.del(dyingKey(slot));
   newLevel(0);
   tutBegin();   // a new player's first game teaches itself (tutorial.js)
 }
@@ -1322,7 +1349,7 @@ function saveGame(){
 // What a slot holds, for the slot list: a line about the character, "" when empty, or why it cannot be loaded.
 function slotInfo(n){
   const s = store.get(slotKey(n)); if (!s) return "";
-  try { const g = decodeSave(s), p = g.player; return p.name + ", level " + p.lvl + " " + RACE[p.race].name + " " + CLASS[p.cls].name + ", " + depthName(g.depth); }
+  try { const g = decodeSave(s), p = g.player; return p.name + ", level " + p.lvl + " " + RACE[p.race].name + " " + CLASS[p.cls].name + ", " + (store.get(dyingKey(n)) !== null ? "dead: soul waiting" : depthName(g.depth)); }
   catch (e){ return "unreadable: " + e.message; }
 }
 function loadGame(n){
@@ -1333,6 +1360,11 @@ function loadGame(n){
   msgs = []; killer = ""; tomb = null; cr = null; aiming = null; pendingLevel = null; digging = null; parts = []; floats = []; shots = []; flashes = []; later = [];
   seenAt.fill(0); inFov.fill(0); audio.music(depth ? "depths" : "town");
   state = "play"; stateT = 0; recalc(); relight(); updateSight(); snapView();
+  const dying = store.get(dyingKey(n));
+  if (dying !== null){   // only reachable by leaving the page while the choice was open
+    const twist = "Nice try adventurer! 🙂 Your soul is still waiting by the Eternal Lamp.";
+    killer = dying; state = "dying"; msgs = []; say(twist); soulDialog(soulPrice(player.lvl, player.revivals || 0), twist); return;
+  }
   say("Welcome back, " + player.name + ". You are " + (depth ? "at " : "in ") + depthName(depth) + ".");
 }
 function download(name, text){

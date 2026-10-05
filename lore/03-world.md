@@ -48,6 +48,16 @@ true: Morrowgloom's hunger pulls a little at every light near the Lampway.
 because of the Eternal Lamp. A Keeper's blessing ties the reader's own small share of the Fire to it, and the Lamp
 pulls them home, then later back to the same depth. If the Eternal Lamp ever went out, no one could be recalled.
 
+**Souls called back.** The same thread holds when a delver dies. For a while their share of the Fire hangs between
+the body and the stars, still tied to the Eternal Lamp, and the Keepers can pull it back to the temple, where the
+delver wakes on the cold floor beside the Lamp. It costs the temple dear in oil, prayer and old relics, so Sister
+Ilvane asks a high price in gold, higher for the great and higher every time: each return frays the thread. Once a
+soul has risen past the Lamp's reach, no one can call it back. *In the game: when you die with enough gold, you may
+pay to wake in the temple.*
+
+**Resting.** No one sleeps well below. The dark leans on a sleeper the way it leans on a lamp, and delvers who try to
+rest down there wake worse than they lay down. Real rest is for the town, behind its lit walls.
+
 ## The ruins of Aurenhold
 
 North of the town walls, the old capital is a field of broken towers, sunken streets and lamp-posts with no lamps.

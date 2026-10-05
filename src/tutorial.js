@@ -16,7 +16,7 @@ const kb = (ks, a) => { const k = tutKey(ks, a); return /^(the |walk )/.test(k) 
 // Each step: text(p, ks), done(p, f, d), and optionally only(p) (who it is for), when(p) (shown only while true) and
 // goal() (where the marker points). f: the step flags set by tutNote; d: the current depth.
 const TUT_STEPS = [
-  { id: "hurt", optional: true, when: p => p.hp < p.mhp * 0.6, text: (p, ks) => `You are hurt. Press ${kb(ks, "drink")} to drink a healing potion, or ${kb(ks, "rest")} to rest when nothing is near.`, done: () => false },
+  { id: "hurt", optional: true, when: p => p.hp < p.mhp * 0.6, text: (p, ks) => depth ? `You are hurt. Press ${kb(ks, "drink")} to drink a healing potion. You can only rest in town: climb back up and press ${kb(ks, "rest")} there.` : `You are hurt. Press ${kb(ks, "rest")} to rest here in town until you are healed.`, done: () => false },
   { id: "look", text: (p, ks) => `First, look at yourself. ${kb(ks, "char")} shows what you wear, and ${kb(ks, "pack")} what you carry.`, done: (p, f) => f.char && f.pack },
   { id: "shop", text: (p, ks) => `Visit the General Store, door 1: walk into it and press [Enter] on a flask of oil or a spare torch to buy it. The Armoury (2) and Weaponsmith (3) sell better gear when you have the gold.`,
     done: (p, f) => f.bought, goal: () => depth === 0 && L.shops ? L.shops[0].door : null },
