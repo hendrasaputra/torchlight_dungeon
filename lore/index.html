@@ -83,6 +83,17 @@ figure.art.wide { }
 .plates.nmany .slot { font-size: 11.5px; padding: 12px; }
 .plates.nmany .slot span { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
 
+/* the bestiary's families: each plate beside its own description */
+.families { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 22px 32px; margin: 10px 0 26px; }
+.family { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: start; padding-bottom: 18px; border-bottom: 1px solid #c9ad6a99; }
+.family .fam-art figure { margin: 0 0 8px; }
+.family .slot { font-size: 10.5px; padding: 8px; gap: 4px; } .family .slot span { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.family h4 { margin: 0 0 6px; font-size: 19px; color: var(--red); border-bottom: 1px solid var(--gold); padding-bottom: 2px; }
+.family p { text-align: left; hyphens: manual; }
+.fam-lore { font-style: italic; margin: 0 0 8px; }
+.fam-kinds, .fam-source { font-size: 13.5px; line-height: 1.5; margin: 0 0 4px; color: #3a2a1c; }
+.fam-kinds b, .fam-source b { font: 800 11.5px "Cinzel", serif; color: var(--red); letter-spacing: .06em; margin-right: 4px; }
+
 /* stat blocks for the named monsters */
 aside.stat {
   break-inside: avoid; margin: 6px 0 16px; padding: 10px 14px 8px; background: var(--stat); font: 14px/1.45 "Libre Baskerville", serif;
@@ -105,13 +116,14 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
   main { margin: 0; padding: 26px 16px 36px; columns: 1; border-radius: 0; }
   h1 { font-size: 32px; } h2 { font-size: 22px; }
   table { display: block; overflow-x: auto; font-size: 13.5px; } td:first-child { white-space: normal; }
+  .families { grid-template-columns: 1fr; } .family { grid-template-columns: 104px 1fr; gap: 12px; }
   p { text-align: left; } footer { padding: 0 16px; }
 }
 @media print {
   body { background: none; } header, footer { display: none; } main { box-shadow: none; margin: 0; max-width: none; }
 }
 </style></head>
-<body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html" aria-current="page">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
+<body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html" aria-current="page">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html">Magic & artifacts</a></nav><a class="play" href="../">Play the game ›</a></header>
 <main class="index"><figure class="cover"><img src="../cartridges/torchlight-dungeons-v2.jpg" alt="An adventurer with a torch in a dungeon, a goblin at the edge of the light"></figure><h1>The lore of Torchlight</h1>
 <div class="flow">
 </div>
@@ -122,7 +134,7 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 <h2>The files</h2>
 <div class="flow">
 </div>
-<table><thead><tr><th>File</th><th>What it covers</th></tr></thead><tbody><tr><td><a href="01-cosmology.html">Cosmology</a></td><td>The Gloam, the First Fire, Morrowgloom, and why there are two kinds of magic</td></tr><tr><td><a href="02-timeline.html">Timeline</a></td><td>From before the Kindling to the present year, 1207 of the Hollow</td></tr><tr><td><a href="03-world.html">The world</a></td><td>The lands above: Lanternhollow, the Hollowmark and its neighbours</td></tr><tr><td><a href="04-the-lampway.html">The Lampway</a></td><td>How the dungeon was built, its five rings, the mines, and the legends of what is down there</td></tr><tr><td><a href="05-peoples.html">Peoples</a></td><td>The eight peoples and how each is bound to the light and the deep</td></tr><tr><td><a href="06-callings.html">Callings</a></td><td>The six callings and the orders behind them</td></tr><tr><td><a href="07-rulers-and-heroes.html">Rulers & heroes</a></td><td>The Lamp Kings, the Keepers, and the heroes of song</td></tr><tr><td><a href="08-bestiary.html">Bestiary</a></td><td>A repository of every monster family, the named uniques, and the Lantern-Eater</td></tr><tr><td><a href="09-magic-and-artifacts.html">Magic & artifacts</a></td><td>The two realms, the spell books, flavours, special kinds and the six artifacts</td></tr><tr><td><a href="10-illustrations.html">Art list</a></td><td>A list of 151 illustrations (monsters, peoples, items, places, maps, emblems) with prompts in four styles and rules that keep them consistent</td></tr></tbody></table>
+<table><thead><tr><th>File</th><th>What it covers</th></tr></thead><tbody><tr><td><a href="01-cosmology.html">Cosmology</a></td><td>The Gloam, the First Fire, Morrowgloom, and why there are two kinds of magic</td></tr><tr><td><a href="02-timeline.html">Timeline</a></td><td>From before the Kindling to the present year, 1207 of the Hollow</td></tr><tr><td><a href="03-world.html">The world</a></td><td>The lands above: Lanternhollow, the Hollowmark and its neighbours</td></tr><tr><td><a href="04-the-lampway.html">The Lampway</a></td><td>How the dungeon was built, its five rings, the mines, and the legends of what is down there</td></tr><tr><td><a href="05-peoples.html">Peoples</a></td><td>The eight peoples and how each is bound to the light and the deep</td></tr><tr><td><a href="06-callings.html">Callings</a></td><td>The six callings and the orders behind them</td></tr><tr><td><a href="07-rulers-and-heroes.html">Rulers & heroes</a></td><td>The Lamp Kings, the Keepers, and the heroes of song</td></tr><tr><td><a href="08-bestiary.html">Bestiary</a></td><td>A repository of every monster family, the named uniques, and the Lantern-Eater</td></tr><tr><td><a href="09-magic-and-artifacts.html">Magic & artifacts</a></td><td>The two realms, the spell books, flavours, special kinds and the six artifacts</td></tr><tr><td><a href="https://github.com/hendrasaputra/torchlight_dungeon/blob/main/lore/10-illustrations.md">Art list</a></td><td>A list of 151 illustrations (monsters, peoples, items, places, maps, emblems) with prompts in four styles and rules that keep them consistent</td></tr></tbody></table>
 <div class="flow">
 </div>
 <h2>Ground rules for the lore</h2>

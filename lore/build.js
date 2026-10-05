@@ -40,8 +40,7 @@ const ART = {
   "07-rulers-and-heroes": { top: ["opener-rulers.png"], "The First Keeper": ["hero-caedra.png", "moment-sealing.png"],
     "The Lamp Kings": ["king-aldren.png", "king-tamsin.png", "king-ysmer.png", "item-crown.png", "family-tomb-kings.png"], "The founders": ["hero-marla.png"],
     "Heroes of song": ["hero-ithrel.png", "hero-orsolya.png", "hero-gorran.png", "hero-quill.png", "hero-wren.png"] },
-  "08-bestiary": { top: ["opener-bestiary.png"], "The families": ["family-rodent.png", "family-bat.png", "family-insect.png", "family-spider.png", "family-beetle.png", "family-worm.png", "family-mould.png", "family-jelly.png", "family-snake.png", "family-canine.png", "family-feline.png", "family-beast.png", "family-bird.png", "family-goblin.png", "family-brigand.png", "family-thief.png", "family-mage.png", "family-priest.png", "family-ogre.png", "family-troll.png", "family-skeleton.png", "family-zombie.png", "family-ghost.png", "family-vampire.png", "family-lich.png", "family-elemental.png", "family-vortex.png", "family-eye.png", "family-plant.png", "family-arachnid.png", "family-reptile.png", "family-horror.png", "family-golem.png", "family-fiend.png", "family-drake.png", "family-dragon.png", "family-deadhound.png", "family-were.png", "family-sporefolk.png", "family-kobolds.png", "family-shades.png", "family-lantern-eater.png", "family-tomb-kings.png", "family-gargoyles.png", "family-scalekin.png", "family-mimics.png",
-      "family-hybrids.png", "family-star-wisps.png", "family-deep-giants.png"],
+  "08-bestiary": { top: ["opener-bestiary.png"],
     "Old Whiskers": ["unique-old-whiskers.png"], "Fenwick": ["unique-fenwick.png"], "Snag": ["unique-snag.png"], "Old Tusk": ["unique-old-tusk.png"], "Mother Bristle": ["unique-mother-bristle.png"],
     "Varn": ["unique-varn.png"], "The Lantern Thief": ["unique-lantern-thief.png"], "Corvane": ["unique-corvane.png"], "Sister Vesper": ["unique-vesper.png"], "Kettlemaw": ["unique-kettlemaw.png"],
     "Hollow Jack": ["unique-hollow-jack.png"], "Grimsby": ["unique-grimsby.png"], "Brakka": ["unique-brakka.png"], "Ysolde": ["unique-ysolde.png"], "The Maul-Wyrm": ["unique-maul-wyrm.png"],
@@ -51,9 +50,16 @@ const ART = {
   "09-magic-and-artifacts": { top: ["opener-magic.png"], "The arcane books": ["item-spellbooks.png"], Devices: ["item-glow-crystal.png"], Embersong: ["item-embersong.png"], "The Mantle": ["item-mantle.png"],
     "The Stonehelm": ["item-stonehelm.png"], "The Lantern of the First Keeper": ["item-first-lantern.png"], Starfall: ["item-starfall.png"], "The Band of Swift Feet": ["item-swift-band.png"] }
 };
-const unplaced = Object.keys(PICS).filter(f => !Object.values(ART).some(p => Object.values(p).flat().includes(f)));
+// The bestiary's families table becomes one entry per family, with its plate beside its description. Most plates are
+// family-<name>.png; these few were drawn under another name, and the shades have two.
+const FAMILY_ART = { mummy: ["family-tomb-kings.png"], giant: ["family-deep-giants.png"], shade: ["family-shades.png", "family-lantern-eater.png"], wisp: ["family-star-wisps.png"],
+  kobold: ["family-kobolds.png"], mimic: ["family-mimics.png"], hybrid: ["family-hybrids.png"], gargoyle: ["family-gargoyles.png"] };
+const familyArt = name => FAMILY_ART[name.toLowerCase()] || ["family-" + name.toLowerCase() + ".png"];
+const familyRows = fs.readFileSync(path.join(HERE, "08-bestiary.md"), "utf8").split("\n").filter(l => /^\| [A-Z][a-z]+ \| /.test(l) && !/^\| Family /.test(l)).map(l => l.split(" | ")[0].slice(2));
+const placed = new Set([...Object.values(ART).flatMap(p => Object.values(p).flat()), ...familyRows.flatMap(familyArt)]);
+const unplaced = Object.keys(PICS).filter(f => !placed.has(f));
 if (unplaced.length) console.warn("lore: illustrations with no place on any page: " + unplaced.join(", "));
-const missing = Object.values(ART).flatMap(p => Object.values(p).flat()).filter(f => !PICS[f]);
+const missing = [...placed].filter(f => !PICS[f]);
 if (missing.length){ console.error("lore: these slots are not in 10-illustrations.md: " + [...new Set(missing)].join(", ")); process.exit(1); }
 
 // The pages use a web copy of each picture (900 px wide JPEG in art/web/), made with macOS's sips when the original
@@ -98,7 +104,7 @@ function statBlock(K){
 const monsterFor = h => { const name = h.replace(/\s*\([^)]*\)\s*$/, "").toLowerCase(); return G.MONSTERS.find(K => (K.unique || K.boss) && K.name.toLowerCase() === name); };
 
 /* ---------- a small Markdown reader: headings, paragraphs, lists, tables, quotes, rules, and inline marks ---------- */
-const link = href => /^https?:/.test(href) ? href : href.startsWith("../") ? REPO + href.slice(3) : href.replace(/\.md(#|$)/, ".html$1").replace(/^README\.html/, "index.html");
+const link = href => /^https?:/.test(href) ? href : href.startsWith("../") ? REPO + href.slice(3) : /^10-illustrations\.md/.test(href) ? REPO + "lore/" + href : href.replace(/\.md(#|$)/, ".html$1").replace(/^README\.html/, "index.html");
 const inline = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/\*([^*]+)\*/g, "<i>$1</i>")
   .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, t, h) => `<a href="${link(h.replace(/&amp;/g, "&"))}">${/^[\w-]+\.md$/.test(t) ? SHORT[t.slice(0, -3)] || "Contents" : t}</a>`);   // a link written as a file name shows the page's name
 function render(md, page){
@@ -127,6 +133,12 @@ function render(md, page){
     if (l.startsWith("|")){
       const rows = []; while (i < lines.length && lines[i].startsWith("|")) rows.push(lines[i++]);
       const cells = r => r.slice(1, -1).split(" | ").map(c => c.trim());
+      if (cells(rows[0])[0] === "Family"){   // the bestiary's families: one entry each, plate beside text
+        outside(`<div class="families">${rows.slice(2).map(r => { const [name, kinds, source, lore] = cells(r);
+          return `<article class="family"><div class="fam-art">${familyArt(name).map(figure).join("")}</div><div class="fam-text"><h4>${inline(name)}</h4><p class="fam-lore">${inline(lore)}</p>
+            <p class="fam-kinds"><b>Kinds</b> ${inline(kinds)}</p><p class="fam-source"><b>From</b> ${inline(source)}</p></div></article>`; }).join("")}</div>`);
+        continue;
+      }
       outside(`<table><thead><tr>${cells(rows[0]).map(c => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>${rows.slice(2).map(r => `<tr>${cells(r).map(c => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
       continue;
     }
@@ -153,7 +165,9 @@ function render(md, page){
 }
 
 /* ---------- the pages ---------- */
-const PAGES = fs.readdirSync(HERE).filter(f => /^\d\d-.*\.md$/.test(f)).sort().map(f => f.slice(0, -3));
+const SKIP = ["10-illustrations"];   // the illustration list is for making pictures, not for reading: it has no page
+const PAGES = fs.readdirSync(HERE).filter(f => /^\d\d-.*\.md$/.test(f)).sort().map(f => f.slice(0, -3)).filter(p => !SKIP.includes(p));
+for (const p of SKIP) if (fs.existsSync(path.join(HERE, p + ".html"))) fs.unlinkSync(path.join(HERE, p + ".html"));
 const titleOf = md => /^# (.*)$/m.exec(md)[1];
 const SHORT = { "01-cosmology": "Cosmology", "02-timeline": "Timeline", "03-world": "The world", "04-the-lampway": "The Lampway", "05-peoples": "Peoples", "06-callings": "Callings",
   "07-rulers-and-heroes": "Rulers & heroes", "08-bestiary": "Bestiary", "09-magic-and-artifacts": "Magic & artifacts", "10-illustrations": "Art list" };
