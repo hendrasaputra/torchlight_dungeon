@@ -8,7 +8,7 @@ The game is turn-based on a grid, like Moria. The engine's job is light: a torch
 monsters, and spell flashes. Physics is the finishing touch, after each turn: rubble, shattering potions, blasts
 that shove debris.
 
-The plan runs in twelve phases. Phase 1 is the small "Moria-lite" recommended earlier, and it ships to the cartridge
+The plan runs in thirteen phases. Phase 1 is the small "Moria-lite" recommended earlier, and it ships to the cartridge
 shelf on its own. Each later phase adds one Moria system and ships as an update, so the game is playable at every
 step.
 
@@ -37,7 +37,8 @@ resize watcher and the frame loop).
 | 9 Save games | Done. `save.js` packs the character, what they know, the shops and the current level into versioned JSON (the map arrays run-length encoded: about 20 to 30 KB), and refuses damaged, foreign or newer saves with a message instead of crashing; `MIGRATIONS` will lift older versions once there are any. Three slots, one character each, chosen from the title (Enter) or the menu (Characters), with erasing. The game saves on every level change, every 200 turns, when the tab is hidden or the page closes, and on Save and quit; a full or blocked storage says so once. Death erases the slot and keeps a text character dump with the hall of fame entry (D on the tombstone, or Hall of fame in the menu). Export and import a save as a file. Checks: save, load, save gives the same file; a level and a town come back whole; eight kinds of bad save are refused with a message. In the browser: a character continued after a page reload exactly as left, a save on leaving the page, 44 save-and-reload cycles in a 4,000-step bot run without errors, and the storage-full message. Not yet: a test of an older version's save, as there is none. |
 | 10 Presentation and polish | Done, except the parts that need a person. Sound: `audio/torch-sfx.py` synthesises 37 original effects (footsteps, hits, misses, kills, wounds, doors, locks, digging, traps, finds, the shop bell, eating, drinking, reading, a sound per spell element, and seven monster cries by body plan) and two original loops, a lute tune in D for the town and a drone with distant bells for the depths, which also serves as the dungeon's ambience; they are embedded as base64 MP3s (535 KB; the page is about 0.9 MB). The arcade's `createAudio` player is in `lib.js`, with a music switch added; Sound and Music are menu options. Help has a "How to play" page next to the keys. Options: auto-pickup, status colours safe for colour blindness (blue and amber, with ▲ and ▼), and larger text. A cover-art prompt for the pixel-art look in `cartridges/PROMPT.md`. Checks: every sound and both loops decode in the browser; a bot ran with sound on, and with every option on, without errors. Not done: listening to the sounds (they are in `audio/torch/` to judge by ear), the new cover image (it needs an image generator), the full balance pass from town to boss (it needs a person to play), haggling (prices stay fixed; open question 1) and "-more-" prompts (the Journal keeps the whole log). |
 | 11 Lore in the game | Done. `src/lore.js` holds short versions of the lore: the seven rings (Stone, Roots, Rest, Forges, Glass, the Pit, the Unlit Ring) with their depth bands and level feelings, 55 Lore pages, a line of origin for every monster family and special kind, and a writer for every spell book. In the game: item cards show where artifacts and special kinds come from and who wrote each spell book; recall (the Journal and the target card) shows each named monster's story and each family's origin once seen; the level feeling names the ring; Help has a "The world" page; a new **Lore** tab (K) opens pages as you reach a ring, meet a named monster, find an artifact or read one of 12 new **lore books** found below (read with the read command; the Temple buys them). Four world pages are open from the start. Lore pages are saved with the character; saves from before load with the starting pages. Checks: every unique, artifact, ring, lore book, family, special kind and spell book has its text. In the browser: pages unlock as they should, and a 3,000-step bot across every depth, with lore books, artifacts and 21 save-and-reloads, ran without errors. Wide dialogs now fit small windows. |
-| 12 The rings of light | Not started. Gives the game the lore's goal: keep the cage of light lit, or rob it. |
+| 12 The first game: a tutorial | Done. `src/tutorial.js`: Sister Ilvane's "Keeper's charge" runs inside a new player's first real game. A welcome offers Begin or Skip (Esc skips); skipping or finishing it once turns it off for later characters in the browser, and the menu's "Guidance for new delvers" turns it (and the hints) back on or off at any time. One step at a time in a Next box under the status panel, with keys as key caps in the player's own key set: look at yourself (C, I), buy oil or a torch at the General Store, ready your first spell (casters), find the stairs down, kill the first monster, pick something up, then go deeper or home; "you are hurt" (D or R) shows whenever it applies. Advice follows the calling (Spark for an Arcanist, the sling for a Wayfinder, the ambush for a Delver). A pulsing ring marks the step's goal, an arrow at the screen edge points to it when it is off screen, and it blinks on the minimap. On the first trip only, the first room is lit and a lone cave rat sleeps a few steps away, with nothing else near. After the charge, a short hint shows the one key that matters (drink, fresh light, eat, disarm, stairs, pick up, attack). Progress is saved with the character. Checks: every step's text for six callings and three key sets; in the browser, the charge completed for all six callings, skipping leaves no box, markers or rat, later characters get no welcome, and the Guidance option works; bots ran it without errors. |
+| 13 The rings of light | Not started. Gives the game the lore's goal: keep the cage of light lit, or rob it. |
 
 ## Ground rules
 
@@ -488,7 +489,63 @@ The text stays short and lives in one data file in `src/`, written from the lore
 **Done when:** a node check finds lore text for every unique, artifact, ring and lore book, and a playthrough of the
 first rings fills the Lore tab without errors.
 
-### Phase 12: the rings of light (L)
+### Phase 12: the first game, a tutorial (M)
+
+A new player's first game teaches itself: what you wear, which keys to press, what to do, where to go and the first
+monster to kill. It is not a separate practice map. It runs inside the real first game, on the real town and the real
+first level, and anyone who already knows the game skips it with one key.
+
+**When it runs.** On for the first character started in a browser. The welcome that opens it offers **Begin** or
+**Skip** (Esc also skips); skipping, or finishing it once, makes it start off for every later character. The menu
+has "Guidance for new delvers: On / Off" to turn it on or off at any time, in any game. Its progress is saved with
+the character, so a reload resumes the same step.
+
+**Who speaks.** Sister Ilvane, keeper of the Eternal Lamp, who sent out the call for delvers (`lore/03-world.md`).
+Her advice is "the Keeper's charge": one step at a time, in a small **Next** box under the status panel, with the key
+to press shown in the player's own key set (modern, classic or roguelike). Each step completes by itself when the
+player does it; nothing blocks the game, and steps can be done in any order.
+
+**The steps:**
+
+| # | Step | Teaches | Done when |
+|---|---|---|---|
+| 1 | Welcome: who Sister Ilvane is, what is wrong below, and what you are for, in three lines | Enter (Esc skips) | Read |
+| 2 | Look at yourself: what you wear and what you carry | C, then I | Both tabs opened |
+| 3 | What to equip and buy: visit the General Store (1) and buy a flask of oil or a torch; the Armoury (2) and Weaponsmith (3) are shown as places to come back to | Walk into a numbered door; Enter buys | Something bought |
+| 4 | Casters only: ready your first spell or prayer | B, then Q | A spell is ready |
+| 5 | Where to go: find the stairs down. A marker points the way | Arrows to move; W on the stairs | You reach 50 ft |
+| 6 | The first monster: a cave rat sleeps in this first room | Tab to target, A to attack (or walk into it); casters S; Wayfinders fire with A; Delvers strike it asleep for double damage | The rat is slain |
+| 7 | Take what you find | W picks up; gold is picked up by walking on it | Something picked up |
+| 8 | When you are hurt: drink or rest | D drinks the best potion; R rests | Health back up |
+| 9 | What next: go deeper, or go home when your light runs low | W on stairs, F for a fresh torch, Word of Recall | You reach 100 ft, or return to town |
+| 10 | "You are on your own now. The Lore tab (K) keeps what you learn." | | Read |
+
+The text of each step changes with the calling: casters hear about S and Q, Wayfinders about shooting, Delvers about
+sneaking up on sleeping monsters, Lampwardens about their brighter light.
+
+**The first monster.** On a tutorial character's first trip down only, the first room is lit and a lone cave rat (6
+hit points at most) sleeps a few steps away from the stairs: a fight every calling wins. Every later level is as
+random as ever.
+
+**Showing the way.** The goal of the step (a shop door, the stairs, the rat) gets a pulsing marker on the map, an
+arrow at the edge of the screen when it is out of view, and a blinking dot on the minimap.
+
+**Hints that stay.** After the tutorial (and for players who skip it), a short context line still appears when it
+helps, and only then: W when standing on stairs or items, A when a monster is in sight, D when hurt with a known
+healing potion, E when hungry, F when the light is low, "walk into it to disarm" next to a known trap. It can be
+turned off with the guidance option.
+
+**Where it lives.** `src/tutorial.js`: the steps (text per calling and key set, and when each is done) and the hints;
+the Next box and the markers in `ui.js` and `render.js`; the first rat in `newLevel`.
+
+**Done when:**
+
+- a node check finds every step's text and keys for all three key sets and every calling;
+- a bot plays the tutorial for each of the six callings and every step completes;
+- skipping it leaves no Next box, no markers and no first rat;
+- the first rat appears only on the first trip of a tutorial character.
+
+### Phase 13: the rings of light (L)
 
 The lore's goal becomes the game's. The dungeon is the Lampway, a cage of light built to hold Morrowgloom down
 (`lore/04-the-lampway.md`), and it is failing. The delver can mend it, rob it, or end what is inside it. Three motives
@@ -562,6 +619,8 @@ follow how bright the rings are.
 - **The Lantern-Eater is slain:** as now, but far harder in a dark Deep. Its swallowed lights go home.
 - **Rich and retired:** leave Lanternhollow with a fortune in carried light, while the world grows darker behind you.
 - **The world goes dark:** Morrowgloom breaks loose. A loss for everyone, recorded as such.
+
+**The tutorial** (phase 12) gains a step on the first trip: relight your first dark shrine.
 
 Open for this phase: whether harvesting light can ever be the "right" choice, the exact numbers above, and whether
 the Unlit Ring can be fully lit before Morrowgloom is slain.

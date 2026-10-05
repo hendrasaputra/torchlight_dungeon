@@ -112,7 +112,7 @@ function newLevel(d){
   if (d === 0){
     // back from the dungeon: the shops have sold some things and bought in others
     if (from > 0 && player.turns - lastTown > 500) shops.forEach((sh, i) => { sh.stock = restock(sh.stock, SHOPS[i], rng, player.know, 0.5); });
-    lastTown = player.turns; wasDay = isDay(); lightTown();
+    lastTown = player.turns; wasDay = isDay(); lightTown(); if (from > 0) tutNote("returned");
     for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) mem[idx(x, y)] = 1;   // you know your own town
     for (let k = 0, n = 5 + rng.int(4) + (wasDay ? 0 : 3); k < n; k++) spawnMonster(false);
     updateSight();
@@ -127,6 +127,7 @@ function newLevel(d){
   if (d >= boss.depth && !uniqueGone(boss) && (d === boss.depth || rng.chance(0.3))) spawnMonster(false, boss, freeSpot(25));
   for (let k = 0, n = 8 + rng.int(6); k < n; k++) dropAt(freeSpot(0), rng.chance(0.35) ? { k: "gold", n: rng.range(8, 25) * d } : loot(d));
   updateSight(); digging = null;
+  if (d === 1) tutFirstRoom();
   say(d === 1 && from === 0 ? "You enter the dungeon at 50 ft. Your torch hisses in the damp air." : "You are now at " + feet(d) + " ft.");
   levelFeeling(d);
   saveGame();
@@ -277,7 +278,7 @@ function damage(m, dmg, msg, delay = 0){   // returns true if it died
   return false;
 }
 function kill(m, name, delay = 0){
-  say("You have slain " + name + "."); sfx("kill");
+  say("You have slain " + name + "."); sfx("kill"); tutNote("killed");
   mons.splice(mons.indexOf(m), 1); player.kills++; player.slain[m.K.id] = (player.slain[m.K.id] || 0) + 1; lore(m.K).kills++; saveLore();
   if (target === m) target = null;
   gainExp(m.K.exp * m.K.depth / player.lvl);
@@ -320,6 +321,7 @@ function pickUp(){
     floor.splice(floor.indexOf(f), 1);
     say("You have " + nameOf(got) + " (" + String.fromCharCode(97 + player.inv.indexOf(got)) + ").");
     if (got.art) unlockLore("a-" + got.art);
+    tutNote("picked");
   }
   recalc();
   if (player.bonus.burden) say("You are carrying too much and slow down.");
@@ -844,6 +846,7 @@ function castSpell(S, quick){
     player.mana -= S.mana;
     if (rng.int(100) < spellFail(S, player) + (player.t.stun ? 25 : 0)){ say(holy ? "You lose your concentration." : "You failed to get the spell off!"); sfx("fizzle"); return true; }
     // a spell grows with its caster: power is added to bolts, beams, balls and healing (items stay as they are)
+    tutNote("cast");
     if (!S.aim) sfx(S.elem || (holy ? "light" : "arcane"));   // aimed ones sound as they fly
     FX[S.fx]({ K: S, tx, ty, power: player.lvl });
     if (S.also) FX[S.also]({ K: S, tx, ty, power: player.lvl });
@@ -1193,7 +1196,7 @@ function spellKey(){   // S: cast the readied spell
   if (!S){ msgs = []; say(cls().realm ? "You have not learned any " + realmWord() + "s yet. Open the Book (B) to study." : "You know no spells or prayers."); return; }
   castSpell(S, true);
 }
-function nextSpell(d){ const k = knownSpells(); if (!k.length) return spellKey(); const S = readySpell(), n = k[(k.indexOf(S) + d + k.length) % k.length]; player.ready = n.id; msgs = []; say("Ready: " + n.name + " (" + n.mana + " mana)."); }
+function nextSpell(d){ tutNote("readied"); const k = knownSpells(); if (!k.length) return spellKey(); const S = readySpell(), n = k[(k.indexOf(S) + d + k.length) % k.length]; player.ready = n.id; msgs = []; say("Ready: " + n.name + " (" + n.mana + " mana)."); }
 // D: the healing potion that best fits your wounds, so a scratch does not use up the strongest one
 function bestPotion(){
   const miss = player.mhp - player.hp, list = player.inv.filter(it => { const K = ITEM[it.k]; return K.cat === "potion" && kindKnown(K, player.know) && (K.effect === "heal" || K.effect === "healFull"); })
@@ -1298,6 +1301,7 @@ function begin(){
   state = "play"; stateT = 0;
   shops = newShops(rng, player.know); lastTown = 0; depth = 0; slot = newSlot;
   newLevel(0);
+  tutBegin();   // a new player's first game teaches itself (tutorial.js)
 }
 /* ---------- the title scene: the first level's biggest room, dimly lit, behind the title ---------- */
 function titleScene(){
@@ -1373,7 +1377,7 @@ function buy(i, it){
   if (player.gold < price) return say(S.keeper + ": \"Come back when you can afford it.\"");
   const one = { ...it, n: 1 }, got = carry(one);
   if (!got) return say("You have no room in your pack.");
-  player.gold -= price; player.know.known[it.k] = true;
+  player.gold -= price; player.know.known[it.k] = true; tutNote("bought");
   if (--it.n <= 0) shops[i].stock.splice(shops[i].stock.indexOf(it), 1);
   say("You buy " + nameOf(one) + " for " + price + " gold."); recalc();
 }

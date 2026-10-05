@@ -115,6 +115,18 @@ function drawWorld(t, dt){
       ctx.fillRect(Math.min(cx, cx + ex * L4), cy - (ey < 0 ? Z : 0), L4, Z); ctx.fillRect(cx - (ex < 0 ? Z : 0), Math.min(cy, cy + ey * L4), Z, L4); } }
   if (depth === 0) L.shops.forEach((sh, k) => { const x = sh.door % MW, y = Math.floor(sh.door / MW); if (!mem[sh.door]) return; const [sx, sy] = scr(x, y + (y < L.street ? -1 : 1.1)); label(sx + 8 * Z, sy + 10 * Z, (k + 1) + " " + SHOPS[k].name, "#f6e7c4", 0.62, true); });
   for (const f of floats){ const [sx, sy] = scr(f.x, f.y - f.t * 0.9); ctx.globalAlpha = Math.min(1, (0.9 - f.t) * 3); label(sx + 8 * Z, sy - 2 * Z, f.text, hex(f.rgb), 0.95, true); ctx.globalAlpha = 1; }
+  const goal = tutGoal();   // the tutorial's goal: a pulsing ring on it, or an arrow at the edge pointing to it
+  if (goal !== null){
+    const w = TS * Z, [gx, gy] = scr(goal % MW, Math.floor(goal / MW)), cx = gx + w / 2, cy = gy + w / 2, pulse = 0.5 + 0.5 * Math.sin(t / 180);
+    ctx.strokeStyle = `rgba(240,192,64,${0.55 + pulse * 0.45})`; ctx.fillStyle = "#f0c040"; ctx.lineWidth = Math.max(2, Z * 1.2);
+    if (cx > 0 && cy > 0 && cx < VWpx && cy < VHpx){ ctx.beginPath(); ctx.arc(cx, cy, w * (0.75 + pulse * 0.25), 0, 7); ctx.stroke(); }
+    else {
+      const mx = VWpx / 2, my = VHpx / 2, a = Math.atan2(cy - my, cx - mx), m = 34 * Z / 2;
+      const k = Math.min((mx - m) / Math.abs(Math.cos(a) || 1e-6), (my - m) / Math.abs(Math.sin(a) || 1e-6)), ax = mx + Math.cos(a) * k, ay = my + Math.sin(a) * k, s = 7 * Z * (0.9 + pulse * 0.2);
+      ctx.save(); ctx.translate(ax, ay); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(s, 0); ctx.lineTo(-s * 0.7, -s * 0.7); ctx.lineTo(-s * 0.3, 0); ctx.lineTo(-s * 0.7, s * 0.7); ctx.closePath();
+      ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = Z; ctx.stroke(); ctx.restore();
+    }
+  }
   if (aiming){ const [sx, sy] = scr(posOf(player).x, posOf(player).y); ctx.strokeStyle = "#f0c04088"; ctx.lineWidth = Z; ctx.setLineDash([2 * Z, 2 * Z]); ctx.strokeRect(sx - 2 * Z, sy - 2 * Z, 20 * Z, 20 * Z); ctx.setLineDash([]); }
 }
 function label(x, y, s, col, size = 0.8, centre = false){
@@ -187,6 +199,8 @@ function drawMinimap(c, s, focus){
   }
   for (const f of floor) if (f.seen || visible(idx(f.x, f.y))){ const o = 4 * (f.y * w + f.x); d[o] = 90; d[o + 1] = 170; d[o + 2] = 255; d[o + 3] = 255; }
   for (const m of mons) if (m.K && sensed(m)){ const o = 4 * (m.y * w + m.x); d[o] = 255; d[o + 1] = 70; d[o + 2] = 60; d[o + 3] = 255; }
+  const goal = tutGoal(), gx = goal % MW, gy = Math.floor(goal / MW);   // the tutorial's goal blinks
+  if (goal !== null && gx < w && gy < h && (performance.now() / 250 | 0) % 2){ const o = 4 * (gy * w + gx); d[o] = 255; d[o + 1] = 220; d[o + 2] = 60; d[o + 3] = 255; }
   const tmp = memo(ICONS, "mini" + w + "x" + h, () => newCanvas(w, h)); tmp.getContext("2d").putImageData(img, 0, 0);
   const cw = c.width, ch = c.height;
   // a small minimap follows you; the Map tab shows the whole level

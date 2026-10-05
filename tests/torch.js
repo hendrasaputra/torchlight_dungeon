@@ -1,8 +1,8 @@
 // Checks for Torchlight Dungeons' rules. Run: node tests/torch.js
 // Loads the game's logic files without a browser: random numbers, sight and light, turns, levels and data.
 const fs = require("fs"), vm = require("vm"), path = require("path");
-const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "lore.js", "save.js", "sprites.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
-const G = vm.runInNewContext(files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, RINGS, ringOf, LORE_PAGES, LORE_START, FAMILY_LORE, EGO_LORE, BOOK_LORE, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
+const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "lore.js", "save.js", "sprites.js", "tutorial.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
+const G = vm.runInNewContext(files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, RINGS, ringOf, LORE_PAGES, LORE_START, FAMILY_LORE, EGO_LORE, BOOK_LORE, TUT_STEPS, TUT_KEYS, firstSpell, CLASSES, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
 
 let failed = 0;
 const check = (name, ok, detail) => { console.log((ok ? "ok    " : "FAIL  ") + name + (detail ? "  (" + detail + ")" : "")); if (!ok) failed++; };
@@ -256,6 +256,17 @@ const { MW, MH, T } = G;
   const egos = G.EGOS.filter(E => !G.EGO_LORE[E.id]).map(E => E.id), books = G.ITEMS.filter(K => K.cat === "book" && !G.BOOK_LORE[K.id]).map(K => K.id);
   check("every monster family, special kind and spell book has its line of lore", !fams.length && !egos.length && !books.length, [...fams, ...egos, ...books].join(", "));
   check("the starting pages exist", G.LORE_START.every(page));
+}
+
+{ // phase 12: the tutorial reads properly for every calling and key set
+  const bad = [];
+  for (const C of G.CLASSES) for (const ks of ["modern", "original", "roguelike"]){
+    const S1 = G.firstSpell(C), p = { cls: C.id, spells: S1 && G.spellLevel(S1, C) === 1 ? [S1.id] : [], hp: 10, mhp: 10 };
+    for (const S of G.TUT_STEPS){ if (S.only && !S.only(p)) continue; const t = S.text(p, ks); if (!t || t.length < 30 || /undefined|null|NaN/.test(t)) bad.push(C.id + "/" + ks + "/" + S.id + ": " + t); }
+  }
+  check("every tutorial step has its text and keys for all six callings and three key sets", !bad.length, bad.slice(0, 3).join(" | "));
+  const keys = Object.keys(G.TUT_KEYS.modern);
+  check("every key set names every action the tutorial teaches", ["original", "roguelike"].every(ks => keys.every(k => G.TUT_KEYS[ks][k])));
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");

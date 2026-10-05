@@ -32,6 +32,10 @@ header { color: var(--text); } #hud { color: var(--dim); }
 img.px { image-rendering: pixelated; width: 32px; height: 32px; display: block; }
 img.px.big { width: 48px; height: 48px; } img.px.face { width: 40px; height: 40px; } img.px.hero { width: 160px; height: 160px; filter: drop-shadow(0 6px 0 #0007); }
 #ov > * { position: absolute; }
+#status .next { margin-top: 8px; padding: 7px 8px; border: 1px solid var(--gold); border-radius: 4px; background: #2a2010cc; font-size: 12px; line-height: 1.45; }
+#status .next b { display: block; color: var(--gold); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
+#status .hint { margin-top: 6px; font-size: 12px; color: #d8cfb8; }
+#status kbd { min-width: 0; display: inline-block; padding: 0 4px; border: 1px solid #8a7458; border-radius: 3px; background: #1a1610; color: var(--gold); font: inherit; font-weight: bold; }
 #status { left: 10px; top: 10px; width: 250px; background: #0c0b12d8; border: 2px solid var(--edge); border-radius: 6px; padding: 8px 10px; }
 .who { display: flex; gap: 10px; align-items: center; } .who b { display: block; font-size: 14px; } .who small { color: var(--dim); }
 .meter { margin: 5px 0; } .meter span { display: flex; justify-content: space-between; font-size: 12px; } .meter i { display: block; height: 7px; background: #2a2636; border-radius: 3px; overflow: hidden; }
@@ -2141,7 +2145,7 @@ function newLevel(d){
   if (d === 0){
     // back from the dungeon: the shops have sold some things and bought in others
     if (from > 0 && player.turns - lastTown > 500) shops.forEach((sh, i) => { sh.stock = restock(sh.stock, SHOPS[i], rng, player.know, 0.5); });
-    lastTown = player.turns; wasDay = isDay(); lightTown();
+    lastTown = player.turns; wasDay = isDay(); lightTown(); if (from > 0) tutNote("returned");
     for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) mem[idx(x, y)] = 1;   // you know your own town
     for (let k = 0, n = 5 + rng.int(4) + (wasDay ? 0 : 3); k < n; k++) spawnMonster(false);
     updateSight();
@@ -2156,6 +2160,7 @@ function newLevel(d){
   if (d >= boss.depth && !uniqueGone(boss) && (d === boss.depth || rng.chance(0.3))) spawnMonster(false, boss, freeSpot(25));
   for (let k = 0, n = 8 + rng.int(6); k < n; k++) dropAt(freeSpot(0), rng.chance(0.35) ? { k: "gold", n: rng.range(8, 25) * d } : loot(d));
   updateSight(); digging = null;
+  if (d === 1) tutFirstRoom();
   say(d === 1 && from === 0 ? "You enter the dungeon at 50 ft. Your torch hisses in the damp air." : "You are now at " + feet(d) + " ft.");
   levelFeeling(d);
   saveGame();
@@ -2306,7 +2311,7 @@ function damage(m, dmg, msg, delay = 0){   // returns true if it died
   return false;
 }
 function kill(m, name, delay = 0){
-  say("You have slain " + name + "."); sfx("kill");
+  say("You have slain " + name + "."); sfx("kill"); tutNote("killed");
   mons.splice(mons.indexOf(m), 1); player.kills++; player.slain[m.K.id] = (player.slain[m.K.id] || 0) + 1; lore(m.K).kills++; saveLore();
   if (target === m) target = null;
   gainExp(m.K.exp * m.K.depth / player.lvl);
@@ -2349,6 +2354,7 @@ function pickUp(){
     floor.splice(floor.indexOf(f), 1);
     say("You have " + nameOf(got) + " (" + String.fromCharCode(97 + player.inv.indexOf(got)) + ").");
     if (got.art) unlockLore("a-" + got.art);
+    tutNote("picked");
   }
   recalc();
   if (player.bonus.burden) say("You are carrying too much and slow down.");
@@ -2873,6 +2879,7 @@ function castSpell(S, quick){
     player.mana -= S.mana;
     if (rng.int(100) < spellFail(S, player) + (player.t.stun ? 25 : 0)){ say(holy ? "You lose your concentration." : "You failed to get the spell off!"); sfx("fizzle"); return true; }
     // a spell grows with its caster: power is added to bolts, beams, balls and healing (items stay as they are)
+    tutNote("cast");
     if (!S.aim) sfx(S.elem || (holy ? "light" : "arcane"));   // aimed ones sound as they fly
     FX[S.fx]({ K: S, tx, ty, power: player.lvl });
     if (S.also) FX[S.also]({ K: S, tx, ty, power: player.lvl });
@@ -3222,7 +3229,7 @@ function spellKey(){   // S: cast the readied spell
   if (!S){ msgs = []; say(cls().realm ? "You have not learned any " + realmWord() + "s yet. Open the Book (B) to study." : "You know no spells or prayers."); return; }
   castSpell(S, true);
 }
-function nextSpell(d){ const k = knownSpells(); if (!k.length) return spellKey(); const S = readySpell(), n = k[(k.indexOf(S) + d + k.length) % k.length]; player.ready = n.id; msgs = []; say("Ready: " + n.name + " (" + n.mana + " mana)."); }
+function nextSpell(d){ tutNote("readied"); const k = knownSpells(); if (!k.length) return spellKey(); const S = readySpell(), n = k[(k.indexOf(S) + d + k.length) % k.length]; player.ready = n.id; msgs = []; say("Ready: " + n.name + " (" + n.mana + " mana)."); }
 // D: the healing potion that best fits your wounds, so a scratch does not use up the strongest one
 function bestPotion(){
   const miss = player.mhp - player.hp, list = player.inv.filter(it => { const K = ITEM[it.k]; return K.cat === "potion" && kindKnown(K, player.know) && (K.effect === "heal" || K.effect === "healFull"); })
@@ -3327,6 +3334,7 @@ function begin(){
   state = "play"; stateT = 0;
   shops = newShops(rng, player.know); lastTown = 0; depth = 0; slot = newSlot;
   newLevel(0);
+  tutBegin();   // a new player's first game teaches itself (tutorial.js)
 }
 /* ---------- the title scene: the first level's biggest room, dimly lit, behind the title ---------- */
 function titleScene(){
@@ -3402,7 +3410,7 @@ function buy(i, it){
   if (player.gold < price) return say(S.keeper + ": \"Come back when you can afford it.\"");
   const one = { ...it, n: 1 }, got = carry(one);
   if (!got) return say("You have no room in your pack.");
-  player.gold -= price; player.know.known[it.k] = true;
+  player.gold -= price; player.know.known[it.k] = true; tutNote("bought");
   if (--it.n <= 0) shops[i].stock.splice(shops[i].stock.indexOf(it), 1);
   say("You buy " + nameOf(one) + " for " + price + " gold."); recalc();
 }
@@ -3584,6 +3592,110 @@ function tick(dt, t){
   drawWorld(t, dt);
   drawUI(dt);
 }
+/* ---------- Torchlight Dungeons: the first game teaches itself (phase 12) ---------- */
+// "The Keeper's charge": Sister Ilvane's steps for a new delver, one at a time in the Next box, each done when the
+// player does it. It runs inside a character's first real game: on for the first character in a browser, skipped with
+// Esc or Skip, and once skipped or finished it starts off for later characters. The menu's Guidance option turns it
+// (and the key hints that stay after it) on or off. State: player.tut = { flags, done, at, ratDone, finished }.
+
+// The key for each action, in each key set.
+const TUT_KEYS = {
+  modern: { move: "the arrow keys", char: "C", pack: "I", book: "B", ready: "Q", cast: "S", attack: "A", target: "Tab", grab: "W", down: "W", up: "W", drink: "D", rest: "R", eat: "E", fuel: "F", lore: "K", help: "?" },
+  original: { move: "the arrow keys or numpad", char: "C", pack: "i", book: "m", ready: "m", cast: "m", attack: "walk into it", target: "Tab", grab: "g", down: ">", up: "<", drink: "q", rest: "R", eat: "E", fuel: "F", lore: "the Lore tab", help: "?" },
+  roguelike: { move: "h j k l (y u b n diagonally)", char: "C", pack: "i", book: "m", ready: "m", cast: "m", attack: "walk into it", target: "Tab", grab: "g", down: ">", up: "<", drink: "q", rest: "R", eat: "E", fuel: "F", lore: "the Lore tab", help: "?" }
+};
+const tutKey = (ks, a) => (TUT_KEYS[ks] || TUT_KEYS.modern)[a];
+const kb = (ks, a) => { const k = tutKey(ks, a); return /^(the |walk )/.test(k) ? k : "[" + k + "]"; };   // shown as a key cap in the Next box
+
+// Each step: text(p, ks), done(p, f, d), and optionally only(p) (who it is for), when(p) (shown only while true) and
+// goal() (where the marker points). f: the step flags set by tutNote; d: the current depth.
+const TUT_STEPS = [
+  { id: "hurt", optional: true, when: p => p.hp < p.mhp * 0.6, text: (p, ks) => `You are hurt. Press ${kb(ks, "drink")} to drink a healing potion, or ${kb(ks, "rest")} to rest when nothing is near.`, done: () => false },
+  { id: "look", text: (p, ks) => `First, look at yourself. ${kb(ks, "char")} shows what you wear, and ${kb(ks, "pack")} what you carry.`, done: (p, f) => f.char && f.pack },
+  { id: "shop", text: (p, ks) => `Visit the General Store, door 1: walk into it and press [Enter] on a flask of oil or a spare torch to buy it. The Armoury (2) and Weaponsmith (3) sell better gear when you have the gold.`,
+    done: (p, f) => f.bought, goal: () => depth === 0 && L.shops ? L.shops[0].door : null },
+  { id: "spell", only: p => !!CLASS[p.cls].realm, text: (p, ks) => { const S = SPELL[p.spells[0]], what = CLASS[p.cls].realm === "holy" ? "prayer" : "spell";
+      return S ? (ks === "modern" ? `You know the ${what} ${S.name}: ${S.desc}. ${kb(ks, "ready")} chooses which ${what} is ready, and ${kb(ks, "cast")} casts it${S.aim ? " at your target" : ""}.` : `You know the ${what} ${S.name}: ${S.desc}. Press ${kb(ks, "cast")} to cast from your book.`)
+        : `You will learn your first ${what} at level ${spellLevel(firstSpell(CLASS[p.cls]), CLASS[p.cls])}. Open the book tab (B) to see what is coming.`; },
+    done: (p, f) => f.readied || f.cast || !p.spells.length },
+  { id: "stairs", text: (p, ks) => `Now find the stairs down; the marker shows the way. Move with ${kb(ks, "move")}, stand on the stairs and press ${kb(ks, "down")}.`,
+    done: (p, f, d) => d > 0 || p.maxDepth > 0, goal: () => depth === 0 ? L.spot() : null },
+  { id: "rat", text: (p, ks) => { const C = p.cls;
+      const how = C === "wayfinder" ? `Press ${kb(ks, "attack")} to shoot it with your sling from where you stand.` : C === "delver" ? `Creep up while it sleeps: a Delver strikes a sleeping foe twice as hard. Walk into it.`
+        : p.spells.some(id => SPELL[id].aim) && ks === "modern" ? `Press ${kb(ks, "cast")} to cast ${SPELL[p.spells.find(id => SPELL[id].aim)].name} at it, or walk into it to fight.` : `Walk into it to fight${ks === "modern" ? `, or press ${kb(ks, "attack")}` : ""}.`;
+      return `A cave rat sleeps in this room. ${kb(ks, "target")} targets it. ${how}`; },
+    done: (p, f) => f.killed, goal: () => { const m = mons.find(m => m.tutorial); return m ? idx(m.x, m.y) : null; } },
+  { id: "grab", text: (p, ks) => `Things lie about down here. Stand on one and press ${kb(ks, "grab")} to pick it up; gold you pick up just by walking over it.`,
+    done: (p, f, d) => f.picked || p.maxDepth >= 2, goal: () => { let best = null, bd = 99; for (const f of floor) if (f.seen && f.it.k !== "gold"){ const k = dist(f.x, f.y, player.x, player.y); if (k < bd){ bd = k; best = idx(f.x, f.y); } } return best; } },
+  { id: "onward", text: (p, ks) => `Your light burns down as you go; ${kb(ks, "fuel")} lights a fresh torch. Go deeper by the stairs down (${kb(ks, "down")}), or climb back to town (${kb(ks, "up")} on the stairs up) to rest and shop.`,
+    done: (p, f) => p.maxDepth >= 2 || f.returned, goal: () => { if (depth === 0) return null; let best = null, bd = 99; for (let i = 0; i < MW * MH; i++) if (mem[i] && L.tiles[i] === T.DOWN){ const k = dist(i % MW, Math.floor(i / MW), player.x, player.y); if (k < bd){ bd = k; best = i; } } return best; } }
+];
+const TUT_WELCOME = "Welcome to Lanternhollow, delver. I am Sister Ilvane, keeper of the Eternal Lamp. The dungeon under this town is a cage of light, and it is failing: something below is eating the lamps. Go down, bring back what you can, and come back alive. Let me walk you through your first trip.";
+const TUT_FAREWELL = "You are on your own now, delver. Morrowgloom waits at 2,500 ft, and the deep gets darker every year. The Lore tab keeps what you learn, and ? shows every key. Keep it lit.";
+
+const guidanceOn = () => store.get("guidance", "1") === "1";
+const tutActive = () => !!(player && player.tut && !player.tut.finished && guidanceOn() && state === "play");
+function tutNote(flag){ if (player && player.tut) player.tut.flags[flag] = true; }
+// The step to show now: a hurt warning first, then the first step not yet done.
+function tutStep(){
+  if (!tutActive()) return null;
+  const p = player, t = p.tut;
+  for (const S of TUT_STEPS){
+    if (S.only && !S.only(p)) continue;
+    if (S.optional){ if (S.when(p)) return S; continue; }
+    if (t.done[S.id]) continue;
+    if (S.done(p, t.flags, depth)){ t.done[S.id] = true; sfx("found"); continue; }
+    return S;
+  }
+  return null;
+}
+// Called whenever the HUD is drawn: finishes the charge when every step is done.
+function tutCheck(){
+  if (!tutActive() || dlg) return;
+  if (!tutStep()){ player.tut.finished = true; store.set("tutorialSeen", "1"); say("Sister Ilvane's charge is done."); noteDialog("Sister Ilvane", TUT_FAREWELL); }
+}
+function tutGoal(){ const S = tutStep(); const g = S && S.goal ? S.goal() : null; return g === null || g === undefined || g < 0 ? null : g; }
+// A new character's first game: start the charge, unless it was skipped or finished before in this browser.
+function tutBegin(){
+  if (store.get("tutorialSeen") === "1" || !guidanceOn()) return;
+  player.tut = { flags: {}, done: {}, ratDone: false, finished: false };
+  openDialog({ title: "Sister Ilvane", head: `<p class="lore">${esc(TUT_WELCOME)}</p>`, side: false, onBack: tutSkip,
+    cols: [[{ label: "Begin", select: closeDialog }, { label: "Skip: I know how to play", select: tutSkip }]], note: "Esc skips · the menu's Guidance option turns it back on" });
+}
+function tutSkip(){ if (player) player.tut = null; store.set("tutorialSeen", "1"); closeDialog(); msgs = []; say("Good luck down there, delver."); }
+// The menu's Guidance option: off hides the charge and the hints; on brings them back (and the charge, if this
+// character never had one or finished it, starting from what is not done yet).
+function setGuidance(on){
+  store.set("guidance", on ? "1" : "0");
+  if (on && player && state === "play" && (!player.tut || player.tut.finished)) player.tut = { flags: {}, done: {}, ratDone: true, finished: false };
+  refreshUI();
+}
+// The first trip down: the first room is lit, and a lone cave rat sleeps a few steps from you.
+function tutFirstRoom(){
+  if (!player.tut || player.tut.ratDone || !guidanceOn()) return;
+  player.tut.ratDone = true;
+  const here = idx(player.x, player.y), id = L.room[here];
+  for (const m of [...mons]) if (m.K && dist(m.x, m.y, player.x, player.y) < 14) mons.splice(mons.indexOf(m), 1);   // nothing else nearby on the first fight
+  if (id >= 0) lightCells([...L.room.keys()].filter(i => L.room[i] === id));
+  for (let r = 3; r <= 6; r++) for (let tries = 0; tries < 40; tries++){
+    const x = player.x + rng.range(-r, r), y = player.y + rng.range(-r, r), i = idx(x, y);
+    if (L.tiles[i] !== T.FLOOR || monAt(x, y) || dist(x, y, player.x, player.y) < 3 || (id >= 0 && L.room[i] !== id)) continue;
+    const m = newMon(MON.rat, x, y, 400); m.tutorial = true; updateSight(); return;
+  }
+}
+// The short hint that stays after the charge: the one key that matters right now, if any.
+function hintText(){
+  if (!guidanceOn() || state !== "play" || aiming || !player || tutStep()) return "";
+  const p = player, ks = keySet, t = L.tiles[idx(p.x, p.y)], lt = p.eq.light;
+  if (p.hp < p.mhp * 0.5 && bestPotion()) return `${kb(ks, "drink")} drink a healing potion`;
+  if (lt && lt.fuel !== undefined && lt.fuel < 500) return `${kb(ks, "fuel")} fresh light`;
+  if (p.food < 2000 && p.inv.some(it => ITEM[it.k].cat === "food")) return `${kb(ks, "eat")} eat`;
+  for (const k of [1, 2, 3, 4, 6, 7, 8, 9]){ const [dx, dy] = DIRS[k], i = idx(p.x + dx, p.y + dy); if (L.trap[i] && L.trapSeen[i]) return "walk into the trap to disarm it"; }
+  if (t === T.DOWN || t === T.UP) return `${kb(ks, t === T.DOWN ? "down" : "up")} take the stairs`;
+  if (itemsAt(p.x, p.y).length) return `${kb(ks, "grab")} pick up`;
+  if (mons.some(m => m.K && seesMon(m) && !m.K.town)) return `${ks === "modern" ? kb(ks, "attack") + " attack" : "walk into it to attack"} · ${kb(ks, "target")} target`;
+  return "";
+}
 /* ---------- Torchlight Dungeons: drawing the map (phase 6) ---------- */
 // Tiles and figures from sprites.js, then the light field multiplied over them: what you see now is lit by your
 // torch and the rooms, what you remember is dim and cold, and the unknown is black. Movement, lunges, hit flashes,
@@ -3701,6 +3813,18 @@ function drawWorld(t, dt){
       ctx.fillRect(Math.min(cx, cx + ex * L4), cy - (ey < 0 ? Z : 0), L4, Z); ctx.fillRect(cx - (ex < 0 ? Z : 0), Math.min(cy, cy + ey * L4), Z, L4); } }
   if (depth === 0) L.shops.forEach((sh, k) => { const x = sh.door % MW, y = Math.floor(sh.door / MW); if (!mem[sh.door]) return; const [sx, sy] = scr(x, y + (y < L.street ? -1 : 1.1)); label(sx + 8 * Z, sy + 10 * Z, (k + 1) + " " + SHOPS[k].name, "#f6e7c4", 0.62, true); });
   for (const f of floats){ const [sx, sy] = scr(f.x, f.y - f.t * 0.9); ctx.globalAlpha = Math.min(1, (0.9 - f.t) * 3); label(sx + 8 * Z, sy - 2 * Z, f.text, hex(f.rgb), 0.95, true); ctx.globalAlpha = 1; }
+  const goal = tutGoal();   // the tutorial's goal: a pulsing ring on it, or an arrow at the edge pointing to it
+  if (goal !== null){
+    const w = TS * Z, [gx, gy] = scr(goal % MW, Math.floor(goal / MW)), cx = gx + w / 2, cy = gy + w / 2, pulse = 0.5 + 0.5 * Math.sin(t / 180);
+    ctx.strokeStyle = `rgba(240,192,64,${0.55 + pulse * 0.45})`; ctx.fillStyle = "#f0c040"; ctx.lineWidth = Math.max(2, Z * 1.2);
+    if (cx > 0 && cy > 0 && cx < VWpx && cy < VHpx){ ctx.beginPath(); ctx.arc(cx, cy, w * (0.75 + pulse * 0.25), 0, 7); ctx.stroke(); }
+    else {
+      const mx = VWpx / 2, my = VHpx / 2, a = Math.atan2(cy - my, cx - mx), m = 34 * Z / 2;
+      const k = Math.min((mx - m) / Math.abs(Math.cos(a) || 1e-6), (my - m) / Math.abs(Math.sin(a) || 1e-6)), ax = mx + Math.cos(a) * k, ay = my + Math.sin(a) * k, s = 7 * Z * (0.9 + pulse * 0.2);
+      ctx.save(); ctx.translate(ax, ay); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(s, 0); ctx.lineTo(-s * 0.7, -s * 0.7); ctx.lineTo(-s * 0.3, 0); ctx.lineTo(-s * 0.7, s * 0.7); ctx.closePath();
+      ctx.fill(); ctx.strokeStyle = "#000"; ctx.lineWidth = Z; ctx.stroke(); ctx.restore();
+    }
+  }
   if (aiming){ const [sx, sy] = scr(posOf(player).x, posOf(player).y); ctx.strokeStyle = "#f0c04088"; ctx.lineWidth = Z; ctx.setLineDash([2 * Z, 2 * Z]); ctx.strokeRect(sx - 2 * Z, sy - 2 * Z, 20 * Z, 20 * Z); ctx.setLineDash([]); }
 }
 function label(x, y, s, col, size = 0.8, centre = false){
@@ -3773,6 +3897,8 @@ function drawMinimap(c, s, focus){
   }
   for (const f of floor) if (f.seen || visible(idx(f.x, f.y))){ const o = 4 * (f.y * w + f.x); d[o] = 90; d[o + 1] = 170; d[o + 2] = 255; d[o + 3] = 255; }
   for (const m of mons) if (m.K && sensed(m)){ const o = 4 * (m.y * w + m.x); d[o] = 255; d[o + 1] = 70; d[o + 2] = 60; d[o + 3] = 255; }
+  const goal = tutGoal(), gx = goal % MW, gy = Math.floor(goal / MW);   // the tutorial's goal blinks
+  if (goal !== null && gx < w && gy < h && (performance.now() / 250 | 0) % 2){ const o = 4 * (gy * w + gx); d[o] = 255; d[o + 1] = 220; d[o + 2] = 60; d[o + 3] = 255; }
   const tmp = memo(ICONS, "mini" + w + "x" + h, () => newCanvas(w, h)); tmp.getContext("2d").putImageData(img, 0, 0);
   const cw = c.width, ch = c.height;
   // a small minimap follows you; the Map tab shows the whole level
@@ -3905,6 +4031,12 @@ function recall(K){
 }
 
 /* ---------- the HUD ---------- */
+// Sister Ilvane's next step (phase 12), or the one key hint that matters now; keys in [brackets] become key caps.
+function tutHtml(){
+  const S = tutStep(), caps = s => esc(s).replace(/\[([^\]]+)\]/g, "<kbd>$1</kbd>");
+  if (S) return `<div class="next"><b>Sister Ilvane</b>${caps(S.text(player, keySet))}</div>`;
+  const h = hintText(); return h ? `<div class="hint">${caps(h)}</div>` : "";
+}
 const healthWord = m => m.hp >= m.mhp ? "unhurt" : m.hp > m.mhp * 0.6 ? "wounded" : m.hp > m.mhp * 0.25 ? "badly wounded" : "almost dead";
 function bar(label, v, max, cls){ return `<div class="meter ${cls}"><span>${label}<b>${v} / ${max}</b></span><i><s style="width:${Math.max(0, Math.min(100, 100 * v / max))}%"></s></i></div>`; }
 function drawHud(){
@@ -3920,7 +4052,9 @@ function drawHud(){
     ${bar("Health", Math.max(0, p.hp), p.mhp, p.hp < p.mhp * 0.3 ? "hp low" : "hp")}${p.mmana ? bar("Mana", p.mana, p.mmana, "mp") : ""}
     <div class="meter xp"><i><s style="width:${100 * (p.exp - xpPrev) / (xpNext - xpPrev)}%"></s></i></div>
     <div class="facts"><span>${depth ? feet(depth) + " ft" : "Town · " + (isDay() ? "day" : "night")}</span><span class="${!lt || lt.fuel < 500 ? "bad" : ""}">${lt ? (lt.fuel !== undefined ? "🔥 " + lt.fuel : "🔥 steady") : "No light"}</span><span class="gold">● ${p.gold}</span></div>
-    <div class="chips">${chips.map(([v, s, c]) => `<em class="${c}">${s}${typeof v === "number" && s !== "Burdened" ? " " + v : ""}</em>`).join("")}</div>`;
+    <div class="chips">${chips.map(([v, s, c]) => `<em class="${c}">${s}${typeof v === "number" && s !== "Burdened" ? " " + v : ""}</em>`).join("")}</div>
+    ${tutHtml()}`;
+  tutCheck();
   // the target
   const tg = target && mons.includes(target) && sensed(target) ? target : null;
   $("target").hidden = !tg;
@@ -4028,6 +4162,7 @@ function drawPanel(){
 }
 function drawBigMap(){ const c = $("bigmap"); if (!c || !L) return; const w = $("tab").clientWidth - 4, s = Math.max(1, Math.floor(w / L.w)); c.width = L.w * s; c.height = L.h * s; drawMinimap(c, s, false); }
 function openTab(id){
+  tutNote(id);
   if (!panelOn){ panelOn = true; store.set("panel", "1"); }
   if (panelFocus && tab === id){ panelFocus = false; hideTip(); }
   else { if (tab !== id) psel = 0; tab = id; panelFocus = id !== "map"; }
@@ -4110,6 +4245,7 @@ function spellDialog(S){
   openDialog({ title: S.name, cols: [rows], sideHtml: spellCard(S) });
 }
 function castDialog(){   // Classic keys: m / p
+  tutNote("readied");
   const known = SPELLS.filter(S => player.spells.includes(S.id));
   if (!known.length){ msgs = []; say("You have not learned any " + realmWord() + "s yet."); return refreshUI(); }
   openDialog({ title: (cls().realm === "holy" ? "Pray" : "Cast") + " · mana " + player.mana + "/" + player.mmana, cols: [known.map(S => ({ spell: S, label: S.name, right: S.mana + " mp " + spellFail(S, player) + "%", select: () => { closeDialog(); castSpell(S, false); } }))] });
@@ -4140,6 +4276,7 @@ function menuDialog(){
     { label: "Sound", right: (audio.muted ? "Off" : "On") + "  ‹ ›", adjust: () => { audio.toggleMute(); menuDialog(); }, select: () => { audio.toggleMute(); menuDialog(); } },
     { label: "Music", right: (audio.musicOn ? "On" : "Off") + "  ‹ ›", adjust: () => { audio.toggleMusic(); menuDialog(); }, select: () => { audio.toggleMusic(); menuDialog(); } },
     ...Object.entries(OPTIONS).map(([k, label]) => ({ label, right: (opt(k) ? "On" : "Off") + "  ‹ ›", adjust: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); }, select: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); } })),
+    { label: "Guidance for new delvers", right: (guidanceOn() ? "On" : "Off") + "  ‹ ›", adjust: () => { setGuidance(!guidanceOn()); menuDialog(); }, select: () => { setGuidance(!guidanceOn()); menuDialog(); } },
     { label: "Hall of fame", select: fameDialog },
     ...(state === "play" ? [{ label: "Export this character to a file", select: () => { closeDialog(); exportSave(); } }, { label: "Character dump", right: "a text file", select: () => { closeDialog(); download(player.name + ".txt", characterDump()); } },
       { label: "Save and quit", select: () => { saveGame(); closeDialog(); toTitle(); } }] : [])
@@ -4181,7 +4318,8 @@ function helpDialog(){
     ["Magic", "Casters need their book in the pack. When you can learn more, open the Book (B) to study."],
     ["Hidden things", "Space waits and searches for secret doors and traps. Walk into a known trap to disarm it, and into a locked door to pick it."],
     ["Digging", "Walk into rubble or a vein of magma or quartz to dig it; T digs plain rock. A shovel or pick in your pack helps."],
-    ["Saving", "The game saves as you play. Death is for good: the save is erased and the hall of fame keeps your story."]];
+    ["Saving", "The game saves as you play. Death is for good: the save is erased and the hall of fame keeps your story."],
+    ["Guidance", "Sister Ilvane walks a new delver through a first trip, and short key hints show what to press. The menu turns both on or off."]];
   const world = [["The Gloam and the First Fire", "Before the world there was only dark. A first fire burned it back; every light since is a spark of it."],
     ["Morrowgloom", "The last of that dark, trapped under the world at 2,500 ft. It does not think. It only hungers for light, and eats it."],
     ["The Lampway", "The dungeon is a cage of light built downward, ring under ring of lamp-shrines, to keep Morrowgloom down. It is failing."],

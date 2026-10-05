@@ -14,6 +14,8 @@ Play it at [dungeon.hensap.id](https://dungeon.hensap.id), and read the lore of 
   paper-doll hero.
 - 60 spells and prayers in two realms; a town with six shops, day and night.
 - 267 kinds of monster in 50 families, 25 named uniques, and a final boss at 2,500 ft; monster recall.
+- A first game that teaches itself: Sister Ilvane walks a new delver through their first trip, step by step, and
+  experienced players skip it with one key.
 - The world's lore in the game: a Lore tab that fills as you reach each ring of the Lampway, meet the named, find
   artifacts and read lore books found below.
 - Hunger, bleeding, stuns and hallucination; 16 hidden traps; secret, locked and stuck doors; rubble and veins
@@ -49,6 +51,7 @@ Moria's own letter keys and the roguelike set are in the menu (Keys), as is Deta
   monster with every class at the level you would expect at its depth.
 - `src/`, by job:
   - **Rules and data:** `rng.js` random numbers; `fov.js` sight and light; `turn.js` the speed scheduler; `gen.js` levels, rock, doors and the town; `data.js` townsfolk and traps; `bestiary.js` the dungeon's monsters and combat numbers; `items.js` items, flavours and names; `shops.js` shops and prices; `chars.js` peoples, callings, stats and skills; `spells.js` magic; `lore.js` the world's lore in short; `save.js` the save format.
+  - **The tutorial:** `tutorial.js` Sister Ilvane's steps for a first game, and the key hints.
   - **The game:** `game.js` the rules of play and the keys.
   - **The look:** `sprites.js` tiles, figures and icons, drawn by code; `render.js` the map, light, animation and debris; `ui.js` the HTML HUD, panel, dialogs and screens; `head.html` the page markup and styles.
   - **Helpers:** `lib.js` preferences, high scores, sound, resizing and the frame loop; `audio-data.js` the sounds (generated).
@@ -59,7 +62,7 @@ Moria's own letter keys and the roguelike set are in the menu (Keys), as is Deta
   pages, with stat blocks from the game's data and the illustrations from `lore/art/` (web copies in `lore/art/web/`).
 
 Everything is saved in the browser's localStorage under `torchlightDungeons.v1.`: three character slots, keys,
-panel, detail, sound, options, high scores with character dumps, and monster recall. Nothing is sent anywhere. The game saves itself
+panel, detail, sound, options, whether the tutorial was done, high scores with character dumps, and monster recall. Nothing is sent anywhere. The game saves itself
 as you play; the menu exports a character to a file, and Characters imports one.
 
 ## Licence

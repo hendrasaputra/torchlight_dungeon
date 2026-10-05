@@ -122,6 +122,12 @@ function recall(K){
 }
 
 /* ---------- the HUD ---------- */
+// Sister Ilvane's next step (phase 12), or the one key hint that matters now; keys in [brackets] become key caps.
+function tutHtml(){
+  const S = tutStep(), caps = s => esc(s).replace(/\[([^\]]+)\]/g, "<kbd>$1</kbd>");
+  if (S) return `<div class="next"><b>Sister Ilvane</b>${caps(S.text(player, keySet))}</div>`;
+  const h = hintText(); return h ? `<div class="hint">${caps(h)}</div>` : "";
+}
 const healthWord = m => m.hp >= m.mhp ? "unhurt" : m.hp > m.mhp * 0.6 ? "wounded" : m.hp > m.mhp * 0.25 ? "badly wounded" : "almost dead";
 function bar(label, v, max, cls){ return `<div class="meter ${cls}"><span>${label}<b>${v} / ${max}</b></span><i><s style="width:${Math.max(0, Math.min(100, 100 * v / max))}%"></s></i></div>`; }
 function drawHud(){
@@ -137,7 +143,9 @@ function drawHud(){
     ${bar("Health", Math.max(0, p.hp), p.mhp, p.hp < p.mhp * 0.3 ? "hp low" : "hp")}${p.mmana ? bar("Mana", p.mana, p.mmana, "mp") : ""}
     <div class="meter xp"><i><s style="width:${100 * (p.exp - xpPrev) / (xpNext - xpPrev)}%"></s></i></div>
     <div class="facts"><span>${depth ? feet(depth) + " ft" : "Town · " + (isDay() ? "day" : "night")}</span><span class="${!lt || lt.fuel < 500 ? "bad" : ""}">${lt ? (lt.fuel !== undefined ? "🔥 " + lt.fuel : "🔥 steady") : "No light"}</span><span class="gold">● ${p.gold}</span></div>
-    <div class="chips">${chips.map(([v, s, c]) => `<em class="${c}">${s}${typeof v === "number" && s !== "Burdened" ? " " + v : ""}</em>`).join("")}</div>`;
+    <div class="chips">${chips.map(([v, s, c]) => `<em class="${c}">${s}${typeof v === "number" && s !== "Burdened" ? " " + v : ""}</em>`).join("")}</div>
+    ${tutHtml()}`;
+  tutCheck();
   // the target
   const tg = target && mons.includes(target) && sensed(target) ? target : null;
   $("target").hidden = !tg;
@@ -245,6 +253,7 @@ function drawPanel(){
 }
 function drawBigMap(){ const c = $("bigmap"); if (!c || !L) return; const w = $("tab").clientWidth - 4, s = Math.max(1, Math.floor(w / L.w)); c.width = L.w * s; c.height = L.h * s; drawMinimap(c, s, false); }
 function openTab(id){
+  tutNote(id);
   if (!panelOn){ panelOn = true; store.set("panel", "1"); }
   if (panelFocus && tab === id){ panelFocus = false; hideTip(); }
   else { if (tab !== id) psel = 0; tab = id; panelFocus = id !== "map"; }
@@ -327,6 +336,7 @@ function spellDialog(S){
   openDialog({ title: S.name, cols: [rows], sideHtml: spellCard(S) });
 }
 function castDialog(){   // Classic keys: m / p
+  tutNote("readied");
   const known = SPELLS.filter(S => player.spells.includes(S.id));
   if (!known.length){ msgs = []; say("You have not learned any " + realmWord() + "s yet."); return refreshUI(); }
   openDialog({ title: (cls().realm === "holy" ? "Pray" : "Cast") + " · mana " + player.mana + "/" + player.mmana, cols: [known.map(S => ({ spell: S, label: S.name, right: S.mana + " mp " + spellFail(S, player) + "%", select: () => { closeDialog(); castSpell(S, false); } }))] });
@@ -357,6 +367,7 @@ function menuDialog(){
     { label: "Sound", right: (audio.muted ? "Off" : "On") + "  ‹ ›", adjust: () => { audio.toggleMute(); menuDialog(); }, select: () => { audio.toggleMute(); menuDialog(); } },
     { label: "Music", right: (audio.musicOn ? "On" : "Off") + "  ‹ ›", adjust: () => { audio.toggleMusic(); menuDialog(); }, select: () => { audio.toggleMusic(); menuDialog(); } },
     ...Object.entries(OPTIONS).map(([k, label]) => ({ label, right: (opt(k) ? "On" : "Off") + "  ‹ ›", adjust: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); }, select: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); } })),
+    { label: "Guidance for new delvers", right: (guidanceOn() ? "On" : "Off") + "  ‹ ›", adjust: () => { setGuidance(!guidanceOn()); menuDialog(); }, select: () => { setGuidance(!guidanceOn()); menuDialog(); } },
     { label: "Hall of fame", select: fameDialog },
     ...(state === "play" ? [{ label: "Export this character to a file", select: () => { closeDialog(); exportSave(); } }, { label: "Character dump", right: "a text file", select: () => { closeDialog(); download(player.name + ".txt", characterDump()); } },
       { label: "Save and quit", select: () => { saveGame(); closeDialog(); toTitle(); } }] : [])
@@ -398,7 +409,8 @@ function helpDialog(){
     ["Magic", "Casters need their book in the pack. When you can learn more, open the Book (B) to study."],
     ["Hidden things", "Space waits and searches for secret doors and traps. Walk into a known trap to disarm it, and into a locked door to pick it."],
     ["Digging", "Walk into rubble or a vein of magma or quartz to dig it; T digs plain rock. A shovel or pick in your pack helps."],
-    ["Saving", "The game saves as you play. Death is for good: the save is erased and the hall of fame keeps your story."]];
+    ["Saving", "The game saves as you play. Death is for good: the save is erased and the hall of fame keeps your story."],
+    ["Guidance", "Sister Ilvane walks a new delver through a first trip, and short key hints show what to press. The menu turns both on or off."]];
   const world = [["The Gloam and the First Fire", "Before the world there was only dark. A first fire burned it back; every light since is a spark of it."],
     ["Morrowgloom", "The last of that dark, trapped under the world at 2,500 ft. It does not think. It only hungers for light, and eats it."],
     ["The Lampway", "The dungeon is a cage of light built downward, ring under ring of lamp-shrines, to keep Morrowgloom down. It is failing."],
