@@ -13,7 +13,7 @@ Nothing in the Deep was put there to fight delvers. Everything there is there fo
 3. **Made.** Things people built or bred: golems, the old royal menagerie's hybrids, gargoyles, mimics.
 4. **The dead.** Those buried in the Ring of Rest whose last spark could not rise once the lamps went out.
 5. **The fire.** Spirits and dragons of the deep fires, loose since the Ashborn left the Ring of Forges.
-6. **The dark.** Scraps of Morrowgloom itself, and things from the Unlit below it.
+6. **The dark.** Scraps of Morrowgloom itself, and things from the Unlit Ring below it.
 7. **The light.** Lost sparks: wisps that wandered off from a lamp, or starlight caught in the Ring of Glass.
 
 ## The families
@@ -58,9 +58,9 @@ Nothing in the Deep was put there to fight delvers. Everything there is there fo
 | Arachnid | cave crab (150), giant scorpion (450), lava crab (800), shadow scorpion (1,200) | Native | Crabs came up the underground river; scorpions down from the hills' hot rocks. |
 | Reptile | cave lizard (100), salamander (300), deep crocodile (500), two-headed hydra (800), basilisk (1,000), five-headed hydra (1,400), seven-headed hydra (2,000) | Native / the fire | The hydras grow a head for every century they live, delvers say, which is nonsense, probably. |
 | Hybrid | harpy (300), goat-man (400), bull-man (1,000), manticore (1,500), chimera (1,800) | Made | The royal menagerie of Aurenhold, where Collegium beast-shapers mixed creatures for the court. Released at the Fall. |
-| Horror | pale crawler (600), mind leech (900), tentacled horror (1,200), maw beast (1,600), thing from below (2,250) | The dark | Things from the Unlit, under the cage, that crawled up through the cracks Morrowgloom made. |
+| Horror | pale crawler (600), mind leech (900), tentacled horror (1,200), maw beast (1,600), thing from below (2,250) | The dark | Things from the Unlit Ring Ring, under the cage, that crawled up through the cracks Morrowgloom made. |
 | Golem | clay golem (500), flesh golem (700), stone golem (1,000), iron golem (1,500), crystal golem (2,000) | Made | Built to guard shrines, forges and vaults. Ironjaw is one. Crystal golems were grown with the Ring of Glass. |
-| Fiend | imp (600), ember imp (800), gloom fiend (1,100), horned fiend (1,500), flayer fiend (1,900), night duke (2,400) | The dark | Fiends of the Unlit. They want what Duke Ashvane wanted: to win the world above at a game it does not know it is playing. |
+| Fiend | imp (600), ember imp (800), gloom fiend (1,100), horned fiend (1,500), flayer fiend (1,900), night duke (2,400) | The dark | Fiends of the Unlit Ring. They want what Duke Ashvane wanted: to win the world above at a game it does not know it is playing. |
 | Drake | green, blue, white and red wyrmlings (500 to 650), venom drake (1,200), fire drake (1,300), frost drake (1,350), storm drake (1,400) | The fire | The Ember Queen's grandchildren, or so the drakes believe. |
 | Dragon | ember dragon (2,000), rime dragon (2,100), thunder dragon (2,200), plague dragon (2,300), prism dragon (2,750) | The fire | The great dragons of the deep fires. The prism dragon lives on the light of the Ring of Glass and may be on Morrowgloom's side. |
 | Wisp | marsh wisp (400), will-o'-lantern (700), ghost light (1,100), star wisp (1,700) | The light | Lost sparks. Star wisps are bits of starlight caught in the Ring of Glass; they are the only monsters a Keeper is sad to kill. |
@@ -171,7 +171,7 @@ When word reached him, centuries later, that his family above had died, he froze
 sing about him.
 
 ### The Many-Mouthed (1,950 ft)
-*"Every mouth whispers a different lie, all at once."* A horror from the Unlit. It was the voice Sister Vesper heard
+*"Every mouth whispers a different lie, all at once."* A horror from the Unlit Ring. It was the voice Sister Vesper heard
 under the temple floor.
 
 ### Skarth the Unsleeping (2,100 ft)
@@ -185,7 +185,7 @@ living thing in the world. She allowed the Pact of the Forge for a price no one 
 she *is* the First Fire, or what is left of her. Her hoard may hold the last true ember.
 
 ### Duke Ashvane (2,400 ft)
-*"A fiend who wagered his kingdom and won yours."* A fiend of the Unlit who came to Aurenhold as a merchant prince and
+*"A fiend who wagered his kingdom and won yours."* A fiend of the Unlit Ring who came to Aurenhold as a merchant prince and
 won the kingdom from Ysmer the Last at dice in 412 BH. He took the crown down into the Deep and wears it still. The
 Oathknights want it back.
 

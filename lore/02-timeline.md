@@ -11,6 +11,8 @@ down, and the peoples tell them differently.*
 | — | **The Gloam.** A still, lightless sea; nothing else. |
 | — | **The Kindling.** The First Fire burns and pushes the Gloam back; the world forms inside the hollow it makes. |
 | — | **The Bursting.** The Fire bursts. Its far sparks become the stars, its heavy sparks sink and become the deep fires, and one ember falls on the land to be carried. The last of the Gloam is trapped under the world: Morrowgloom. |
+| — | **The First Lamp.** Unknown hands catch the fallen ember in a lamp. Every flame since is lit from it. |
+| — | **The Elder Ring.** The same unknown hands light a ring of lamps far below the world, around the trapped dark. No record says who they were. |
 | — | The **Ember Queen**, a red dragon, hatches in the deep fires. She is the only living thing that claims to remember the First Fire. |
 | — | **The first peoples.** The Cragborn cool out of the mountain roots; the Stonekin wake in the deep halls; the Sylvan come where starlight falls thickest, in the old forests; the Ashborn are born at the edges of the deep fires. Humans, Burrowfolk and Tinkerlings come later, from beyond the hills, carrying the ember with them. |
 
@@ -19,13 +21,14 @@ down, and the peoples tell them differently.*
 | When | What happened |
 |---|---|
 | ~2600 BH | A cold black wind starts to breathe out of a sinkhole in the hills of the Hollowmark. Crops fail within a mile of it; lamps gutter. People call it **the Breath**. |
-| ~2580 BH | **Caedra**, a human lamplighter from the coast, carries a lantern lit from the ember into the sinkhole and comes back. She says the dark below is alive, and hungry, and rising. |
+| ~2580 BH | **Caedra**, a human lamplighter from the coast, carries a lantern lit from the First Lamp into the sinkhole and comes back. She says the dark below is alive, and hungry, and rising. |
 | ~2560 BH | Caedra founds the **Order of the Lamp**. Her rule is short: *"Keep it lit, and keep it down."* |
 | ~2550 BH | **The Building of the Lampway begins.** Keepers, Stonekin masons of the Deephall clans and Cragborn haulers dig downward from the sinkhole, ring under ring, each ring a circuit of lamp-shrines that holds the dark beneath it. |
 | ~2400 BH | The **Ring of Stone** (the top ring) and the **Ring of Roots** (the drowned caverns) are finished. |
 | ~2300 BH | The **Ring of Rest** is cut. The Order's dead are laid in it, each with a lamp, as wardens who keep watch even in death. |
 | ~2200 BH | The **Pact of the Forge.** The Ashborn agree to keep the deep fires of the **Ring of Forges** burning as a wall of heat and light. The Ember Queen allows it, for a price no one wrote down. |
 | ~2120 BH | The **Ring of Glass** is grown, not cut: Tinkerling glassmakers and Arcanists of the young Collegium raise walls of crystal that hold light, right over Morrowgloom. |
+| ~2110 BH | Digging below the Ring of Glass, the Keepers see a faint light in the rock far beneath the Pit: the **Elder Ring**. They learn that someone caged the dark before them. |
 | ~2100 BH | **The Sealing.** Caedra, now old, carries her lantern down to the Ring of Glass and lights every ring on the way. She does not come back up. The Breath stops. |
 
 ## The Age of Lamps (2100 to 1000 BH)
@@ -33,6 +36,7 @@ down, and the peoples tell them differently.*
 | When | What happened |
 |---|---|
 | ~2090 BH | The **Kingdom of Aurenhold** is founded over the Lampway. Its first king, **Aldren the Kindler**, is crowned by the Keepers on one condition: the crown must keep oil, wicks and lamplighters going down the Lampway forever. |
+| ~2080 BH | The Keepers begin a sixth ring, **the Unlit Ring**, tunnelling round and beneath the Pit to close the cage from below and reach the Elder Ring. |
 | ~1900 BH | **Hollis the Mason** builds the Hollow Gate, a great door over the Lampway's mouth, and the lamplighters' road down through the rings. |
 | ~1700 BH | The **Collegium of Sparks** is founded in Aurenhold to study starlight. Its first book, the *Book of First Sparks*, is still the first book every Arcanist learns from. |
 | ~1500 BH | **Queen Tamsin the Wise** has the great Mirror of Aurenhold made, a glass that shows the rings below so the Keepers can see which lamps are failing. (The mirror is lost; see Thessaly Glass in [08-bestiary.md](08-bestiary.md).) |
@@ -43,12 +47,12 @@ down, and the peoples tell them differently.*
 
 | When | What happened |
 |---|---|
-| ~1000 BH | **The Oil Tithe is cut.** King **Merrow the Proud** spends the lamp-oil tithe on a war with the hill clans. The lowest rings go short of oil for the first time. |
+| ~1000 BH | **The Oil Tithe is cut.** King **Merrow the Proud** spends the lamp-oil tithe on a war with the hill clans. The lowest rings go short of oil for the first time, and work on the Unlit Ring stops for good. Its shrines are never lit, but before they leave, the last Keepers there light one great crystal, **the Last Lamp**, to hold the unfinished ring on its own. It is still burning. |
 | ~960 BH | In the Ring of Glass, unwatched, the lamps go out one by one. Morrowgloom drinks the light stored in the crystal walls and begins to grow. |
 | ~900 BH | **The Lantern Thief** is first seen: a shadow in a stolen coat that climbs the rings at night and snuffs the lamps, carrying them off in a sack. |
 | ~640 BH | **The Night the River Rose.** An underground river breaks into the Ring of Rest. King **Oswy**, who had gone down himself to relight his fathers' lamps, drowns in the flooded crypts. He is still there: the Drowned King. |
 | ~600 BH | **Princess Lisette**, betrothed to a Marrow Guard captain who went down and never returned, walks into the Lampway in her wedding dress on her wedding day. She is still there too: the Pale Bride. |
-| ~520 BH | **Duke Ashvane**, a fiend who climbed up out of the Unlit (whatever lies below Morrowgloom), arrives at the court of Aurenhold dressed as a merchant prince. |
+| ~520 BH | **Duke Ashvane**, a fiend who climbed up out of the Unlit Ring (the unfinished ring below Morrowgloom), arrives at the court of Aurenhold dressed as a merchant prince. |
 | 412 BH | **The Fall of Aurenhold.** **King Ysmer the Last** stakes the kingdom on a game of dice with Duke Ashvane, and loses. Ashvane does not take the throne; he takes the crown down into the Deep. Without a crown there is no Oil Tithe at all. The crypts wake. The city empties within a year. |
 | 410 BH | The last Keepers seal the Hollow Gate and withdraw to a single temple in the hills. The Marrowkin, blamed for not saving the king, are driven out of every town. |
 | 410 BH – 0 | Aurenhold falls into ruin and then into memory. The rings below go dark one by one. Monsters come up from the deep fires and in from the hills to live in the empty halls. |

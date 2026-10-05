@@ -29,8 +29,9 @@ Still to decide or do (not done here):
 
 ## State of the game
 
-All ten phases of [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md) are done; its Progress table says what each phase built
-and what it left out. What is left needs a person: listening to the sounds (`audio/torch/*.mp3`; change them in
+Phases 0 to 10 of [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md) are done; its Progress table says what each phase built
+and what it left out. Two more are planned from the lore (`lore/`): **phase 11**, showing the lore in the game, and
+**phase 12**, the rings of light, which gives the game the lore's goal. What is left needs a person: listening to the sounds (`audio/torch/*.mp3`; change them in
 `audio/torch-sfx.py`, run it, then `./build.sh`), making the pixel-art cover from `cartridges/PROMPT.md`, and
 playing a full game from the town to the boss to tune the balance.
 

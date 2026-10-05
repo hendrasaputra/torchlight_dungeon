@@ -180,6 +180,7 @@ One plate per family that defines a ring, for a bestiary page.
 | `item-first-lantern.png` | The Lantern of the First Keeper, a simple old brass lantern with a flame that burns without wick or oil, light rays crosshatched around it. |
 | `item-starfall.png` | Starfall, a long bow of pale wood strung with a silver string that sparkles, an arrow with a star-shaped head beside it. |
 | `item-swift-band.png` | The Band of Swift Feet, a plain silver ring with motion lines and a trail of tiny footprints around it. |
+| `item-first-lamp.png` | The First Lamp: a small, very old clay lamp of no known make, worn smooth by countless hands, holding a single bright ember-like flame that lights the whole plate. |
 | `item-glow-crystal.png` | A glow crystal: a rough shard of crystal shining on its own, still half embedded in a broken piece of carved shrine wall. |
 | `item-eternal-lamp.png` | **Style C.** The Eternal Lamp on the temple altar in Lanternhollow, its flame slightly smaller than its old soot mark, Sister Ilvane watching it anxiously. |
 | `item-spellbooks.png` | **Style C.** The eight spell books on a shelf: four blue arcane books (Book of First Sparks, Hidden Ways, Storm and Frost, Deep Sorcery) and four gold holy books (Lamp Psalter, Hymns of the Hearth, Litany of Dawn, Rites of the Unbroken Flame), worn and well loved. |
@@ -196,6 +197,9 @@ One plate per family that defines a ring, for a bestiary page.
 | `place-ring-of-roots.png` | The Ring of Roots: a dripping cavern with tree roots hanging from the ceiling, an underground river, mushrooms and moss over carved shrine stones. |
 | `place-ring-of-rest.png` | **Style A.** The Ring of Rest: a vast crypt of stone coffins, each with a cold dead lamp on its lid, one lamp still burning far away. |
 | `place-ring-of-forges.png` | The Ring of Forges: abandoned Ashborn forges at the edge of a magma lake, giant anvils, chains, and a single golem still hammering. |
+| `place-unlit-ring.png` | The Unlit Ring, below the Pit: half-dug tunnels in raw rock, chisel marks still fresh, empty lamp niches in every wall, abandoned tools, a darkness that seems to lean in from the unfinished ends, and in the far distance one great crystal burning alone: the Last Lamp. |
+| `item-last-lamp.png` | **Style A, 1:1.** The Last Lamp: a great crystal taller than a man, set in a rough-cut niche of raw rock, blazing with light, the dark pressing against the edges of its glow like water against glass. |
+| `place-elder-ring.png` | The Elder Ring, deep under the world: a ring of small, ancient lamps of a strange shape, set in rock by unknown hands, still faintly burning in an endless dark, with no one in sight to tend them. |
 | `place-ring-of-glass.png` | The Ring of Glass: walls of tall crystal that once shone and now glow a cold failing blue, cracked and dimming towards a black hole in the floor. |
 | `moment-sealing.png` | Caedra, an old woman with a lantern, descending a crystal stair into darkness, every ring above her lit. |
 | `moment-open-doors.png` | **Style A.** The Night of Open Doors (612 YH): miners fleeing up a mine shaft as the dead climb after them, lanterns going out one by one. |
@@ -208,7 +212,7 @@ One plate per family that defines a ring, for a bestiary page.
 |---|---|
 | `map-hollowmark.png` | A map of the Hollowmark: a bowl of low stony hills; the Greenroof forest to the west, the Crag Roots mountains to the north, the Deephalls in the eastern mountains, the river Tarrow running south-east to the coast; in the centre the ruined city of Aurenhold with the walled town of Lanternhollow on its southern edge, and a dark sinkhole marked with a lamp symbol. |
 | `map-lanternhollow.png` | A bird's-eye plan of Lanternhollow: a walled timber town on old stone foundations, one main street with six shop fronts, lamp posts along it, a small temple, the stairs down to the Hollow Gate, and the broken towers of Aurenhold beyond the north wall. |
-| `diagram-lampway.png` | **Style D, 2:3.** A tall cutaway of the Lampway seen from the side: the town at the surface, then five stacked rings going down (worked stone halls; drowned caverns with roots; crypts; forges by a magma lake; crystal walls), each ring a flat band of corridors with small lamp symbols, a long stair linking them, and at the bottom a black pit with many small eyes. |
+| `diagram-lampway.png` | **Style D, 2:3.** A tall cutaway of the Lampway seen from the side: the town at the surface, then five stacked rings going down (worked stone halls; drowned caverns with roots; crypts; forges by a magma lake; crystal walls), each ring a flat band of corridors with small lamp symbols, a long stair linking them, then a black pit with many small eyes; below the pit a ragged, half-dug sixth ring with empty lamp niches, and far beneath that, drawn in a different, older hand, a faint ring of tiny lamps. |
 | `diagram-lamp-ring.png` | **Style D, 1:1.** The plan of one lamp-ring from above: corridors and chambers linked into a loose circuit, a lamp symbol in each shrine chamber, hidden lamplighters' passages drawn as dotted lines, stairs up and down. |
 
 ## 8. Emblems (style A, square 1:1, drawn as a heraldic badge on a plain ground)
@@ -311,8 +315,8 @@ Together with the ten in section 4, every family in the game has a plate.
 
 ---
 
-**147 illustrations in all:** 8 peoples, 6 callings, 26 named monsters (with the boss), 49 family plates, 10 items,
-12 places and moments, 4 maps and plans, 10 emblems, 6 shopkeepers, 10 heroes and kings, and 6 chapter openers.
+**151 illustrations in all:** 8 peoples, 6 callings, 26 named monsters (with the boss), 49 family plates, 12 items,
+14 places and moments, 4 maps and plans, 10 emblems, 6 shopkeepers, 10 heroes and kings, and 6 chapter openers.
 Drawn so far: the peoples and the callings.
 
 **Order of work that makes the pages whole fastest:** the chapter openers and the pictures at the top of each page

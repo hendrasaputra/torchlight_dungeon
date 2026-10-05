@@ -42,14 +42,33 @@ The Keepers' name for it means "the gloom of tomorrow." Every light it eats is a
 enough, the old teaching goes, it would rise to the surface, put out the hearths, then the sun, then the stars, and
 the world would close up again into the still sea it came from.
 
+**It does not think.** Morrowgloom is a will that is only hunger for light. It makes no plans, speaks no words and
+holds no grudge; it does not hate the world, any more than a drain hates water. Everything it does is reaching for
+the nearest light. That is what makes it so hard to fight: it cannot be bargained with, frightened, tricked or
+persuaded, and it never stops. Things that do think, like the fiends and the Many-Mouthed, have learned to use its
+hunger for their own ends, but none of them can command it.
+
 In the game, Morrowgloom waits at 2,500 ft as *"a darkness older than the stars, with your torch reflected in a
 thousand of its eyes."* The eyes are the swallowed lights, still burning inside it. Lore-keepers count them as
 tallies of everything it has taken.
 
-**Its servants.** Anything that loves the dark can serve Morrowgloom without ever meeting it. Shades are the plainest
+**Its servants.** Morrowgloom gives no orders, so it has no servants in the usual sense. Anything that loves the
+dark serves it simply by putting lights out. Shades are the plainest
 of them. A **lantern-eater** (the monster) is a scrap of Morrowgloom that has come loose and wandered upward,
 carrying the same hunger in a smaller mouth. Below them come the umbral stalkers, the hearts of darkness, and
 whatever drains your light, your food and your strength in the deeper rings.
+
+## The First Lamp
+
+The ember that fell on the land did not stay loose for long. Someone, long before any people now living kept
+records, caught it in a lamp: **the First Lamp**. No one knows whose hands made it. Every lamp, hearth and torch
+since was lit from it, or from a flame lit from it, in an unbroken line. Caedra's lantern was lit from the First
+Lamp itself; that is what made it the Keepers' first and greatest relic, even though it was never the oldest lamp.
+
+The same unknown hands did something stranger. Far below the world, deeper than the Lampway would ever reach from
+above, they lit a ring of lamps around the dark: **the Elder Ring**. The Keepers found it only by its light, a faint
+glow in the rock under the Pit, and understood that they were not the first to cage the Gloam. Who lit it, and why
+it was not enough, are the great mysteries of the Order (see [04-the-lampway.md](04-the-lampway.md)).
 
 ## The two lights, and the two magics
 
@@ -80,6 +99,7 @@ the Lamp Kings were buried with lamps, and why the crypts went wrong when the la
 ## Things the draft leaves open
 
 - Whether the great Gloam outside the stars can break back in, or only the trapped pool is a danger.
+- Who lit the First Lamp and the Elder Ring. Settled: it was not the Keepers, and it was before Caedra.
 - Whether the First Fire is a person (the Ashborn belief) or a force (the Collegium's view). Keeping both is
   probably better than settling it.
 - What, exactly, the thousand eyes of Morrowgloom would do if it were slain and they were set free. The game ends

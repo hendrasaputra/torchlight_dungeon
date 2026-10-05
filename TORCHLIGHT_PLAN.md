@@ -8,7 +8,7 @@ The game is turn-based on a grid, like Moria. The engine's job is light: a torch
 monsters, and spell flashes. Physics is the finishing touch, after each turn: rubble, shattering potions, blasts
 that shove debris.
 
-The plan runs in ten phases. Phase 1 is the small "Moria-lite" recommended earlier, and it ships to the cartridge
+The plan runs in twelve phases. Phase 1 is the small "Moria-lite" recommended earlier, and it ships to the cartridge
 shelf on its own. Each later phase adds one Moria system and ships as an update, so the game is playable at every
 step.
 
@@ -36,6 +36,8 @@ resize watcher and the frame loop).
 | 8 Survival and dungeon detail | Done. Hunger has five stages (Full, Hungry, Weak, Fainting with random blackouts, Starving). New status effects: bleeding cuts and stuns from hard monster blows (by the blow's verb), knock-outs, and hallucination (a Visions mushroom), where monsters look and are named as other kinds. 16 traps (`TRAPS` in `data.js`, effects in `game.js`), hidden until noticed (passively, by Noticing) or searched for (Space, resting, `s`), and disarmed by walking into them, which can set them off. Secret doors, locked doors (picked by Disarming) and stuck doors (bashed by Strength). Rubble in corridors, magma and quartz veins, some holding gold; walking into rubble or a vein digs it, T digs any rock; shovel, pick and mattock help (the best one carried counts, no need to wield it). Earthquakes leave rubble. A Door and Trap Finding scroll. Digging and lock picking repeat until done or disturbed; resting searches. Level feelings on arrival. Checks: every trap has an effect, rock has a hardness, traps and locks are placed correctly; a bot ran 9,000 actions over 25 level changes with no errors, and every trap was set off in the browser. Not done: spikes and closing doors (no close command yet), a "repeat last command" key, and the long soft-lock playtest by a person (digging through any rock means no level can trap you). |
 | 9 Save games | Done. `save.js` packs the character, what they know, the shops and the current level into versioned JSON (the map arrays run-length encoded: about 20 to 30 KB), and refuses damaged, foreign or newer saves with a message instead of crashing; `MIGRATIONS` will lift older versions once there are any. Three slots, one character each, chosen from the title (Enter) or the menu (Characters), with erasing. The game saves on every level change, every 200 turns, when the tab is hidden or the page closes, and on Save and quit; a full or blocked storage says so once. Death erases the slot and keeps a text character dump with the hall of fame entry (D on the tombstone, or Hall of fame in the menu). Export and import a save as a file. Checks: save, load, save gives the same file; a level and a town come back whole; eight kinds of bad save are refused with a message. In the browser: a character continued after a page reload exactly as left, a save on leaving the page, 44 save-and-reload cycles in a 4,000-step bot run without errors, and the storage-full message. Not yet: a test of an older version's save, as there is none. |
 | 10 Presentation and polish | Done, except the parts that need a person. Sound: `audio/torch-sfx.py` synthesises 37 original effects (footsteps, hits, misses, kills, wounds, doors, locks, digging, traps, finds, the shop bell, eating, drinking, reading, a sound per spell element, and seven monster cries by body plan) and two original loops, a lute tune in D for the town and a drone with distant bells for the depths, which also serves as the dungeon's ambience; they are embedded as base64 MP3s (535 KB; the page is about 0.9 MB). The arcade's `createAudio` player is in `lib.js`, with a music switch added; Sound and Music are menu options. Help has a "How to play" page next to the keys. Options: auto-pickup, status colours safe for colour blindness (blue and amber, with ▲ and ▼), and larger text. A cover-art prompt for the pixel-art look in `cartridges/PROMPT.md`. Checks: every sound and both loops decode in the browser; a bot ran with sound on, and with every option on, without errors. Not done: listening to the sounds (they are in `audio/torch/` to judge by ear), the new cover image (it needs an image generator), the full balance pass from town to boss (it needs a person to play), haggling (prices stay fixed; open question 1) and "-more-" prompts (the Journal keeps the whole log). |
+| 11 Lore in the game | Not started. Decided in `lore/README.md` (decision 5). |
+| 12 The rings of light | Not started. Gives the game the lore's goal: keep the cage of light lit, or rob it. |
 
 ## Ground rules
 
@@ -463,6 +465,110 @@ level has no way out.
 - **Options:** key sets, auto-pickup, "-more-" prompts, haggling, colour-blind-safe status colours, and larger text.
 - **Balance:** a full pass from the town to the final boss.
 - **The page:** cover art (prompt in `cartridges/PROMPT.md`), a site icon of its own, and the README.
+
+### Phase 11: lore in the game (M)
+
+The world's lore (`lore/`) shown where players meet it, in five places, as decided in `lore/README.md`:
+
+- **Item descriptions:** special kinds and the six artifacts carry their "where it comes from" line on the item
+  card; spell books name their writers.
+- **Monster descriptions:** each named unique has its story (from `lore/08-bestiary.md`) in its recall, shown by
+  Look and on the target card once you have seen it; each family gets one line on where it comes from.
+- **Level feelings:** the feeling on arrival also names the ring you are in, in its own words ("The stones here were
+  cut by Stonekin hands."), and the Unlit Ring below 2,500 ft gets its own.
+- **The help page:** a short "The world" page next to "How to play": the Gloam, the First Fire, the Lampway and why
+  you are here.
+- **A Lore tab in the Journal:** pages that fill in as you play: each ring when you first reach it, each unique when
+  you first see it, each artifact when you find it, each book when you read it.
+- **Books found in the dungeon:** a new kind of item, readable but not magical (a Keeper's day-book, a miner's
+  letter, a page of the Collegium's lecture notes), each adding a page to the Lore tab.
+
+The text stays short and lives in one data file in `src/`, written from the lore, so the page stays small.
+
+**Done when:** a node check finds lore text for every unique, artifact, ring and lore book, and a playthrough of the
+first rings fills the Lore tab without errors.
+
+### Phase 12: the rings of light (L)
+
+The lore's goal becomes the game's. The dungeon is the Lampway, a cage of light built to hold Morrowgloom down
+(`lore/04-the-lampway.md`), and it is failing. The delver can mend it, rob it, or end what is inside it. Three motives
+pull against each other:
+
+- **Duty:** relight the rings and finish Caedra's cage.
+- **Greed:** carry the rings' light up and sell it, as the Glow Rush did, and dim the cage for profit.
+- **Mystery:** find what lies below: the Elder Ring, the First Lamp, the Crown of Aurenhold, the Lantern Thief's
+  sack of stolen lights.
+
+**Ring light.** Each of the five rings (the five depth bands: Stone 50–450 ft, Roots 500–950, Rest 1,000–1,450,
+Forges 1,500–1,950, Glass 2,000–2,450) has a light level from 0 to 100. The rings are deep reservoirs: they have held
+Morrowgloom down for centuries, and no single delver changes one quickly. A new game starts every ring well lit but
+short of full, the upper rings brighter than the lower (about 85 in the Ring of Stone down to about 60 in the Ring of
+Glass), after a thousand years of neglect and the Glow Rush. Levels are not kept, so the light belongs to the ring,
+not to rooms: it is part of the character and saved with them (`SAVE_VERSION` 2, with a migration that gives old
+saves the starting levels). All numbers here are starting points for tuning.
+
+**The Unlit Ring and the Last Lamp.** The sixth ring, below 2,500 ft, was never finished, and its shrines are cold.
+One light holds it: **the Last Lamp**, a great crystal the last Keepers lit there when the work stopped (about
+1000 BH), which keeps Morrowgloom's power at bay on its own. While it burns, Morrowgloom cannot leave the Pit. The
+Unlit Ring's light starts at 0 apart from the Last Lamp, and relighting its shrines one by one, around the Last Lamp,
+is the champion's mission: the work Caedra's Order never finished.
+
+**Shrines.** A ring's lit rooms are its shrines still burning; a dark shrine is a room with a cold shrine lamp (a new
+tile). Relighting one raises its ring's light by about 3. Ways to light it:
+
+- pour a flask of oil into it;
+- pray Tend the Flame or Sacred Light beside it (Lampwardens and Oathknights are the natural lighters);
+- carry a flame from a burning shrine to it.
+
+Monsters that love the dark (shades, lantern-eaters, the eaters of light) gather near dark shrines and try to put
+lit ones out.
+
+**What light changes.** On every new level, the ring's light sets:
+
+- how many rooms are lit, and how many shrines burn;
+- how many dark-loving monsters appear;
+- the level feeling;
+- Morrowgloom's strength: fewer eyes and less health when the rings above it are bright.
+
+**Harvesting, gradually.** A burning shrine's flame can be taken into your lantern, and glow crystals can be dug
+from the veins. Each takes a small, fixed share of its ring's light: about 2 for a flame, 1 for a crystal. One
+greedy trip barely shows; a habit of greed drains a ring over a long game. The flame is lost if your light goes out
+on the way up: eaten by a monster, drained, or out of fuel. Brought to the Eternal Lamp in the temple, it strengthens
+the town (Word of Recall works more reliably, the temple's healing is cheaper). Sold to the Lantern Guild, it fetches
+a fortune.
+
+**A dark ring.** A ring whose light reaches 0 goes dark: its last shrines go cold, Morrowgloom's hunger reaches up
+through it so monsters from the ring below appear in it, and its level feeling turns to dread. A dark ring can be
+relit, but slowly: each shrine counts for half until a few are burning again.
+
+**The clock: slow, but frightening.** Morrowgloom's hunger takes light from every ring over time, very slowly (about
+1 from each ring every 5,000 turns, half a town day), faster from the darkest. It is not a race against time; it is
+a reminder of what is at stake, and small changes have large effects:
+
+- **The town goes dark first.** When the rings' total falls even a little below where the game began (about 5%),
+  Lanternhollow's lamps go out at night and will not relight: nights are pitch black, townsfolk stay indoors, and
+  shades walk the streets. At about 10% the shops shutter early and some keepers leave. Bringing the light back up
+  relights the town.
+- **The world goes dark last.** If the Last Lamp goes out, or the Unlit Ring and the Ring of Glass both go dark,
+  Morrowgloom breaks loose: every light in the world goes out, and the game ends in the one ending no one wins.
+
+**The town shows the score.** Between those extremes, Lanternhollow's lamps, prices, townsfolk and the keepers' words
+follow how bright the rings are.
+
+**Endings.** Each goes on the tombstone and in the hall of fame, with the lore's judgement on it:
+
+- **The cage is finished:** every ring brought to full light, and the Unlit Ring's shrines relit around the Last
+  Lamp. Morrowgloom is held for good. This is the champion's ending.
+- **The Lantern-Eater is slain:** as now, but far harder in a dark Deep. Its swallowed lights go home.
+- **Rich and retired:** leave Lanternhollow with a fortune in carried light, while the world grows darker behind you.
+- **The world goes dark:** Morrowgloom breaks loose. A loss for everyone, recorded as such.
+
+Open for this phase: whether harvesting light can ever be the "right" choice, the exact numbers above, and whether
+the Unlit Ring can be fully lit before Morrowgloom is slain.
+
+**Done when:** a node check runs ring light through a save and load (and migrates a version 1 save); relighting and
+harvesting move the right ring by the right amount; the clock and the town thresholds turn the town's lamps off and
+on; a bot plays a game in which the rings brighten and the town changes; and each ending can be reached.
 
 ## Testing throughout
 

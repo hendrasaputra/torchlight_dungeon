@@ -115,10 +115,11 @@ stone of the Ring of Stone to hold light. It gives the strength and endurance of
 the dark of their halls. The Deephall clans want it back, and will be very polite until they get it.
 
 ### The Lantern of the First Keeper (lantern, around 1,500 ft)
-*"Its flame never needs oil."* Caedra's lantern, lit from the carried ember, that she took down to light the Ring of
-Glass in about 2100 BH. It was found two thousand years later in the Ring of Forges, still burning. Song says it is
-the first lamp of all; the Order's records say she had three before it. Either way, its flame cannot be put out, and
-the Eternal Lamp in the temple was lit from it.
+*"Its flame never needs oil."* Caedra's lantern, that she took down to light the Ring of Glass in about 2100 BH. It
+is not the oldest lamp; songs that call it "the first lamp of all" are wrong, and far older lamps exist. But its
+flame was lit from the **First Lamp** itself, the lamp that caught the fallen ember, and that is why it cannot be put
+out. It was found two thousand years later in the Ring of Forges, still burning, and the Eternal Lamp in the temple
+was lit from it.
 
 ### Starfall (long bow, around 1,750 ft)
 *"A bow of pale wood strung with silver."* Made by Ithrel Silverstring around 1150 BH, from Greenroof wood that grew

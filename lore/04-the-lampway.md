@@ -10,7 +10,8 @@ Keepers understood one thing about Morrowgloom: it rises wherever it is dark, an
 they dug down towards it and lit the way behind them, ring under ring. Each ring is a level of corridors and
 chambers linked into a circuit of **lamp-shrines**. While every lamp in a ring burns, the dark below that ring
 cannot climb past it. Five rings, one above another, held Morrowgloom at the bottom of the world for a thousand
-years.
+years. A sixth, meant to close the cage from below, was begun and never finished. And the Keepers were not the first:
+far below their work lies an older ring, lit by unknown hands before Caedra was born.
 
 The Keepers called it **the Lampway**. The miners of Lanternhollow, who found only its top, called it **the Hollow**.
 Delvers today call all of it **the Deep**.
@@ -105,7 +106,7 @@ forge-folk left, the fires ran wild, and the Ring of Forges became a land of mag
 like the heat.
 
 - **Who lives here:** fire giants and fire drakes, magma spirits, ember imps and horned fiends that came up from the
-  Unlit, salamanders, lava crabs, iron and stone golems still working at forges for masters long dead, basilisks.
+  Unlit Ring, salamanders, lava crabs, iron and stone golems still working at forges for masters long dead, basilisks.
 - **Named:** Ironjaw (1,550 ft); the Pale Bride (1,650 ft); the Drowned King (1,750 ft); Rimeheart (1,850 ft); the
   Many-Mouthed (1,950 ft).
 - **Legend:** **the Anvil of the Pact**, where Embersong was forged. Any blade tempered in its fire, the Ashborn say,
@@ -130,18 +131,37 @@ What is left glows a cold, failing blue.
 At the bottom of the Ring of Glass is a hollow that was never lit, because it was never meant to be entered. Here
 **Morrowgloom, the Lantern-Eater** waits, with everything it has eaten shining in its thousand eyes.
 
-### The Unlit (below 2,500 ft)
+### The Unlit Ring (below 2,500 ft)
 
-The game's dungeon goes on below Morrowgloom with no limit. The draft calls this **the Unlit**: the rock under the
-cage, which the Keepers never reached and never lit. It is where fiends like Duke Ashvane come from, and what lives
-there was never caged because no one knew it was there. (Open question; see [README.md](README.md).)
+The game's dungeon goes on below Morrowgloom with no limit. This is **the Unlit Ring**: the sixth ring, which the
+Keepers began around 2080 BH to close the cage from below, tunnelling round and under the Pit. It was never finished.
+When the Oil Tithe was cut, the work stopped, and its shrines were cut but never lit. Its passages wind on and down
+through raw rock, half-dug, with empty lamp-niches in every chamber. Fiends like Duke Ashvane, and the horrors of
+the deep, came into the world through it, because an unfinished ring is a door with no lock.
+
+One light burns there: **the Last Lamp**, a great crystal the last Keepers to work in the Unlit Ring lit before they
+climbed out for good, around 1000 BH. It has kept Morrowgloom's power at bay ever since, on its own. While it burns,
+Morrowgloom cannot leave the Pit. If it ever went out, the old teaching says, the Lantern-Eater would rise, and every
+light in the world would go with it.
+
+Relighting the cold shrines of the Unlit Ring around the Last Lamp, the Keepers believe, would finish the cage at
+last. It is the task every champion of the Order dreams of.
+
+### The Elder Ring (deeper still)
+
+Somewhere beneath the Unlit Ring is a ring the Keepers did not build: **the Elder Ring**, lit before the First
+Keeper by unknown hands, the same that made the First Lamp (see [01-cosmology.md](01-cosmology.md)). The Keepers
+first saw its glow in the rock under the Pit around 2110 BH, and the Unlit Ring was dug partly to reach it. No one
+ever has. Whether its lamps still burn, and whether its makers are still there tending them, is the oldest question
+in the Order. *(In the game: whatever lies deep enough below 2,500 ft.)*
 
 ## Legends of the Deep
 
 What delvers say is down there. Some of it is even true.
 
-- **The Last Lamp.** One lamp in the Ring of Glass that never went out. While it burns, Morrowgloom cannot leave the
-  Pit. The Keepers will neither confirm nor deny it.
+- **The Last Lamp.** One lamp that never went out. While it burns, Morrowgloom cannot leave the Pit. Delvers have
+  always looked for it in the Ring of Glass; the Keepers' records put it lower, in the Unlit Ring (see above). They
+  do not like to say so, in case anyone goes looking for it with a sack.
 - **The Crown of Aurenhold.** Duke Ashvane won it at dice and took it down. Whoever brings it back, the old law says,
   is king of the Hollowmark.
 - **The Brassle & Vane vault.** Ironjaw still guards it, and it is empty, but no one has ever proved that.
@@ -150,5 +170,7 @@ What delvers say is down there. Some of it is even true.
 - **The Ember Queen's hoard.** Gold from before there were coins, and the last true ember of the First Fire. If the
   hoard holds it, the Ember Queen is not a monster guarding treasure but a keeper guarding a lamp.
 - **The way home.** Some delvers swear there is a stair in the Ring of Glass that comes out in the Greenroof.
+- **The First Lamp.** The lamp that first caught the fallen ember, older than any Keeper. Some say it stands in the
+  Elder Ring; others that it was on the coast, where Caedra lit her lantern from it, and was lost.
 - **The thousand eyes.** Every light Morrowgloom has eaten is still burning inside it, and among them is Caedra's.
   Kill it and they all go home. *In the game: "the deep grows a little lighter."*

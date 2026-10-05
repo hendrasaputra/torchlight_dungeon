@@ -11,8 +11,9 @@ Order says the flame kept her). A lamplighter from the coast who walked into the
 knowing what was below. She founded the Order of the Lamp, planned the Lampway, and spent her long life building it.
 At the end she carried her lantern down to the Ring of Glass, lit every ring on the way, and did not come back.
 
-She is the only Lampwarden ever to hold the rank *Lamp of the Deep*. Her lantern was later found in the Ring of
-Forges, still burning, which is either a miracle or a mystery. (Open question: see [README.md](README.md).)
+She is the only Lampwarden ever to hold the rank *Lamp of the Deep*. Her lantern was not the first lamp (far older
+lamps exist), but it was lit from the First Lamp itself, which made it the Order's greatest relic. It was later found
+in the Ring of Forges, still burning, though she carried it much deeper; how it came back up, no one knows.
 
 ## The Lamp Kings of Aurenhold
 

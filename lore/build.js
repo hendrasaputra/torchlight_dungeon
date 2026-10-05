@@ -25,14 +25,15 @@ const PICS = {};
 }
 // Page => { heading text it starts with (or "top"): [files] }. A file may appear on more than one page.
 const ART = {
-  "01-cosmology": { top: ["place-the-kindling.png"], "Morrowgloom, the Lantern-Eater": ["boss-morrowgloom.png"], "The two lights": ["item-spellbooks.png"] },
+  "01-cosmology": { top: ["place-the-kindling.png"], "Morrowgloom, the Lantern-Eater": ["boss-morrowgloom.png"], "The First Lamp": ["item-first-lamp.png"], "The two lights": ["item-spellbooks.png"] },
   "02-timeline": { top: ["moment-the-guttering.png"], "The Founding": ["moment-sealing.png"], "The Long Dusk": ["moment-the-wager.png"], "The Years of the Hollow": ["moment-open-doors.png"] },
   index: { top: ["opener-contents.png"] },
   "03-world": { top: ["place-lanternhollow.png"], "The Hollowmark": ["map-hollowmark.png", "emblem-lanternhollow.png"],
     "Lanternhollow": ["map-lanternhollow.png", "keeper-odda.png", "keeper-bram.png", "keeper-kessa.png", "keeper-ilvane.png", "keeper-thorne.png", "keeper-maelis.png", "item-eternal-lamp.png"],
     "The ruins of Aurenhold": ["place-hollow-gate.png", "emblem-aurenhold.png"] },
   "04-the-lampway": { top: ["place-hollow-gate.png"], "What it was for": ["diagram-lampway.png"], "How it was built": ["diagram-lamp-ring.png"], "The mines": ["item-glow-crystal.png"], "The Ring of Stone": ["place-ring-of-stone.png"], "The Ring of Roots": ["place-ring-of-roots.png"],
-    "The Ring of Rest": ["place-ring-of-rest.png"], "The Ring of Forges": ["place-ring-of-forges.png"], "The Ring of Glass": ["place-ring-of-glass.png"], "The Pit of the Gloam": ["boss-morrowgloom.png"] },
+    "The Ring of Rest": ["place-ring-of-rest.png"], "The Ring of Forges": ["place-ring-of-forges.png"], "The Ring of Glass": ["place-ring-of-glass.png"], "The Pit of the Gloam": ["boss-morrowgloom.png"],
+    "The Unlit Ring": ["place-unlit-ring.png", "item-last-lamp.png"], "The Elder Ring": ["place-elder-ring.png"] },
   "05-peoples": { top: ["opener-peoples.png", "emblem-deephall.png", "emblem-lantern-guild.png"], Humans: ["people-human.png"], Sylvan: ["people-sylvan.png"], Stonekin: ["people-stonekin.png"], Burrowfolk: ["people-burrowfolk.png"], Tinkerlings: ["people-tinkerling.png"],
     Ashborn: ["people-ashborn.png"], Marrowkin: ["people-marrowkin.png"], Cragborn: ["people-cragborn.png"] },
   "06-callings": { top: ["opener-callings.png", "emblem-free-companies.png", "emblem-collegium.png", "emblem-order-of-the-lamp.png", "emblem-quiet-hand.png", "emblem-wardens-of-roads.png", "emblem-oath.png"], Sellsword: ["calling-sellsword.png"], Arcanist: ["calling-arcanist.png"], Lampwarden: ["calling-lampwarden.png"], Delver: ["calling-delver.png"], Wayfinder: ["calling-wayfinder.png"], Oathknight: ["calling-oathknight.png"] },
@@ -130,12 +131,12 @@ function render(md, page){
       out.push(`<blockquote>${inline(q.join(" "))}</blockquote>`); continue;
     }
     if ((m = /^(- |\d+\. )/.exec(l))){
-      const ordered = /\d/.test(m[1]), items = [];
+      const ordered = /\d/.test(m[1]), items = [], nums = [];   // numbered lists keep their written numbers (1, 2, 4, 5)
       while (i < lines.length && (/^(- |\d+\. )/.test(lines[i]) || (/^ {2,}\S/.test(lines[i]) && items.length))){
-        if (/^ {2,}\S/.test(lines[i])) items[items.length - 1] += " " + lines[i].trim(); else items.push(lines[i].replace(/^(- |\d+\. )/, ""));
+        if (/^ {2,}\S/.test(lines[i])) items[items.length - 1] += " " + lines[i].trim(); else { nums.push(parseInt(lines[i])); items.push(lines[i].replace(/^(- |\d+\. )/, "")); }
         i++;
       }
-      out.push(`<${ordered ? "ol" : "ul"}>${items.map(t => `<li>${inline(t)}</li>`).join("")}</${ordered ? "ol" : "ul"}>`); continue;
+      out.push(`<${ordered ? "ol" : "ul"}>${items.map((t, k) => `<li${ordered ? ` value="${nums[k]}"` : ""}>${inline(t)}</li>`).join("")}</${ordered ? "ol" : "ul"}>`); continue;
     }
     const p = []; while (i < lines.length && lines[i].trim() && !/^(#|\||>|- |\d+\. |---)/.test(lines[i])) p.push(lines[i++]);
     const text = p.join(" "), isIntro = intro && /^\*[^*]/.test(text);
