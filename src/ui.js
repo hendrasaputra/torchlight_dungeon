@@ -136,6 +136,7 @@ function drawHud(){
   const T0 = p.t, chips = [[T0.fast, "Fast", "good"], [T0.hero, "Hero", "good"], [T0.berserk, "Berserk", "good"], [T0.bless, "Blessed", "good"], [T0.protEvil, "Warded", "good"],
     [T0.resFire, "Res. heat", "good"], [T0.resCold, "Res. cold", "good"], [T0.seeInv, "True sight", "good"], [T0.poison, "Poisoned", "bad"], [T0.confused, "Confused", "bad"], [T0.blind, "Blind", "bad"], [T0.asleep, "Asleep", "bad"],
     [T0.afraid, "Afraid", "bad"], [T0.paralyzed, "Paralysed", "bad"], [T0.slow, "Slowed", "bad"],
+    [p.flame, p.flame && "Carrying a flame", "good"], [depth > 0 && p.rings, depth > 0 && p.rings && "Ring light " + Math.round(p.rings[ringKey(depth)]), depth > 0 && p.rings && p.rings[ringKey(depth)] >= 50 ? "good" : "bad"],
     [T0.cut, "Bleeding", "bad"], [T0.stun, "Stunned", "bad"], [T0.halluc, "Seeing things", "bad"], [p.food >= 10000, "Full", "good"],
     [p.bonus.burden, "Burdened", "bad"], [food, food, "bad"], [p.recall, "Recall", "good"]].filter(c => c[0]);
   const xpNext = expNeeded(p, p.lvl + 1), xpPrev = p.lvl > 1 ? expNeeded(p, p.lvl) : 0;
@@ -205,6 +206,8 @@ function drawPanel(){
         <span>Infravision<b>${infra() ? infra() * 10 + " ft" : "none"}</b></span><span>Light<b>${lightRadius()}</b></span></div>
       ${b.res.size ? `<div class="ln">Resists ${[...b.res].join(", ")}.</div>` : ""}
       <h3>Skills</h3><div class="stats">${SKILLS.map(k => { const v = skillOf(p, k) + (k === "stealth" ? b.stealth : k === "search" ? b.search : 0); return `<span>${SKILL_NAMES[k]}<b>${k === "stealth" ? stealthWord(v) : skillWord(v)}</b></span>`; }).join("")}</div>
+      <h3>The rings of light</h3>${[...CAGE_RINGS, "unlit"].map(k => bar(cap(ringName(k)).replace(/^The /, ""), Math.round(p.rings[k]), 100, p.rings[k] >= 50 ? "ring" : "hp low")).join("")}
+      <div class="ln">${p.lastLamp ? "The Last Lamp burns." : "The Last Lamp is gone."} ${p.cage ? "The cage is finished." : ""} ${["", "Lanternhollow's lamps fail at night.", "Lanternhollow is afraid: two shops empty, the rest shut at dusk."][townShade(p.rings)]}${p.offerings ? " Flames given to the Eternal Lamp: " + p.offerings + "." : ""}${p.flamesSold ? " Flames sold: " + p.flamesSold + "." : ""}</div>
       <div class="ln dim">Deepest ${feet(p.maxDepth)} ft · ${p.kills} kills · ${clockOf(p.turns).text} (${p.turns} turns) · exp penalty +${R.xp + C.xp}%</div>`;
   } else if (tab === "pack"){
     const wt = totalWeight(), capW = capacity();
@@ -346,10 +349,53 @@ function studyDialog(can){ openDialog({ title: "Study which spell?", cols: [can.
 
 /* ---------- shops ---------- */
 let shopNow = -1;
-function openShop(i){ const S = SHOPS[i]; msgs = []; sfx("shop"); say("You enter the " + S.name + ". " + S.keeper + ": \"" + rng.pick(S.hello) + "\""); shopNow = i; shopDialog(i, 0, [0, 0]); }
+// Phase 13: as the cage fails, two keepers leave and the rest shutter at dusk; a flame you carry can go to the
+// Eternal Lamp (the Temple) or be sold to the Lantern Guild (through the General Store).
+const DARK_HELLO = ["Have you seen how dark the nights are now?", "We close early these days. You understand.", "Every night the lamps fail a little sooner.", "Do something about the dark, would you?"];
+function openShop(i){
+  const S = SHOPS[i], shade = townShade(player.rings); msgs = [];
+  if (shade >= 2 && (i === 1 || i === 5)){ say("The " + S.name + " stands empty and dark: " + S.keeper + " has left Lanternhollow."); return; }
+  if (shade >= 2 && !isDay()){ say("The shutters of the " + S.name + " are down. No one opens after dark now."); return; }
+  sfx("shop");
+  const open = () => { say("You enter the " + S.name + ". " + S.keeper + ": \"" + rng.pick(shade ? DARK_HELLO : S.hello) + "\""); shopNow = i; shopDialog(i, 0, [0, 0]); };
+  const k = player.flame;
+  if (!k || (i !== 3 && i !== 0)) return open();
+  const done = msg => { player.flame = null; closeDialog(); msgs = []; say(msg); open(); };
+  openDialog({ title: i === 3 ? "The Eternal Lamp" : "The Lantern Guild's counter", side: false, onBack: () => { closeDialog(); open(); },
+    head: `<p class="lore">${i === 3 ? "Sister Ilvane sees the flame in your light and holds out her hands. Given to the Eternal Lamp, it makes the temple stronger: Word of Recall comes faster, and her healing costs less."
+      : "Odda leans over the counter. \"The Lantern Guild pays well for a shrine's flame, dear, and asks no questions about where it came from.\""} It is a flame of ${esc(ringName(k))}.</p>`,
+    cols: [[i === 3 ? { label: "Give the flame to the Eternal Lamp", select: () => { player.offerings = (player.offerings || 0) + 1; sfx("light"); done("The flame joins the Eternal Lamp, which burns a little taller."); } }
+      : { label: "Sell the flame", right: flamePrice(k) + " gold", select: () => { player.gold += flamePrice(k); player.flamesSold = (player.flamesSold || 0) + 1; sfx("gold"); done("The Lantern Guild pays you " + flamePrice(k) + " gold for the flame."); } },
+      { label: "Keep it", select: () => { closeDialog(); open(); } }]] });
+}
+// Walking into a shrine: relight it, or take its flame. Walking into the Last Lamp: leave it, or end the world.
+function shrineDialog(i){
+  const t = L.tiles[i], p = player;
+  if (t === T.LASTLAMP){
+    const sure = () => openDialog({ title: "Take the Last Lamp?", side: false, onBack: closeDialog, head: `<p class="lore">If you take it, Morrowgloom breaks loose, and every light in the world goes out. There is no coming back from this.</p>`,
+      cols: [[{ label: "No, leave it burning", select: closeDialog }, { label: "Yes, take it", select: () => { closeDialog(); act(() => { takeLastLamp(); return true; }); } }]] });
+    return openDialog({ title: "The Last Lamp", side: false, onBack: closeDialog,
+      head: `<p class="lore">A great crystal, taller than you, blazing on its own in the raw rock. The last Keepers lit it before they left, and while it burns, Morrowgloom cannot leave the Pit. ${p.cage ? "Around it, the shrines of the Unlit Ring burn again." : "Relight the cold shrines of the Unlit Ring around it, and the cage will be finished at last."}</p>`,
+      cols: [[{ label: "Leave it burning", select: closeDialog }, { label: "Take the Last Lamp", right: "frees Morrowgloom", select: sure }]] });
+  }
+  const k = ringHere(), lit = t === T.SHRINE_LIT, rows = [];
+  if (lit){
+    const can = !!p.eq.light && lightRadius() > 0 && !p.flame;
+    rows.push({ label: "Take its flame into your light", right: "dims the ring", off: !can, select: () => { closeDialog(); act(() => { takeFlame(i); return true; }); } });
+  } else {
+    const oil = p.inv.find(it => ITEM[it.k].cat === "flask"), S = knownSpells().find(S => (S.fx === "refuel" || S.fx === "lightArea") && p.mana >= S.mana);
+    rows.push({ label: "Pour in a flask of oil", off: !oil, select: () => { closeDialog(); act(() => { takeOne(oil); lightShrine(i, "from your oil"); return true; }); } });
+    rows.push({ label: S ? (S.realm === "holy" ? "Pray " : "Cast ") + S.name : "Pray or cast a light", right: S ? S.mana + " mana" : "Tend the Flame, Sacred Light, Kindle", off: !S,
+      select: () => { closeDialog(); act(() => { p.mana -= S.mana; lightShrine(i, "at your word"); return true; }); } });
+    rows.push({ label: "Light it from the flame you carry", off: !p.flame, select: () => { closeDialog(); act(() => { p.flame = null; lightShrine(i, "from the flame you carried"); return true; }); } });
+  }
+  rows.push({ label: "Leave it", select: closeDialog });
+  openDialog({ title: lit ? "A burning shrine" : "A cold shrine", side: false, onBack: closeDialog, cols: [rows],
+    head: `<p class="lore">${lit ? "Its flame has burned here for longer than anyone remembers, holding the dark below this ring." : "Its bowl is cold and dry. Every shrine lit holds the dark a little further down."} ${esc(cap(ringName(k)))} burns at ${Math.round(p.rings[k])} of 100.</p>` });
+}
 function shopDialog(i, c, at){
   const S = SHOPS[i], stock = shops[i].stock, cha = player.stats.cha;
-  const buyRows = stock.map(it => ({ item: it, html: esc(cap(shopName(it))), right: buyPrice(it, S, cha) + " g", off: buyPrice(it, S, cha) > player.gold, select: () => { buy(i, it); shopDialog(i, 0, dlg.at); } }));
+  const buyRows = stock.map(it => ({ item: it, html: esc(cap(shopName(it))), right: shopPrice(i, it) + " g", off: shopPrice(i, it) > player.gold, select: () => { buy(i, it); shopDialog(i, 0, dlg.at); } }));
   const sellRows = player.inv.map(it => ({ item: it, label: cap(nameOf(it)), right: !shopBuys(S, it) ? "–" : it.id && kindKnown(ITEM[it.k], player.know) ? sellPrice(it, S, cha) + " g" : "? g", select: () => { sell(i, it); shopDialog(i, 1, dlg.at); } }));
   openDialog({ title: S.name + " · " + S.keeper, wide: true, heads: ["Buy", "Sell"], cols: [buyRows, sellRows], c, at, empty: "Nothing here.",
     head: `<div class="shopline"><span class="gold">● ${player.gold} gold</span><span>${esc(msgs.slice(-1)[0] || "")}</span></div>`, note: "Prices are for one · selling tells you what a thing is" });
@@ -370,6 +416,9 @@ function menuDialog(){
     ...Object.entries(OPTIONS).map(([k, label]) => ({ label, right: (opt(k) ? "On" : "Off") + "  ‹ ›", adjust: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); }, select: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); } })),
     { label: "Guidance for new delvers", right: (guidanceOn() ? "On" : "Off") + "  ‹ ›", adjust: () => { setGuidance(!guidanceOn()); menuDialog(); }, select: () => { setGuidance(!guidanceOn()); menuDialog(); } },
     { label: "Hall of fame", select: fameDialog },
+    ...(state === "play" && depth === 0 ? [{ label: "Retire from delving", right: "ends this game", select: () => openDialog({ title: "Retire from delving?", side: false, onBack: menuDialog,
+      head: `<p class="lore">You leave Lanternhollow for good, alive. ${player.gold >= 50000 || (player.flamesSold || 0) >= 5 ? "With your fortune, it will be remembered as a rich retirement." : "The Deep will go on without you."}</p>`,
+      cols: [[{ label: "No, keep delving", select: menuDialog }, { label: "Yes, retire", select: () => { closeDialog(); retire(); } }]] }) }] : []),
     ...(state === "play" ? [{ label: "Export this character to a file", select: () => { closeDialog(); exportSave(); } }, { label: "Character dump", right: "a text file", select: () => { closeDialog(); download(player.name + ".txt", characterDump()); } },
       { label: "Save and quit", select: () => { saveGame(); closeDialog(); toTitle(); } }] : [])
   ];
@@ -418,6 +467,7 @@ function helpDialog(){
     ["Magic", "Casters need their book in the pack. When you can learn more, open the Book (B) to study."],
     ["Hidden things", "Space waits and searches for secret doors and traps. Walk into a known trap to disarm it, and into a locked door to pick it."],
     ["Digging", "Walk into rubble or a vein of magma or quartz to dig it; T digs plain rock. A shovel or pick in your pack helps."],
+    ["The rings of light", "The dungeon is a cage of light, ring under ring. Walk into a cold shrine to relight it (oil, a prayer of light, or a carried flame): its ring grows brighter, and the Deep with it. You may take a burning shrine's flame home instead, to the Eternal Lamp or to sell, but its ring dims. The Character tab shows every ring."],
     ["Resting", "R rests until you are healed, but only in Lanternhollow: the dark will not let you sleep below. Down there, drink (D) or pray, or climb home."],
     ["Death", "The game saves as you play. If you die with enough gold, Sister Ilvane can call your soul back to the temple; the price rises with your level and every time. Otherwise death is for good, and the hall of fame keeps your story."],
     ["Guidance", "Sister Ilvane walks a new delver through a first trip, and short key hints show what to press. The menu turns both on or off."]];
@@ -444,7 +494,8 @@ function drawScreen(){
   } else if (state === "create") drawCreate();
   else if (state === "dead"){
     const T0 = tomb;
-    el.innerHTML = `<div class="titlecard tomb"><h1 class="rip">R.I.P.</h1><b>${esc(T0.name)}</b><div>the ${esc(T0.race)} ${esc(T0.cls)}, level ${T0.lvl}</div><div>killed by ${esc(T0.killer)}</div><div>${T0.at === "the town" ? "in the town" : "at " + T0.at}${T0.days ? ", on day " + T0.days + " of the delve" : ""}</div>
+    const head = { dark: "The world went dark", rich: "Rich and retired", retired: "Retired" }[T0.ending] || "R.I.P.";
+    el.innerHTML = `<div class="titlecard tomb"><h1 class="rip">${head}</h1><b>${esc(T0.name)}</b><div>the ${esc(T0.race)} ${esc(T0.cls)}, level ${T0.lvl}</div><div>${/^nothing/.test(T0.killer) ? esc(T0.killer.replace(/^nothing: /, "")) : "killed by " + esc(T0.killer)}</div><div>${T0.at === "the town" ? "in the town" : "at " + T0.at}${T0.days ? ", on day " + T0.days + " of the delve" : ""}</div>
       <h3>Score ${T0.score}${T0.best ? " · best!" : ""}</h3><p class="blink">Press Enter for the title</p><p class="dim">D saves a character dump</p></div>`;
   }
 }

@@ -30,9 +30,10 @@ Still to decide or do (not done here):
 ## State of the game
 
 Phases 0 to 10 of [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md) are done; its Progress table says what each phase built
-and what it left out. Phases 11 (the lore in the game) and 12 (a skippable tutorial in a new player's first game) are done too. Next is
-**phase 13**, the rings of light, which gives the game the lore's goal; it adds a tutorial step (relight your first
-shrine) to `src/tutorial.js`. When the lore in `lore/*.md` changes, update the short versions in `src/lore.js` to match. What is left needs a person: listening to the sounds (`audio/torch/*.mp3`; change them in
+and what it left out. Phases 11 (the lore in the game), 12 (a skippable tutorial in a new player's first game) and 13 (the rings of light,
+the lore's goal) are done too. Every phase in the plan is built. What is left needs a person: playing a long game
+through the rings to tune the numbers in `src/rings.js` (starting light, relight and harvest amounts, the drain, the
+town's thresholds) and the balance from town to boss. Saves are at version 2; see `MIGRATIONS` in `src/save.js`. When the lore in `lore/*.md` changes, update the short versions in `src/lore.js` to match. What is left needs a person: listening to the sounds (`audio/torch/*.mp3`; change them in
 `audio/torch-sfx.py`, run it, then `./build.sh`), making the pixel-art cover from `cartridges/PROMPT.md`, and
 playing a full game from the town to the boss to tune the balance.
 

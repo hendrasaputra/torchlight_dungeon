@@ -95,6 +95,21 @@ function rubbleTile(th, under){
   for (const [x, y, r] of [[5, 10, 3], [10, 11, 3], [8, 6, 3], [3, 6, 2], [12, 6, 2], [7, 12, 2]]){ q.disc(x, y, r, hex(th.brick, 0.75 + hash(x, y) * 0.3)); q.px(x - 1, y - r + 1, hex(th.brick, 1.25)); }
   q.outline(); p.g.drawImage(q.c, 0, 0); return p.c;
 }
+// A shrine lamp on its stone pedestal, cold or burning; and the Last Lamp, a great crystal blazing on its own.
+function shrineTile(th, under, lit){
+  const p = pix(); p.g.drawImage(under, 0, 0);
+  const q = pix(), st = th.brick;
+  q.rect(5, 9, 6, 6, hex(st, 0.9)); q.rect(4, 14, 8, 2, hex(st, 0.75)); q.rect(5, 9, 6, 1, hex(st, 1.25));   // the pedestal
+  q.rect(4, 7, 8, 2, hex([0.72, 0.58, 0.3], lit ? 1.1 : 0.6)); q.rect(5, 6, 6, 1, hex([0.72, 0.58, 0.3], lit ? 1.3 : 0.7));   // the bowl
+  if (lit){ q.disc(8, 4, 2, "#ffb030"); q.rect(7, 1, 2, 3, "#ffd27a"); q.px(8, 0, "#fff6c0"); } else { q.px(8, 5, "#3a3a44"); q.px(9, 4, "#2a2a30"); }
+  q.outline(); p.g.drawImage(q.c, 0, 0); return p.c;
+}
+function lastLampTile(under){
+  const p = pix(); p.g.drawImage(under, 0, 0);
+  const q = pix(); q.rect(5, 13, 6, 3, "#3a3640");
+  for (let y = 1; y < 13; y++){ const w = Math.max(1, Math.round(3 - Math.abs(y - 6) / 2.5)); q.rect(8 - w, y, w * 2, 1, y % 3 ? "#bfe8ff" : "#ffffff"); }
+  q.px(7, 3, "#fff"); q.px(9, 8, "#e8f8ff"); q.outline("#1a2a3a"); p.g.drawImage(q.c, 0, 0); return p.c;
+}
 const TRAP_PICS = new Map();
 const trapImage = Tr => memo(TRAP_PICS, Tr.id, () => {   // a found trap, drawn over the floor
   const p = pix(), col = hex(Tr.rgb), id = Tr.id;
@@ -139,6 +154,16 @@ function shopDoor(rgb){
   p.px(10, 10, "#f0d060");
   return p.c;
 }
+// The town's great campfire: a ring of stones and logs, roaring at night, smouldering by day.
+function campfire(under, night){
+  const p = pix(); p.g.drawImage(under, 0, 0);
+  const q = pix();
+  for (let a = 0; a < 10; a++) q.disc(8 + Math.round(Math.cos(a * 0.63) * 6), 11 + Math.round(Math.sin(a * 0.63) * 3), 1, "#6a6670");   // the stone ring
+  q.line(3, 13, 12, 9, hex(WOOD, 0.7)); q.line(4, 9, 13, 13, hex(WOOD, 0.6));   // crossed logs
+  if (night){ q.disc(8, 8, 3, "#ff8a20"); q.disc(8, 6, 2, "#ffc040"); q.rect(7, 2, 2, 4, "#ffd27a"); q.px(8, 1, "#fff6c0"); q.px(5, 5, "#ffb030"); q.px(11, 4, "#ffb030"); }
+  else { q.disc(8, 10, 2, "#8a3a18"); q.px(8, 10, "#ff7a20"); q.px(7, 7, "#9a9aa4"); q.px(9, 5, "#7a7a84"); q.px(8, 3, "#5a5a64"); }   // embers and smoke
+  q.outline(); p.g.drawImage(q.c, 0, 0); return p.c;
+}
 function lampPost(under){
   const p = pix(); p.g.drawImage(under, 0, 0);
   const q = pix(); q.rect(7, 4, 2, 11, "#2a2a30"); q.rect(5, 14, 6, 2, "#2a2a30"); q.rect(5, 0, 6, 5, "#2a2a30"); q.rect(6, 1, 4, 3, "#ffd27a"); q.outline();
@@ -148,7 +173,7 @@ const TILE_CACHE = new Map();
 // The picture for map cell (x, y). wallAt(x, y) says whether a neighbour is wall-like.
 function tileImage(L, x, y, depth){
   const i = y * MW + x, t = L.tiles[i], v = (hash(x, y) * 4) | 0, below = y + 1 < MH ? L.tiles[i + MW] : T.EDGE;
-  const wallish = (xx, yy) => { if (xx < 0 || yy < 0 || xx >= MW || yy >= MH) return true; const u = L.tiles[yy * MW + xx]; return u <= T.WALL || u === T.SHOP || u >= T.MAGMA; };
+  const wallish = (xx, yy) => { if (xx < 0 || yy < 0 || xx >= MW || yy >= MH) return true; const u = L.tiles[yy * MW + xx]; return u <= T.WALL || u === T.SHOP || (u >= T.MAGMA && u <= T.SECRET); };
   const mask = () => (wallish(x, y - 1) ? 0 : 1) | (wallish(x + 1, y) ? 0 : 2) | (wallish(x - 1, y) ? 0 : 8);
   if (L.town){
     const near = Math.abs(y - L.street) <= 1, ground = () => near ? memo(TILE_CACHE, "cob" + v, () => cobbleTile(v)) : memo(TILE_CACHE, "grass" + v, () => grassTile(v));
@@ -160,14 +185,15 @@ function tileImage(L, x, y, depth){
     }
     if (t === T.SHOP){ const k = L.shopAt[i]; return memo(TILE_CACHE, "shop" + k, () => shopDoor(SHOPS[k].rgb)); }
     if (t === T.LAMP) return memo(TILE_CACHE, "lamp" + near + v, () => lampPost(ground()));
+    if (t === T.FIRE){ const night = !(typeof isDay === "function" && isDay()); return memo(TILE_CACHE, "fire" + night, () => campfire(cobbleTile(0), night)); }
     if (t === T.DOWN) return memo(TILE_CACHE, "tdown", () => stairsTile(th, true, grassTile(0)));
     return ground();
   }
   const name = themeFor(depth), th = THEMES[name], k = (s, f) => memo(TILE_CACHE, name + s, f);
   const face = n => k("face" + n, () => wallFace(th, n));
-  const front = !(below <= T.WALL || below === T.DOOR || below >= T.MAGMA);   // open floor below: the wall shows its face
+  const front = !(below <= T.WALL || below === T.DOOR || (below >= T.MAGMA && below <= T.SECRET));   // open floor below: the wall shows its face
   if (t <= T.WALL || t === T.SECRET) return front ? face(v & 1) : k("top" + mask(), () => wallTop(th, mask()));
-  if (t >= T.MAGMA){ const kind = t === T.MAGMA || t === T.MAGMA_T ? "magma" : "quartz", gold = t === T.MAGMA_T || t === T.QUARTZ_T, m = front ? 0 : mask();
+  if (t >= T.MAGMA && t <= T.QUARTZ_T){ const kind = t === T.MAGMA || t === T.MAGMA_T ? "magma" : "quartz", gold = t === T.MAGMA_T || t === T.QUARTZ_T, m = front ? 0 : mask();
     return k(kind + gold + front + m, () => veinTile(VEINS[kind], front, m, gold)); }
   if (t === T.DOOR) return k("door", () => doorTile(face(0), false));
   if (t === T.OPEN) return k("open", () => doorTile(face(0), true));
@@ -175,6 +201,8 @@ function tileImage(L, x, y, depth){
   if (t === T.DOWN) return k("down", () => stairsTile(th, true, fl(0)));
   if (t === T.UP) return k("up", () => stairsTile(th, false, fl(0)));
   if (t === T.RUBBLE) return k("rubble" + (v & 1), () => rubbleTile(th, fl(v)));
+  if (t === T.SHRINE || t === T.SHRINE_LIT) return k("shrine" + (t === T.SHRINE_LIT), () => shrineTile(th, fl(0), t === T.SHRINE_LIT));
+  if (t === T.LASTLAMP) return k("lastlamp", () => lastLampTile(fl(0)));
   return fl(v);
 }
 

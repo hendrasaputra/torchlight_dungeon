@@ -1,8 +1,8 @@
 // Checks for Torchlight Dungeons' rules. Run: node tests/torch.js
 // Loads the game's logic files without a browser: random numbers, sight and light, turns, levels and data.
 const fs = require("fs"), vm = require("vm"), path = require("path");
-const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "lore.js", "save.js", "sprites.js", "tutorial.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
-const G = vm.runInNewContext("var depth = 1;\n" + files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, RINGS, ringOf, LORE_PAGES, LORE_START, FAMILY_LORE, EGO_LORE, BOOK_LORE, TUT_STEPS, TUT_KEYS, soulPrice, clockOf, DAY_TURNS, firstSpell, CLASSES, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
+const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "lore.js", "rings.js", "save.js", "sprites.js", "tutorial.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
+const G = vm.runInNewContext("var depth = 1;\n" + files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, RINGS, ringOf, LORE_PAGES, LORE_START, FAMILY_LORE, EGO_LORE, BOOK_LORE, TUT_STEPS, TUT_KEYS, soulPrice, clockOf, DAY_TURNS, RING_START, CAGE_RINGS, newRings, ringKey, relightRing, dimRing, drainRings, townShade, worldDark, cageFinished, bossFactor, RELIGHT, TAKE_FLAME, DIG_CRYSTAL, START_LIGHT, isShrine, firstSpell, CLASSES, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
 
 let failed = 0;
 const check = (name, ok, detail) => { console.log((ok ? "ok    " : "FAIL  ") + name + (detail ? "  (" + detail + ")" : "")); if (!ok) failed++; };
@@ -280,6 +280,44 @@ const { MW, MH, T } = G;
     [0, 0.5, 0.75, 1].map(k => c(G.DAY_TURNS * k)).join(", "));
   let clash = 0; for (let t = 0; t < 3 * G.DAY_TURNS; t += 37){ const day = (t % G.DAY_TURNS) / G.DAY_TURNS < 0.5, h = G.clockOf(t).h; if (day !== (h >= 6 && h < 18)) clash++; }
   check("the clock's daylight hours match the town's day and night", !clash, clash + " disagreements");
+}
+
+{ // phase 13: the rings of light
+  const R = G.newRings(), keys = [0, 1, 9, 10, 29, 30, 49, 50, 51, 80].map(G.ringKey).join(" ");
+  check("depths belong to their rings, the Pit to the Ring of Glass, all below to the Unlit Ring, and the town to the Ring of Stone", keys === "stone stone stone roots rest forges glass glass unlit unlit", keys);
+  const g = G.relightRing(R, "stone"); const dark = { ...R, roots: 5 }, g2 = G.relightRing(dark, "roots");
+  G.dimRing(R, "glass", G.TAKE_FLAME); G.dimRing(R, "rest", G.DIG_CRYSTAL);
+  check("relighting adds 3 (half in a dark ring); a taken flame takes 2 and a dug crystal 1", g === 3 && R.stone === G.RING_START.stone + 3 && g2 === 1.5 && R.glass === G.RING_START.glass - 2 && R.rest === G.RING_START.rest - 1);
+  const D = { ...G.RING_START, roots: 20 }; G.drainRings(D);
+  const F = { ...G.RING_START }; for (let k = 0; k < 500; k++) G.drainRings(F);
+  check("Morrowgloom's slow drain takes 1 from each ring and 2 from the dim ones, but never puts a ring out by itself", D.stone === G.RING_START.stone - 1 && D.roots === 18 && D.unlit === 0 && G.CAGE_RINGS.every(k => F[k] === 10) && !G.worldDark(F, true));
+  const lose = f => { const r = { ...G.RING_START }; let left = G.START_LIGHT * f; for (const k of G.CAGE_RINGS){ const d = Math.min(r[k], left); r[k] -= d; left -= d; } return G.townShade(r); };
+  check("the town goes dark at about 5% of the cage's light lost, and worse at 10%", lose(0) === 0 && lose(0.04) === 0 && lose(0.05) === 1 && lose(0.1) === 2, [0, 0.04, 0.05, 0.1].map(lose).join(" "));
+  const S = G.RING_START;
+  check("the world goes dark only with the Last Lamp lost, or the Ring of Glass dark with no Unlit Ring below",
+    !G.worldDark(S, true) && G.worldDark(S, false) && G.worldDark({ ...S, glass: 0 }, true) && !G.worldDark({ ...S, glass: 0, unlit: 5 }, true));
+  const full = Object.fromEntries(Object.keys(S).map(k => [k, 100]));
+  check("the cage is finished only with every ring at full light and the Last Lamp burning", G.cageFinished(full, true) && !G.cageFinished(full, false) && !G.cageFinished({ ...full, unlit: 99 }, true));
+  const fs0 = G.bossFactor(S), fsB = G.bossFactor(full), fsD = G.bossFactor(Object.fromEntries(Object.keys(S).map(k => [k, 0])));
+  check("Morrowgloom is about as strong as before with the rings as they start, weaker bright, far stronger dark", Math.abs(fs0 - 1) < 0.05 && fsB < 0.7 && fsD > 1.9, [fs0, fsB, fsD].map(v => v.toFixed(2)).join(" / "));
+  // levels: shrines burn as often as the ring is bright, never cut a way off, and the Unlit Ring's top holds the Last Lamp
+  let bad = "", litB = 0, allB = 0, litD = 0, allD = 0;
+  for (let k = 0; k < 60; k++){
+    for (const light of [100, 0]){
+      const L = G.generateLevel(new G.RNG(7000 + k), 1 + (k % 45), light), seen = G.reachable(L);
+      for (let i = 0; i < L.tiles.length; i++){ const t = L.tiles[i]; if (G.isShrine(t)){ if (light) { allB++; if (t === T.SHRINE_LIT) litB++; } else { allD++; if (t === T.SHRINE_LIT) litD++; } }
+        if ((G.passable(t) || t === T.DOOR) && !seen[i]) bad = "seed " + (7000 + k) + ": a shrine cut cells off"; }
+    }
+  }
+  check("shrines all burn in a bright ring and none in a dark one, and never cut a way off", !bad && allB > 40 && litB === allB && allD > 40 && litD === 0, bad || `${allB} and ${allD} shrines`);
+  const top = G.generateLevel(new G.RNG(51), 51, 0);
+  check("the top of the Unlit Ring holds the Last Lamp", top.tiles.some(t => t === T.LASTLAMP));
+  // saves: ring light survives a save and load, and an old (version 1) save gets the starting rings
+  const L = G.generateLevel(new G.RNG(1), 3), p = { name: "Ash", inv: [], eq: {}, know: G.newKnowledge(new G.RNG(1)), stats: {}, t: {}, rings: { ...G.RING_START, stone: 91 }, lastLamp: true, flame: "stone" };
+  const g0 = { player: p, depth: 3, L, mem: new Uint8Array(MW * MH), mons: [p], floor: [], shops: [], lastTown: 0, wasDay: true, turnNo: 1, log: [], rng: 1, target: -1 };
+  const back = G.decodeSave(G.encodeSave(g0));
+  const old = JSON.parse(G.encodeSave(g0)); old.v = 1; delete old.player.rings; delete old.player.lastLamp; const mig = G.decodeSave(JSON.stringify(old));
+  check("ring light survives a save and load; a version 1 save is lifted with the starting rings", back.player.rings.stone === 91 && back.player.flame === "stone" && mig.player.rings.glass === G.RING_START.glass && mig.player.lastLamp === true && mig.v === G.SAVE_VERSION);
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");

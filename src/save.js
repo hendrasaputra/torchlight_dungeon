@@ -2,8 +2,11 @@
 // A save is versioned JSON: the character (with what they know), the shops, and the level they are on. Levels are
 // not kept, so the current one is all there is; its map arrays are run-length encoded. decodeSave refuses anything
 // damaged with a message, and lifts older versions to this one through MIGRATIONS, one version at a time.
-const SAVE_VERSION = 1;
-const MIGRATIONS = {};   // n: save at version n => the same save at version n + 1
+const SAVE_VERSION = 2;
+const MIGRATIONS = {   // n: save at version n => the same save at version n + 1
+  // 1 => 2 (phase 13): the rings of light. An older character's rings start where a new game's do, the Last Lamp burning.
+  1: s => { const p = s.player; if (p){ p.rings = p.rings || { ...RING_START }; if (p.lastLamp === undefined) p.lastLamp = true; p.flame = p.flame || null; p.offerings = p.offerings || 0; p.flamesSold = p.flamesSold || 0; } return s; }
+};
 const ARRAYS = { Uint8Array, Int8Array, Int16Array };
 const badSave = msg => { const e = new Error(msg); e.save = true; throw e; };
 // "Uint8Array:1*40,2,1*3": runs of value*count

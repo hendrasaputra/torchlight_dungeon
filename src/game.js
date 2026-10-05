@@ -2,7 +2,7 @@
 // see what your light (or a lit room, a glowing monster, a flying spell) shows you, and warm bodies within your
 // infravision. Characters come from chars.js. render.js draws the map and ui.js the interface; this file only
 // keeps the rules and the keys. See TORCHLIGHT_PLAN.md for the phases.
-const TORCH_RGB = [1.0, 0.62, 0.3], ROOM_RGB = [0.42, 0.42, 0.47];
+const FIRE_RGB = [1.0, 0.55, 0.22], TORCH_RGB = [1.0, 0.62, 0.3], ROOM_RGB = [0.42, 0.42, 0.47];
 const DIRS = { 1: [-1, 1], 2: [0, 1], 3: [1, 1], 4: [-1, 0], 6: [1, 0], 7: [-1, -1], 8: [0, -1], 9: [1, -1] };
 let state = "title", stateT = 0;
 let rng = new RNG(Date.now() & 0xffffffff), L = null, depth = 1, player = null, mons = [], floor = [];
@@ -106,7 +106,7 @@ const infra = () => player.t.blind ? 0 : race().infra + player.bonus.infra;
 function newLevel(d){
   const from = depth;
   depth = d; player.maxDepth = Math.max(player.maxDepth, d);
-  L = d === 0 ? generateTown(rng) : generateLevel(rng, d);
+  L = d === 0 ? generateTown(rng) : generateLevel(rng, d, player.rings[ringKey(d)]);
   mem.fill(0); mons = [player]; floor = []; pendingLevel = null; parts = []; floats = []; shots = []; flashes = []; later = []; target = null;
   const at = L.spot(); player.x = at % MW; player.y = Math.floor(at / MW); audio.music(d ? "depths" : "town");
   if (d === 0){
@@ -114,17 +114,25 @@ function newLevel(d){
     if (from > 0 && player.turns - lastTown > 500) shops.forEach((sh, i) => { sh.stock = restock(sh.stock, SHOPS[i], rng, player.know, 0.5); });
     lastTown = player.turns; wasDay = isDay(); lightTown(); if (from > 0) tutNote("returned");
     for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) mem[idx(x, y)] = 1;   // you know your own town
-    for (let k = 0, n = 5 + rng.int(4) + (wasDay ? 0 : 3); k < n; k++) spawnMonster(false);
+    const shade = townShade(player.rings), dark = !wasDay && shade > 0;   // when the cage fails, the town's nights go black
+    for (let k = 0, n = dark ? 2 : 5 + rng.int(4) + (wasDay ? 0 : 3); k < n; k++) spawnMonster(false);
+    if (dark) for (let k = 0, n = 1 + rng.int(shade); k < n; k++) spawnMonster(false, MON.shade, freeSpot(10));
     updateSight();
     say(from > 0 ? "You climb out into the town of Lanternhollow." : "You stand in Lanternhollow, a town above the dungeon. The shops are numbered 1 to 6.");
-    say(wasDay ? "It is daytime." : "It is night; the lamps are lit.");
+    say(wasDay ? "It is daytime." : dark ? "It is night, and the lamps of Lanternhollow will not light. Shades walk the streets." : "It is night; the lamps are lit.");
+    if (wasDay && shade) say(shade > 1 ? "The town is afraid: two shops stand empty, and the rest shutter at dusk." : "People say the lamps fail at night now.");
     saveGame();
     return;
   }
   relight();
-  for (let k = 0, n = 14 + Math.min(d, 30) + rng.int(8); k < n; k++) spawnMonster(false);
+  const light = player.rings[ringKey(d)], darkRing = light <= 0;   // a dark ring lets the ring below reach up through it
+  for (let k = 0, n = 14 + Math.min(d, 30) + rng.int(8); k < n; k++) spawnMonster(false, pickMonster(darkRing && rng.chance(0.3) ? d + 10 : d));
+  gatherDark(d, light);
   const boss = MON.morrowgloom;   // the Lantern-Eater waits at 2,500 ft, and sometimes deeper
-  if (d >= boss.depth && !uniqueGone(boss) && (d === boss.depth || rng.chance(0.3))) spawnMonster(false, boss, freeSpot(25));
+  if (d >= boss.depth && !uniqueGone(boss) && (d === boss.depth || rng.chance(0.3))){
+    spawnMonster(false, boss, freeSpot(25));
+    const b = mons.find(m => m.K === boss); if (b){ b.hp = b.mhp = Math.max(1, Math.round(b.hp * bossFactor(player.rings))); }   // weaker under bright rings, far stronger in a dark Deep
+  }
   for (let k = 0, n = 8 + rng.int(6); k < n; k++) dropAt(freeSpot(0), rng.chance(0.35) ? { k: "gold", n: rng.range(8, 25) * d } : loot(d));
   updateSight(); digging = null;
   if (d === 1) tutFirstRoom();
@@ -137,6 +145,63 @@ function relight(){
   if (depth === 0) return lightTown();
   roomLight.fill(0);
   for (let i = 0; i < MW * MH; i++) if (L.lit[i]){ roomLight[3 * i] = ROOM_RGB[0]; roomLight[3 * i + 1] = ROOM_RGB[1]; roomLight[3 * i + 2] = ROOM_RGB[2]; }
+  for (let i = 0; i < MW * MH; i++){   // burning shrines and the Last Lamp shine on their own
+    const t = L.tiles[i];
+    if (t === T.SHRINE_LIT) addLight(roomLight, MW, MH, blocks, { x: i % MW, y: Math.floor(i / MW), r: 5, i: 0.85, rgb: SHRINE_RGB });
+    if (t === T.LASTLAMP) addLight(roomLight, MW, MH, blocks, { x: i % MW, y: Math.floor(i / MW), r: 14, i: 1.4, rgb: LASTLAMP_RGB });
+  }
+}
+/* ---------- the rings of light (phase 13; the rules are in rings.js) ---------- */
+// Walk into a shrine to relight it (oil, a prayer of light, or a flame you carry) or to take its flame; carry a flame
+// home to the Eternal Lamp, or sell it. Dark-loving monsters gather by the shrines and snuff the burning ones.
+const SHRINE_RGB = [1.0, 0.72, 0.38], LASTLAMP_RGB = [0.75, 0.92, 1.2];
+const ringHere = () => ringKey(depth);
+const darkLover = K => K.fam === "shade" || K.blows.some(b => b[2] === "eatLight") || !!(K.spells && K.spells.list.includes("darkness"));
+const shrineRoom = i => { const id = L.room[i]; return id >= 0 ? [...L.room.keys()].filter(j => L.room[j] === id) : []; };
+function setShrine(i, lit){ L.tiles[i] = lit ? T.SHRINE_LIT : T.SHRINE; if (lit) lightCells(shrineRoom(i)); else for (const j of shrineRoom(i)) L.lit[j] = 0; relight(); }
+// After any change to a ring's light: the world may go dark, or the cage be finished.
+function ringChanged(msg){
+  if (msg) say(msg);
+  if (worldDark(player.rings, player.lastLamp)) return worldGoesDark();
+  if (!player.cage && cageFinished(player.rings, player.lastLamp)){ player.cage = true; sfx("levelup");
+    say("Every ring of the Lampway burns at full light, the Unlit Ring too. The cage is finished, and Morrowgloom is held for good. You have won!"); }
+}
+const ringWord = k => cap(ringName(k)) + " (" + Math.round(player.rings[k]) + ")";
+function lightShrine(i, how){
+  setShrine(i, true); const k = ringHere(); relightRing(player.rings, k);
+  player.relit = (player.relit || 0) + 1; tutNote("relit"); sfx("light"); gainExp(2 + depth);
+  flashes.push({ x: i % MW, y: Math.floor(i / MW), t: 0.6, t0: 0.6, rgb: SHRINE_RGB });
+  ringChanged("The shrine lamp catches " + how + ". " + ringWord(k) + " grows brighter.");
+}
+function snuffShrine(i, msg){ setShrine(i, false); dimRing(player.rings, ringHere(), RELIGHT); ringChanged(msg); }
+function takeFlame(i){
+  setShrine(i, false); const k = ringHere(); dimRing(player.rings, k, TAKE_FLAME); player.flame = k;
+  ringChanged("You lift the shrine's flame into your " + ITEM[player.eq.light.k].name.toLowerCase() + ". The lamp goes dark, and " + ringWord(k) + " dims.");
+}
+// The Last Lamp taken: Morrowgloom breaks loose.
+function takeLastLamp(){ player.lastLamp = false; ringChanged(); }
+function worldGoesDark(){
+  if (state !== "play") return;
+  killer = "the dark, when Morrowgloom broke loose"; player.ending = "dark"; msgs = [];
+  say("Far below, the last light holding the cage goes out. Morrowgloom rises, and every light in the world goes with it.");
+  sfx("death"); audio.music(null); bury();
+}
+// On a new level, the dark gathers by its shrines: more the dimmer the ring.
+function gatherDark(d, light){
+  const shrines = []; for (let i = 0; i < MW * MH; i++) if (isShrine(L.tiles[i])) shrines.push(i);
+  const pool = MONSTERS.filter(K => !K.town && !K.unique && !K.boss && darkLover(K) && K.depth <= d + 2);
+  for (let k = 0, n = Math.round((100 - light) / 20); k < n && pool.length && shrines.length; k++){
+    const s = rng.pick(shrines);
+    for (let tries = 0; tries < 20; tries++){ const x = s % MW + rng.range(-3, 3), y = Math.floor(s / MW) + rng.range(-3, 3);
+      if (passable(L.tiles[idx(x, y)]) && !monAt(x, y) && dist(x, y, player.x, player.y) > 6){ spawnMonster(false, rng.pick(pool), idx(x, y)); break; } }
+  }
+}
+// Retiring, in town: the game ends without a death. With a fortune, or many flames sold, it is the Rich ending.
+function retire(){
+  const p = player; p.ending = p.gold >= 50000 || (p.flamesSold || 0) >= 5 ? "rich" : "retired";
+  killer = p.ending === "rich" ? "nothing: retired rich, while the world grew darker" : "nothing: retired from delving";
+  msgs = []; say(p.ending === "rich" ? "You leave Lanternhollow with a fortune in carried light. Behind you, the town's lamps burn a little lower." : "You hang up your lantern and leave the Deep to others.");
+  sfx("shop"); audio.music(null); bury();
 }
 const depthName = d => d ? feet(d) + " ft" : "the town";
 
@@ -164,6 +229,7 @@ function lightTown(){
     return;
   }
   for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++){ const i = idx(x, y); roomLight[3 * i] = MOON_RGB[0]; roomLight[3 * i + 1] = MOON_RGB[1]; roomLight[3 * i + 2] = MOON_RGB[2]; }
+  if (townShade(player.rings)) return;   // when the cage fails, the lamps will not light (the campfire burns on, lower)
   for (const i of L.lamps) addLight(roomLight, MW, MH, blocks, { x: i % MW, y: Math.floor(i / MW), r: 6, i: 0.9, rgb: LAMP_RGB });
   L.shops.forEach((sh, k) => addLight(roomLight, MW, MH, blocks, { x: sh.door % MW, y: Math.floor(sh.door / MW), r: 4, i: 0.8, rgb: SHOPS[k].rgb.map(v => v * 0.7) }));
 }
@@ -203,6 +269,10 @@ function spawnMonster(awake, K = pickMonster(depth), at = freeSpot(10)){
 /* ---------- sight and light ---------- */
 function computeLight(field, t){
   field.set(roomLight);
+  if (depth === 0 && L.fire >= 0 && !isDay()){   // the town's campfire at night: wide and warm, lower when the cage fails
+    const f = t ? 0.08 * Math.sin(t * 0.013) + 0.06 * Math.sin(t * 0.037 + 2) + 0.04 * Math.sin(t * 0.09) : 0, low = townShade(player.rings) ? 0.7 : 1;
+    addLight(field, MW, MH, blocks, { x: L.fire % MW, y: Math.floor(L.fire / MW), r: (10 + f * 6) * low, i: 1.25 * (1 + f) * low, rgb: FIRE_RGB });
+  }
   const R = lightRadius();
   if (R > 0){
     const f = t ? 0.06 * Math.sin(t * 0.011) + 0.04 * Math.sin(t * 0.029 + 1.3) + 0.03 * Math.sin(t * 0.071) : 0;   // the flame flickers
@@ -232,6 +302,7 @@ function tryMove(dx, dy){
   if (m) return attack(m);
   if (workAt(x, y)) return work(x, y);
   if (t === T.DOOR){ L.tiles[i] = T.OPEN; say("You open the door."); sfx("door"); return true; }
+  if (isShrine(t) || t === T.LASTLAMP){ shrineDialog(i); return false; }
   if (!passable(t)){ say(t <= T.WALL || t >= T.RUBBLE ? "There is a wall in the way." : "Something is in the way."); return false; }
   player.x = x; player.y = y; sfx("step");
   if (L.trap[i]){ springTrap(i); if (state !== "play" || player.x !== x || player.y !== y || pendingLevel !== null) return true; }
@@ -360,7 +431,9 @@ function work(x, y){
   if (digging.done < HARDNESS[t]) return true;
   digging = null; L.tiles[i] = T.FLOOR; burst(x, y, RUBBLE_RGB, 10); sfx("rubble");
   say(t === T.RUBBLE ? "You have cleared the rubble." : "You have dug through the rock.");
-  if (t === T.MAGMA_T || t === T.QUARTZ_T){ dropAt(i, { k: "gold", n: rng.range(10, 30) * depth * (t === T.QUARTZ_T ? 2 : 1) }); floor[floor.length - 1].seen = true; say("You have found something!"); }
+  if (t === T.MAGMA_T || t === T.QUARTZ_T){ dropAt(i, { k: "gold", n: rng.range(10, 30) * depth * (t === T.QUARTZ_T ? 2 : 1) }); floor[floor.length - 1].seen = true; say("You have found something!");
+    if (rng.chance(0.25)){ dropAt(i, plainItem("crystal")); floor[floor.length - 1].seen = true; const k = ringHere(); dimRing(player.rings, k, DIG_CRYSTAL);
+      ringChanged("A glow crystal glitters in the broken rock: old lamplight, set into stone. " + ringWord(k) + " is a little dimmer for it."); } }
   else if (t === T.RUBBLE && rng.chance(0.08)){ dropAt(i, loot(depth)); floor[floor.length - 1].seen = true; say("You have found something in the rubble!"); }
   return true;
 }
@@ -640,7 +713,7 @@ const FX = {
   recall: () => {
     if (player.recall > 0){ player.recall = 0; say("A tension leaves the air around you."); return true; }
     if (depth === 0 && player.maxDepth < 1){ say("The air stirs, but there is nowhere for it to take you yet."); return true; }
-    player.recall = 15 + rng.int(20); say("The air about you becomes charged..."); return true;
+    player.recall = Math.max(5, 15 + rng.int(20) - (player.offerings || 0)); say("The air about you becomes charged..."); return true;
   },
   enchHit: () => enchant(weapon(), "tohit"), enchDam: () => enchant(weapon(), "todam"),
   enchAc: () => { const worn = ["body", "shield", "cloak", "head", "hands", "feet"].map(s => player.eq[s]).filter(Boolean); return enchant(worn.length ? rng.pick(worn) : null, "toac"); },
@@ -908,6 +981,11 @@ function everyTurn(){
   if (player.food === 0) say("You are starving!");
   if (player.food < 500 && !(player.t.paralyzed > 0) && rng.int(15) === 0){ player.t.paralyzed = 1 + rng.int(4); say("You faint from the lack of food."); disturbed = true; }
   if (player.food < 0 && player.food % 10 === 0) hurt(1, "starvation");
+  if (player.flame && lightRadius() === 0){ player.flame = null; say("The flame you carried has gone out with your light."); }
+  if (player.turns % DRAIN_EVERY === 0 && player.rings){   // Morrowgloom's hunger: slow, but it never stops
+    const before = townShade(player.rings); drainRings(player.rings); ringChanged();
+    if (state === "play" && townShade(player.rings) > before) say(depth ? "You feel the dark lean a little closer, far above as well as here." : "The lamps of Lanternhollow gutter, and some go out.");
+  }
   if (depth > 0) search(skillOf(player, "notice") / 4);   // now and then you notice something without looking
   if (player.t.poison > 0) hurt(1, "poison");
   if (player.t.cut > 0 && state === "play") hurt(player.t.cut > 20 ? 2 : 1, "bleeding");
@@ -975,7 +1053,7 @@ function bury(){
   saveLore();
   if (slot){ store.del(slotKey(slot)); store.del(dyingKey(slot)); }
   slot = 0;   // the save goes, and the character dump goes to the hall of fame
-  const p = player, entry = { score: Math.floor(p.exp) + 100 * p.maxDepth + (p.won ? 10000 : 0), name: p.name, race: race().name, cls: cls().name, lvl: p.lvl, depth: feet(p.maxDepth), killer: killer + (p.won ? " (a winner)" : ""), days: clockOf(p.turns).day, dump: characterDump() };
+  const p = player, entry = { score: Math.floor(p.exp) + 100 * p.maxDepth + (p.won ? 10000 : 0) + (p.cage ? 20000 : 0) + (p.ending === "rich" ? Math.floor(p.gold / 10) : 0), ending: p.ending || "", name: p.name, race: race().name, cls: cls().name, lvl: p.lvl, depth: feet(p.maxDepth), killer: killer + (p.won ? " (a winner)" : ""), days: clockOf(p.turns).day, dump: characterDump() };
   tomb = { ...entry, best: scores.add(entry).rank === 0, at: depthName(depth) };
 }
 function monsterTurn(m){
@@ -985,6 +1063,10 @@ function monsterTurn(m){
     const st = skillOf(player, "stealth");
     if (d < 16 - st) m.sleep -= rng.range(0, Math.max(1, 6 - st));
     return;
+  }
+  if (darkLover(K) && depth > 0 && rng.int(8) === 0) for (const k of [1, 2, 3, 4, 6, 7, 8, 9]){   // it puts out a burning shrine beside it
+    const [dx, dy] = DIRS[k], j = idx(m.x + dx, m.y + dy);
+    if (L.tiles[j] === T.SHRINE_LIT){ snuffShrine(j, seesMon(m) ? cap(theName(m)) + " snuffs out the shrine lamp!" : inFov[j] === turnNo ? "A shrine lamp goes out." : null); return; }
   }
   m.speed = K.speed - (m.slow > 0 ? 10 : 0) + (m.haste > 0 ? 10 : 0);
   if (m.slow > 0) m.slow--;
@@ -1323,6 +1405,7 @@ function begin(){
   if (C.bow) player.eq.bow = plainItem(C.bow);
   recalc();
   player.mhp = player.hp = firstHp(player); player.mmana = player.mana = maxMana(player);
+  player.rings = newRings(); player.lastLamp = true; player.flame = null; player.offerings = 0; player.flamesSold = 0;
   player.hot = Array(10).fill(null); player.slain = {}; player.ready = null; player.lore = Object.fromEntries(LORE_START.map(id => [id, 1]));
   log = []; msgs = []; killer = ""; tomb = null; cr = null;
   state = "play"; stateT = 0;
@@ -1403,8 +1486,10 @@ function characterDump(){
 
 /* ---------- shops: buying, and selling, which tells you what a thing was (the screens are in ui.js) ---------- */
 const shopName = it => itemName(it, { ...player.know, known: SHOP_KNOWS.known });
+// What a shop asks: the temple asks less the more flames you have given the Eternal Lamp.
+const shopPrice = (i, it) => Math.max(1, Math.round(buyPrice(it, SHOPS[i], player.stats.cha) * (i === 3 ? 1 - Math.min(0.3, 0.03 * (player.offerings || 0)) : 1)));
 function buy(i, it){
-  const S = SHOPS[i], price = buyPrice(it, S, player.stats.cha);
+  const S = SHOPS[i], price = shopPrice(i, it);
   msgs = [];
   if (player.gold < price) return say(S.keeper + ": \"Come back when you can afford it.\"");
   const one = { ...it, n: 1 }, got = carry(one);

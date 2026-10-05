@@ -86,6 +86,9 @@ function drawWorld(t, dt){
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (shown(idx(x, y))) ctx.drawImage(tileImage(L, x, y, depth), x * TS, y * TS);
   if (title) return lightOverlay(x0, y0, x1, y1, lit, title);
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){ const i = idx(x, y); if (L.trapSeen[i] && L.trap[i] && mem[i]) ctx.drawImage(trapImage(TRAPS[L.trap[i] - 1]), x * TS, y * TS); }
+  if (depth === 0 && L.fire >= 0 && !title && !isDay() && Math.random() < dt * 4){   // sparks rise from the campfire at night
+    const fx = L.fire % MW, fy = Math.floor(L.fire / MW); parts.push({ x: fx + 0.3 + Math.random() * 0.4, y: fy + 0.5, z: 0.5, vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6, vz: 3 + Math.random() * 3, rgb: [1, 0.6 + Math.random() * 0.3, 0.2], life: 0.7 + Math.random() * 0.5, s: 1 });
+  }
   const bob = n => Math.round(Math.sin(t / 260 + n) * 0.6);
   for (const f of floor){ const i = idx(f.x, f.y); if (!visible(i) && !f.seen) continue;
     ctx.drawImage(itemIcon(f.it), f.x * TS + 2, f.y * TS + 2 + (visible(i) ? bob(f.x) : 0), 12, 12); }
@@ -194,7 +197,7 @@ function drawMinimap(c, s, focus){
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
     const i = idx(x, y), o = 4 * (y * w + x); if (!mem[i]) continue;
     const t = L.tiles[i], v = visible(i);
-    const col = t === T.DOWN || t === T.UP ? [240, 240, 240] : t === T.SHOP ? [240, 200, 90] : t === T.DOOR || t === T.OPEN ? [170, 110, 50] : L.trap[i] && L.trapSeen[i] ? [220, 90, 200] : t === T.MAGMA_T || t === T.QUARTZ_T ? [200, 170, 60] : opaque(t) ? [96, 92, 110] : v ? [70, 66, 58] : [40, 40, 52];
+    const col = t === T.DOWN || t === T.UP ? [240, 240, 240] : t === T.SHOP ? [240, 200, 90] : t === T.DOOR || t === T.OPEN ? [170, 110, 50] : L.trap[i] && L.trapSeen[i] ? [220, 90, 200] : t === T.SHRINE_LIT || t === T.LASTLAMP || t === T.FIRE ? [255, 200, 90] : t === T.SHRINE ? [120, 120, 150] : t === T.MAGMA_T || t === T.QUARTZ_T ? [200, 170, 60] : opaque(t) ? [96, 92, 110] : v ? [70, 66, 58] : [40, 40, 52];
     d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
   }
   for (const f of floor) if (f.seen || visible(idx(f.x, f.y))){ const o = 4 * (f.y * w + f.x); d[o] = 90; d[o + 1] = 170; d[o + 2] = 255; d[o + 3] = 255; }

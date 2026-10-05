@@ -32,6 +32,7 @@ header { color: var(--text); } #hud { color: var(--dim); }
 img.px { image-rendering: pixelated; width: 32px; height: 32px; display: block; }
 img.px.big { width: 48px; height: 48px; } img.px.face { width: 40px; height: 40px; } img.px.hero { width: 160px; height: 160px; filter: drop-shadow(0 6px 0 #0007); }
 #ov > * { position: absolute; }
+.meter.ring s { background: linear-gradient(90deg, #c88a2a, #f0c860); }
 #status .facts.clock { color: var(--dim); margin-top: 2px; }
 #status .next { margin-top: 8px; padding: 7px 8px; border: 1px solid var(--gold); border-radius: 4px; background: #2a2010cc; font-size: 12px; line-height: 1.45; }
 #status .next b { display: block; color: var(--gold); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
@@ -116,6 +117,19 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
 .cinfo h2 { margin: 0 0 6px; color: var(--gold); font-weight: normal; } .cinfo .stats { margin: 8px 0; }
 .preview { display: grid; place-items: center; background: #13111a; border: 2px solid var(--edge); border-radius: 8px; padding: 10px; }
 .namebox { margin-top: 8px; padding: 6px 10px; border: 2px solid var(--gold); border-radius: 4px; font-size: 16px; } .caret { animation: blink 1s steps(2) infinite; }
+
+/* A leather finish for the panel, the dialogs and the HUD boxes: grain from an SVG noise pattern drawn by the
+   browser (no image files), a warm brown with darker worn edges, and a faint stitched seam inside the border. */
+:root { --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --leather: var(--grain), radial-gradient(ellipse at 30% 20%, #4a3424 0, #2e2016 55%, #1c130c 100%);
+  --leather-dark: var(--grain), radial-gradient(ellipse at 30% 20%, #3a281b 0, #241910 60%, #150e09 100%); --seam: #c9a46a3d; --edge: #5a3f26; }
+#panel, #dlg .box { background: var(--leather); background-color: #2a1d14; border-color: #6a4a2c; box-shadow: inset 0 0 0 1px #00000080, inset 0 0 24px #0000008c, 0 10px 30px #000a; }
+#panel { outline: 1px dashed var(--seam); outline-offset: -6px; }
+#dlg .box { border-color: #a07a3c; outline: 1px dashed var(--seam); outline-offset: -7px; }
+#status, #target, #minibox canvas { background: var(--leather-dark); background-color: #1e150e; border-color: #6a4a2c; box-shadow: inset 0 0 14px #000a, 0 4px 12px #0008; }
+#target { border-color: #a07a3c; }
+#tabs b { background: #1a120c; border-bottom-color: #5a3f26; } #tabs b.on { background: transparent; }
+.card { background: var(--leather-dark); background-color: #1e150e; }
 </style>
 </head>
 <body>
@@ -338,15 +352,20 @@ function nextActor(actors){
 const MW = 198, MH = 66;   // map size, as in Moria
 // Town tiles: GROUND (open ground), SHOP (a shop's entrance; L.shopAt says which), LAMP (a lamp post: blocks your
 // way but not your view). From RUBBLE on (phase 8) the tiles block both, and can be dug: rubble, veins of magma and
-// quartz (the _T ones hold treasure), and SECRET, a door that looks like the wall until it is found.
-const T = { EDGE: 0, WALL: 1, FLOOR: 2, DOOR: 3, OPEN: 4, DOWN: 5, UP: 6, SHOP: 7, GROUND: 8, LAMP: 9, RUBBLE: 10, MAGMA: 11, QUARTZ: 12, MAGMA_T: 13, QUARTZ_T: 14, SECRET: 15 };
+// quartz (the _T ones hold treasure), and SECRET, a door that looks like the wall until it is found. SHRINE and
+// SHRINE_LIT (phase 13) are a ring's shrine lamps, cold or burning, and LASTLAMP the great crystal of the Unlit Ring:
+// like a lamp post, they block your way but not your view.
+const T = { EDGE: 0, WALL: 1, FLOOR: 2, DOOR: 3, OPEN: 4, DOWN: 5, UP: 6, SHOP: 7, GROUND: 8, LAMP: 9, RUBBLE: 10, MAGMA: 11, QUARTZ: 12, MAGMA_T: 13, QUARTZ_T: 14, SECRET: 15,
+  SHRINE: 16, SHRINE_LIT: 17, LASTLAMP: 18, FIRE: 19 };   // FIRE: the town's great campfire
 const passable = t => t >= T.FLOOR && t !== T.DOOR && t !== T.LAMP && t < T.RUBBLE;   // closed doors open when you walk into them
-const opaque = t => t <= T.WALL || t === T.DOOR || t >= T.RUBBLE;
-const rocky = t => t === T.WALL || (t >= T.RUBBLE && t !== T.SECRET);   // what digging, tunnelling monsters and earthquakes break
+const opaque = t => t <= T.WALL || t === T.DOOR || (t >= T.RUBBLE && t <= T.SECRET);
+const rocky = t => t === T.WALL || (t >= T.RUBBLE && t <= T.QUARTZ_T);   // what digging, tunnelling monsters and earthquakes break
+const isShrine = t => t === T.SHRINE || t === T.SHRINE_LIT;
 // How hard each kind of rock is to dig: digging adds your digging power each turn until it reaches this.
 const HARDNESS = { [T.RUBBLE]: 60, [T.MAGMA]: 250, [T.MAGMA_T]: 250, [T.QUARTZ]: 400, [T.QUARTZ_T]: 400, [T.WALL]: 900 };
 
-function generateLevel(rng, depth){
+// light: the ring's light (0 to 100, phase 13), which sets how many rooms are lit and how many shrines burn.
+function generateLevel(rng, depth, light = 70){
   const tiles = new Uint8Array(MW * MH).fill(T.WALL), room = new Int16Array(MW * MH).fill(-1), lit = new Uint8Array(MW * MH);
   const lock = new Int8Array(MW * MH), trap = new Uint8Array(MW * MH), trapSeen = new Uint8Array(MW * MH);   // trap: 0 none, else 1 + its index in TRAPS
   for (let x = 0; x < MW; x++){ tiles[x] = T.EDGE; tiles[(MH - 1) * MW + x] = T.EDGE; }
@@ -361,7 +380,7 @@ function generateLevel(rng, depth){
   for (let tries = 0; rooms.length < target && tries < 600; tries++){
     const w = 4 + rng.int(14), h = 3 + rng.int(7), x0 = 2 + rng.int(MW - w - 4), y0 = 2 + rng.int(MH - h - 4), x1 = x0 + w - 1, y1 = y0 + h - 1;
     if (!free(x0, y0, x1, y1)) continue;
-    const id = rooms.length, isLit = rng.int(28) + 1 > depth;   // lit rooms are common near the top, rare deep down
+    const id = rooms.length, isLit = rng.int(28) + 1 > depth && rng.chance(Math.min(1, light / 70));   // lit rooms are common near the top, rare deep down, rarer in a dim ring
     const shape = w >= 9 && h >= 5 ? rng.pick(["plain", "plain", "plain", "cross", "pillars"]) : "plain";
     const cells = [];
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){
@@ -378,7 +397,7 @@ function generateLevel(rng, depth){
       const j = i + dy * MW + dx; if (tiles[j] === T.WALL && room[j] < 0) room[j] = id;
     }
     if (isLit) for (let y = y0 - 1; y <= y1 + 1; y++) for (let x = x0 - 1; x <= x1 + 1; x++) if (room[y * MW + x] === id) lit[y * MW + x] = 1;
-    rooms.push({ id, x0, y0, x1, y1, lit: isLit, cells, cx: (x0 + x1) >> 1, cy: (y0 + y1) >> 1 });
+    rooms.push({ id, x0, y0, x1, y1, lit: isLit, cells, cx: (x0 + x1) >> 1, cy: (y0 + y1) >> 1, shape });
   }
   // corridors: each room to the next one from left to right, then a few extra links so there are loops
   const order = [...rooms].sort((a, b) => a.cx - b.cx);
@@ -417,6 +436,20 @@ function generateLevel(rng, depth){
         tiles[i] = rng.chance(rich) ? (quartz ? T.QUARTZ_T : T.MAGMA_T) : quartz ? T.QUARTZ : T.MAGMA;
       }
     }
+  }
+  // shrines (phase 13): a lamp on a pedestal in the middle of some plain rooms, burning as often as the ring is bright;
+  // a burning shrine lights its room. Only where all eight neighbours are floor, so it never blocks a way through.
+  const open8 = i => [1, -1, MW, -MW, MW + 1, MW - 1, -MW + 1, -MW - 1].every(d => tiles[i + d] === T.FLOOR);
+  const lightRoom = r => { for (let y = r.y0 - 1; y <= r.y1 + 1; y++) for (let x = r.x0 - 1; x <= r.x1 + 1; x++) if (room[y * MW + x] === r.id) lit[y * MW + x] = 1; };
+  if (depth >= 51){   // the Unlit Ring: its top holds the Last Lamp, in the biggest room
+    const big = [...rooms].filter(r => r.shape === "plain").sort((a, b) => b.cells.length - a.cells.length)[0], i = big && big.cy * MW + big.cx;
+    if (big && depth === 51 && open8(i)){ tiles[i] = T.LASTLAMP; lightRoom(big); }
+  }
+  for (const r of rooms){
+    const i = r.cy * MW + r.cx;
+    if (r.shape !== "plain" || r.x1 - r.x0 < 4 || r.y1 - r.y0 < 3 || tiles[i] !== T.FLOOR || !open8(i) || !rng.chance(0.35)) continue;
+    tiles[i] = rng.chance(light / 100) ? T.SHRINE_LIT : T.SHRINE;
+    if (tiles[i] === T.SHRINE_LIT) lightRoom(r);
   }
   // stairs, on room floor away from doors
   const spot = () => {
@@ -464,12 +497,14 @@ function generateTown(rng){
     if (free){ building(x0, y0, w, h); houses.push({ x0, y0, w, h }); }
   }
   for (let x = 6; x < TW - 4; x += 12) for (const y of [street - 1, street + 1]) if (tiles[at(x, y)] === T.GROUND){ tiles[at(x, y)] = T.LAMP; lamps.push(at(x, y)); }
+  // the great campfire in the middle of the main street
+  const fire = at(TW >> 1, street); if (tiles[fire] === T.GROUND) tiles[fire] = T.FIRE;
   // the stairs down, somewhere on open ground away from the street
   const ground = []; for (let i = 0; i < tiles.length; i++) if (tiles[i] === T.GROUND) ground.push(i);
   let down;
   do down = rng.pick(ground); while (Math.abs(Math.floor(down / MW) - street) < 3);
   tiles[down] = T.DOWN;
-  return { tiles, room, lit, rooms: [{ cells: ground.filter(i => i !== down) }], spot: () => down, lock: new Int8Array(MW * MH), trap: new Uint8Array(MW * MH), trapSeen: new Uint8Array(MW * MH), w: TW, h: TH, town: true, shops, shopAt, lamps, houses, street };
+  return { tiles, room, lit, rooms: [{ cells: ground.filter(i => i !== down) }], spot: () => down, lock: new Int8Array(MW * MH), trap: new Uint8Array(MW * MH), trapSeen: new Uint8Array(MW * MH), w: TW, h: TH, town: true, shops, shopAt, lamps, houses, street, fire: tiles[fire] === T.FIRE ? fire : -1 };
 }
 // Every cell a player can stand on, reached from the first room (closed, locked and secret doors, and rubble, count
 // as passable: they can all be opened, found or dug).
@@ -1628,12 +1663,51 @@ const BOOK_LORE = {
   hbook1: "The first Keepers' prayers, from the building of the Lampway.", hbook2: "Prayers for the lamplighters of the rings.",
   hbook3: "Written after the Night the River Rose, in grief.", hbook4: "Caedra's own rites, the Order says, spoken as she lit the Ring of Glass."
 };
+/* ---------- Torchlight Dungeons: the rings of light (phase 13) ---------- */
+// The Lampway is a cage of light, and each ring's light (0 to 100) is how well it still holds. Levels are not kept,
+// so the light belongs to the ring and is saved with the character (player.rings). Relighting a dark shrine raises
+// it; taking a shrine's flame or digging out a glow crystal lowers it; Morrowgloom's hunger drains it slowly. The
+// town feels it first; the world goes dark if the Last Lamp is lost. All numbers are starting points for tuning.
+// Plain rules, no game state: tests/torch.js checks them.
+
+const CAGE_RINGS = ["stone", "roots", "rest", "forges", "glass"];   // the five rings that hold the cage
+const RING_START = { stone: 85, roots: 78, rest: 72, forges: 66, glass: 60, unlit: 0 };   // a thousand years of neglect and the Glow Rush
+const RELIGHT = 3, TAKE_FLAME = 2, DIG_CRYSTAL = 1, DRAIN_EVERY = 5000;
+const newRings = () => ({ ...RING_START });
+// Which ring's light a depth belongs to: the Pit is the bottom of the Ring of Glass, everything below is the Unlit
+// Ring, and the town, which stands right on the Ring of Stone, counts as that ring (a bot once hit a ring lookup in
+// town that could not be reproduced; this keeps such a path from crashing).
+const ringKey = d => d >= 51 ? "unlit" : d >= 50 ? "glass" : d < 1 ? "stone" : ringOf(d).id;
+const ringName = k => RINGS.find(R => R.id === k).name;
+const cageLight = rings => CAGE_RINGS.reduce((s, k) => s + rings[k], 0);
+const START_LIGHT = cageLight(RING_START);
+// Relighting a shrine: a dark ring (below 10) takes half as much from each, until a few are burning again.
+function relightRing(rings, k){ const gain = rings[k] < 10 ? RELIGHT / 2 : RELIGHT; rings[k] = Math.min(100, rings[k] + gain); return gain; }
+function dimRing(rings, k, n){ rings[k] = Math.max(0, rings[k] - n); }
+// Morrowgloom's hunger, every DRAIN_EVERY turns: a little from each ring, twice as much from the dim ones. On its own
+// it never takes a ring below DRAIN_FLOOR: only greed and the dark's servants can put a ring out.
+const DRAIN_FLOOR = 10;
+function drainRings(rings){ for (const k of [...CAGE_RINGS, "unlit"]) if (rings[k] > DRAIN_FLOOR) rings[k] = Math.max(DRAIN_FLOOR, rings[k] - (rings[k] < 30 ? 2 : 1)); }
+// How dark the town has gone: 0 as it was, 1 when the cage has lost about 5% of its light (the lamps fail at night),
+// 2 at about 10% (shops shutter after dark, and two keepers leave).
+function townShade(rings){ const lost = (START_LIGHT - cageLight(rings)) / START_LIGHT; return lost >= 0.10 ? 2 : lost >= 0.05 ? 1 : 0; }
+// The world goes dark if the Last Lamp is lost, or if the Ring of Glass goes dark with no Unlit Ring below to hold.
+const worldDark = (rings, lastLamp) => !lastLamp || (rings.glass <= 0 && rings.unlit <= 0);
+// The champion's ending: every ring, the Unlit Ring too, at full light, around a burning Last Lamp.
+const cageFinished = (rings, lastLamp) => lastLamp && [...CAGE_RINGS, "unlit"].every(k => rings[k] >= 100);
+// Morrowgloom's strength: about as now with the rings as they start, weaker when they are bright, far stronger dark.
+const bossFactor = rings => 0.6 + 1.4 * (1 - cageLight(rings) / (100 * CAGE_RINGS.length));
+// What a carried flame fetches from the Lantern Guild: more the deeper its ring.
+const flamePrice = k => 300 * (CAGE_RINGS.indexOf(k) + 1 || 6);
 /* ---------- Torchlight Dungeons: save games (phase 9) ---------- */
 // A save is versioned JSON: the character (with what they know), the shops, and the level they are on. Levels are
 // not kept, so the current one is all there is; its map arrays are run-length encoded. decodeSave refuses anything
 // damaged with a message, and lifts older versions to this one through MIGRATIONS, one version at a time.
-const SAVE_VERSION = 1;
-const MIGRATIONS = {};   // n: save at version n => the same save at version n + 1
+const SAVE_VERSION = 2;
+const MIGRATIONS = {   // n: save at version n => the same save at version n + 1
+  // 1 => 2 (phase 13): the rings of light. An older character's rings start where a new game's do, the Last Lamp burning.
+  1: s => { const p = s.player; if (p){ p.rings = p.rings || { ...RING_START }; if (p.lastLamp === undefined) p.lastLamp = true; p.flame = p.flame || null; p.offerings = p.offerings || 0; p.flamesSold = p.flamesSold || 0; } return s; }
+};
 const ARRAYS = { Uint8Array, Int8Array, Int16Array };
 const badSave = msg => { const e = new Error(msg); e.save = true; throw e; };
 // "Uint8Array:1*40,2,1*3": runs of value*count
@@ -1779,6 +1853,21 @@ function rubbleTile(th, under){
   for (const [x, y, r] of [[5, 10, 3], [10, 11, 3], [8, 6, 3], [3, 6, 2], [12, 6, 2], [7, 12, 2]]){ q.disc(x, y, r, hex(th.brick, 0.75 + hash(x, y) * 0.3)); q.px(x - 1, y - r + 1, hex(th.brick, 1.25)); }
   q.outline(); p.g.drawImage(q.c, 0, 0); return p.c;
 }
+// A shrine lamp on its stone pedestal, cold or burning; and the Last Lamp, a great crystal blazing on its own.
+function shrineTile(th, under, lit){
+  const p = pix(); p.g.drawImage(under, 0, 0);
+  const q = pix(), st = th.brick;
+  q.rect(5, 9, 6, 6, hex(st, 0.9)); q.rect(4, 14, 8, 2, hex(st, 0.75)); q.rect(5, 9, 6, 1, hex(st, 1.25));   // the pedestal
+  q.rect(4, 7, 8, 2, hex([0.72, 0.58, 0.3], lit ? 1.1 : 0.6)); q.rect(5, 6, 6, 1, hex([0.72, 0.58, 0.3], lit ? 1.3 : 0.7));   // the bowl
+  if (lit){ q.disc(8, 4, 2, "#ffb030"); q.rect(7, 1, 2, 3, "#ffd27a"); q.px(8, 0, "#fff6c0"); } else { q.px(8, 5, "#3a3a44"); q.px(9, 4, "#2a2a30"); }
+  q.outline(); p.g.drawImage(q.c, 0, 0); return p.c;
+}
+function lastLampTile(under){
+  const p = pix(); p.g.drawImage(under, 0, 0);
+  const q = pix(); q.rect(5, 13, 6, 3, "#3a3640");
+  for (let y = 1; y < 13; y++){ const w = Math.max(1, Math.round(3 - Math.abs(y - 6) / 2.5)); q.rect(8 - w, y, w * 2, 1, y % 3 ? "#bfe8ff" : "#ffffff"); }
+  q.px(7, 3, "#fff"); q.px(9, 8, "#e8f8ff"); q.outline("#1a2a3a"); p.g.drawImage(q.c, 0, 0); return p.c;
+}
 const TRAP_PICS = new Map();
 const trapImage = Tr => memo(TRAP_PICS, Tr.id, () => {   // a found trap, drawn over the floor
   const p = pix(), col = hex(Tr.rgb), id = Tr.id;
@@ -1823,6 +1912,16 @@ function shopDoor(rgb){
   p.px(10, 10, "#f0d060");
   return p.c;
 }
+// The town's great campfire: a ring of stones and logs, roaring at night, smouldering by day.
+function campfire(under, night){
+  const p = pix(); p.g.drawImage(under, 0, 0);
+  const q = pix();
+  for (let a = 0; a < 10; a++) q.disc(8 + Math.round(Math.cos(a * 0.63) * 6), 11 + Math.round(Math.sin(a * 0.63) * 3), 1, "#6a6670");   // the stone ring
+  q.line(3, 13, 12, 9, hex(WOOD, 0.7)); q.line(4, 9, 13, 13, hex(WOOD, 0.6));   // crossed logs
+  if (night){ q.disc(8, 8, 3, "#ff8a20"); q.disc(8, 6, 2, "#ffc040"); q.rect(7, 2, 2, 4, "#ffd27a"); q.px(8, 1, "#fff6c0"); q.px(5, 5, "#ffb030"); q.px(11, 4, "#ffb030"); }
+  else { q.disc(8, 10, 2, "#8a3a18"); q.px(8, 10, "#ff7a20"); q.px(7, 7, "#9a9aa4"); q.px(9, 5, "#7a7a84"); q.px(8, 3, "#5a5a64"); }   // embers and smoke
+  q.outline(); p.g.drawImage(q.c, 0, 0); return p.c;
+}
 function lampPost(under){
   const p = pix(); p.g.drawImage(under, 0, 0);
   const q = pix(); q.rect(7, 4, 2, 11, "#2a2a30"); q.rect(5, 14, 6, 2, "#2a2a30"); q.rect(5, 0, 6, 5, "#2a2a30"); q.rect(6, 1, 4, 3, "#ffd27a"); q.outline();
@@ -1832,7 +1931,7 @@ const TILE_CACHE = new Map();
 // The picture for map cell (x, y). wallAt(x, y) says whether a neighbour is wall-like.
 function tileImage(L, x, y, depth){
   const i = y * MW + x, t = L.tiles[i], v = (hash(x, y) * 4) | 0, below = y + 1 < MH ? L.tiles[i + MW] : T.EDGE;
-  const wallish = (xx, yy) => { if (xx < 0 || yy < 0 || xx >= MW || yy >= MH) return true; const u = L.tiles[yy * MW + xx]; return u <= T.WALL || u === T.SHOP || u >= T.MAGMA; };
+  const wallish = (xx, yy) => { if (xx < 0 || yy < 0 || xx >= MW || yy >= MH) return true; const u = L.tiles[yy * MW + xx]; return u <= T.WALL || u === T.SHOP || (u >= T.MAGMA && u <= T.SECRET); };
   const mask = () => (wallish(x, y - 1) ? 0 : 1) | (wallish(x + 1, y) ? 0 : 2) | (wallish(x - 1, y) ? 0 : 8);
   if (L.town){
     const near = Math.abs(y - L.street) <= 1, ground = () => near ? memo(TILE_CACHE, "cob" + v, () => cobbleTile(v)) : memo(TILE_CACHE, "grass" + v, () => grassTile(v));
@@ -1844,14 +1943,15 @@ function tileImage(L, x, y, depth){
     }
     if (t === T.SHOP){ const k = L.shopAt[i]; return memo(TILE_CACHE, "shop" + k, () => shopDoor(SHOPS[k].rgb)); }
     if (t === T.LAMP) return memo(TILE_CACHE, "lamp" + near + v, () => lampPost(ground()));
+    if (t === T.FIRE){ const night = !(typeof isDay === "function" && isDay()); return memo(TILE_CACHE, "fire" + night, () => campfire(cobbleTile(0), night)); }
     if (t === T.DOWN) return memo(TILE_CACHE, "tdown", () => stairsTile(th, true, grassTile(0)));
     return ground();
   }
   const name = themeFor(depth), th = THEMES[name], k = (s, f) => memo(TILE_CACHE, name + s, f);
   const face = n => k("face" + n, () => wallFace(th, n));
-  const front = !(below <= T.WALL || below === T.DOOR || below >= T.MAGMA);   // open floor below: the wall shows its face
+  const front = !(below <= T.WALL || below === T.DOOR || (below >= T.MAGMA && below <= T.SECRET));   // open floor below: the wall shows its face
   if (t <= T.WALL || t === T.SECRET) return front ? face(v & 1) : k("top" + mask(), () => wallTop(th, mask()));
-  if (t >= T.MAGMA){ const kind = t === T.MAGMA || t === T.MAGMA_T ? "magma" : "quartz", gold = t === T.MAGMA_T || t === T.QUARTZ_T, m = front ? 0 : mask();
+  if (t >= T.MAGMA && t <= T.QUARTZ_T){ const kind = t === T.MAGMA || t === T.MAGMA_T ? "magma" : "quartz", gold = t === T.MAGMA_T || t === T.QUARTZ_T, m = front ? 0 : mask();
     return k(kind + gold + front + m, () => veinTile(VEINS[kind], front, m, gold)); }
   if (t === T.DOOR) return k("door", () => doorTile(face(0), false));
   if (t === T.OPEN) return k("open", () => doorTile(face(0), true));
@@ -1859,6 +1959,8 @@ function tileImage(L, x, y, depth){
   if (t === T.DOWN) return k("down", () => stairsTile(th, true, fl(0)));
   if (t === T.UP) return k("up", () => stairsTile(th, false, fl(0)));
   if (t === T.RUBBLE) return k("rubble" + (v & 1), () => rubbleTile(th, fl(v)));
+  if (t === T.SHRINE || t === T.SHRINE_LIT) return k("shrine" + (t === T.SHRINE_LIT), () => shrineTile(th, fl(0), t === T.SHRINE_LIT));
+  if (t === T.LASTLAMP) return k("lastlamp", () => lastLampTile(fl(0)));
   return fl(v);
 }
 
@@ -2047,7 +2149,7 @@ function spellIcon(S, rgb){
 // see what your light (or a lit room, a glowing monster, a flying spell) shows you, and warm bodies within your
 // infravision. Characters come from chars.js. render.js draws the map and ui.js the interface; this file only
 // keeps the rules and the keys. See TORCHLIGHT_PLAN.md for the phases.
-const TORCH_RGB = [1.0, 0.62, 0.3], ROOM_RGB = [0.42, 0.42, 0.47];
+const FIRE_RGB = [1.0, 0.55, 0.22], TORCH_RGB = [1.0, 0.62, 0.3], ROOM_RGB = [0.42, 0.42, 0.47];
 const DIRS = { 1: [-1, 1], 2: [0, 1], 3: [1, 1], 4: [-1, 0], 6: [1, 0], 7: [-1, -1], 8: [0, -1], 9: [1, -1] };
 let state = "title", stateT = 0;
 let rng = new RNG(Date.now() & 0xffffffff), L = null, depth = 1, player = null, mons = [], floor = [];
@@ -2151,7 +2253,7 @@ const infra = () => player.t.blind ? 0 : race().infra + player.bonus.infra;
 function newLevel(d){
   const from = depth;
   depth = d; player.maxDepth = Math.max(player.maxDepth, d);
-  L = d === 0 ? generateTown(rng) : generateLevel(rng, d);
+  L = d === 0 ? generateTown(rng) : generateLevel(rng, d, player.rings[ringKey(d)]);
   mem.fill(0); mons = [player]; floor = []; pendingLevel = null; parts = []; floats = []; shots = []; flashes = []; later = []; target = null;
   const at = L.spot(); player.x = at % MW; player.y = Math.floor(at / MW); audio.music(d ? "depths" : "town");
   if (d === 0){
@@ -2159,17 +2261,25 @@ function newLevel(d){
     if (from > 0 && player.turns - lastTown > 500) shops.forEach((sh, i) => { sh.stock = restock(sh.stock, SHOPS[i], rng, player.know, 0.5); });
     lastTown = player.turns; wasDay = isDay(); lightTown(); if (from > 0) tutNote("returned");
     for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) mem[idx(x, y)] = 1;   // you know your own town
-    for (let k = 0, n = 5 + rng.int(4) + (wasDay ? 0 : 3); k < n; k++) spawnMonster(false);
+    const shade = townShade(player.rings), dark = !wasDay && shade > 0;   // when the cage fails, the town's nights go black
+    for (let k = 0, n = dark ? 2 : 5 + rng.int(4) + (wasDay ? 0 : 3); k < n; k++) spawnMonster(false);
+    if (dark) for (let k = 0, n = 1 + rng.int(shade); k < n; k++) spawnMonster(false, MON.shade, freeSpot(10));
     updateSight();
     say(from > 0 ? "You climb out into the town of Lanternhollow." : "You stand in Lanternhollow, a town above the dungeon. The shops are numbered 1 to 6.");
-    say(wasDay ? "It is daytime." : "It is night; the lamps are lit.");
+    say(wasDay ? "It is daytime." : dark ? "It is night, and the lamps of Lanternhollow will not light. Shades walk the streets." : "It is night; the lamps are lit.");
+    if (wasDay && shade) say(shade > 1 ? "The town is afraid: two shops stand empty, and the rest shutter at dusk." : "People say the lamps fail at night now.");
     saveGame();
     return;
   }
   relight();
-  for (let k = 0, n = 14 + Math.min(d, 30) + rng.int(8); k < n; k++) spawnMonster(false);
+  const light = player.rings[ringKey(d)], darkRing = light <= 0;   // a dark ring lets the ring below reach up through it
+  for (let k = 0, n = 14 + Math.min(d, 30) + rng.int(8); k < n; k++) spawnMonster(false, pickMonster(darkRing && rng.chance(0.3) ? d + 10 : d));
+  gatherDark(d, light);
   const boss = MON.morrowgloom;   // the Lantern-Eater waits at 2,500 ft, and sometimes deeper
-  if (d >= boss.depth && !uniqueGone(boss) && (d === boss.depth || rng.chance(0.3))) spawnMonster(false, boss, freeSpot(25));
+  if (d >= boss.depth && !uniqueGone(boss) && (d === boss.depth || rng.chance(0.3))){
+    spawnMonster(false, boss, freeSpot(25));
+    const b = mons.find(m => m.K === boss); if (b){ b.hp = b.mhp = Math.max(1, Math.round(b.hp * bossFactor(player.rings))); }   // weaker under bright rings, far stronger in a dark Deep
+  }
   for (let k = 0, n = 8 + rng.int(6); k < n; k++) dropAt(freeSpot(0), rng.chance(0.35) ? { k: "gold", n: rng.range(8, 25) * d } : loot(d));
   updateSight(); digging = null;
   if (d === 1) tutFirstRoom();
@@ -2182,6 +2292,63 @@ function relight(){
   if (depth === 0) return lightTown();
   roomLight.fill(0);
   for (let i = 0; i < MW * MH; i++) if (L.lit[i]){ roomLight[3 * i] = ROOM_RGB[0]; roomLight[3 * i + 1] = ROOM_RGB[1]; roomLight[3 * i + 2] = ROOM_RGB[2]; }
+  for (let i = 0; i < MW * MH; i++){   // burning shrines and the Last Lamp shine on their own
+    const t = L.tiles[i];
+    if (t === T.SHRINE_LIT) addLight(roomLight, MW, MH, blocks, { x: i % MW, y: Math.floor(i / MW), r: 5, i: 0.85, rgb: SHRINE_RGB });
+    if (t === T.LASTLAMP) addLight(roomLight, MW, MH, blocks, { x: i % MW, y: Math.floor(i / MW), r: 14, i: 1.4, rgb: LASTLAMP_RGB });
+  }
+}
+/* ---------- the rings of light (phase 13; the rules are in rings.js) ---------- */
+// Walk into a shrine to relight it (oil, a prayer of light, or a flame you carry) or to take its flame; carry a flame
+// home to the Eternal Lamp, or sell it. Dark-loving monsters gather by the shrines and snuff the burning ones.
+const SHRINE_RGB = [1.0, 0.72, 0.38], LASTLAMP_RGB = [0.75, 0.92, 1.2];
+const ringHere = () => ringKey(depth);
+const darkLover = K => K.fam === "shade" || K.blows.some(b => b[2] === "eatLight") || !!(K.spells && K.spells.list.includes("darkness"));
+const shrineRoom = i => { const id = L.room[i]; return id >= 0 ? [...L.room.keys()].filter(j => L.room[j] === id) : []; };
+function setShrine(i, lit){ L.tiles[i] = lit ? T.SHRINE_LIT : T.SHRINE; if (lit) lightCells(shrineRoom(i)); else for (const j of shrineRoom(i)) L.lit[j] = 0; relight(); }
+// After any change to a ring's light: the world may go dark, or the cage be finished.
+function ringChanged(msg){
+  if (msg) say(msg);
+  if (worldDark(player.rings, player.lastLamp)) return worldGoesDark();
+  if (!player.cage && cageFinished(player.rings, player.lastLamp)){ player.cage = true; sfx("levelup");
+    say("Every ring of the Lampway burns at full light, the Unlit Ring too. The cage is finished, and Morrowgloom is held for good. You have won!"); }
+}
+const ringWord = k => cap(ringName(k)) + " (" + Math.round(player.rings[k]) + ")";
+function lightShrine(i, how){
+  setShrine(i, true); const k = ringHere(); relightRing(player.rings, k);
+  player.relit = (player.relit || 0) + 1; tutNote("relit"); sfx("light"); gainExp(2 + depth);
+  flashes.push({ x: i % MW, y: Math.floor(i / MW), t: 0.6, t0: 0.6, rgb: SHRINE_RGB });
+  ringChanged("The shrine lamp catches " + how + ". " + ringWord(k) + " grows brighter.");
+}
+function snuffShrine(i, msg){ setShrine(i, false); dimRing(player.rings, ringHere(), RELIGHT); ringChanged(msg); }
+function takeFlame(i){
+  setShrine(i, false); const k = ringHere(); dimRing(player.rings, k, TAKE_FLAME); player.flame = k;
+  ringChanged("You lift the shrine's flame into your " + ITEM[player.eq.light.k].name.toLowerCase() + ". The lamp goes dark, and " + ringWord(k) + " dims.");
+}
+// The Last Lamp taken: Morrowgloom breaks loose.
+function takeLastLamp(){ player.lastLamp = false; ringChanged(); }
+function worldGoesDark(){
+  if (state !== "play") return;
+  killer = "the dark, when Morrowgloom broke loose"; player.ending = "dark"; msgs = [];
+  say("Far below, the last light holding the cage goes out. Morrowgloom rises, and every light in the world goes with it.");
+  sfx("death"); audio.music(null); bury();
+}
+// On a new level, the dark gathers by its shrines: more the dimmer the ring.
+function gatherDark(d, light){
+  const shrines = []; for (let i = 0; i < MW * MH; i++) if (isShrine(L.tiles[i])) shrines.push(i);
+  const pool = MONSTERS.filter(K => !K.town && !K.unique && !K.boss && darkLover(K) && K.depth <= d + 2);
+  for (let k = 0, n = Math.round((100 - light) / 20); k < n && pool.length && shrines.length; k++){
+    const s = rng.pick(shrines);
+    for (let tries = 0; tries < 20; tries++){ const x = s % MW + rng.range(-3, 3), y = Math.floor(s / MW) + rng.range(-3, 3);
+      if (passable(L.tiles[idx(x, y)]) && !monAt(x, y) && dist(x, y, player.x, player.y) > 6){ spawnMonster(false, rng.pick(pool), idx(x, y)); break; } }
+  }
+}
+// Retiring, in town: the game ends without a death. With a fortune, or many flames sold, it is the Rich ending.
+function retire(){
+  const p = player; p.ending = p.gold >= 50000 || (p.flamesSold || 0) >= 5 ? "rich" : "retired";
+  killer = p.ending === "rich" ? "nothing: retired rich, while the world grew darker" : "nothing: retired from delving";
+  msgs = []; say(p.ending === "rich" ? "You leave Lanternhollow with a fortune in carried light. Behind you, the town's lamps burn a little lower." : "You hang up your lantern and leave the Deep to others.");
+  sfx("shop"); audio.music(null); bury();
 }
 const depthName = d => d ? feet(d) + " ft" : "the town";
 
@@ -2209,6 +2376,7 @@ function lightTown(){
     return;
   }
   for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++){ const i = idx(x, y); roomLight[3 * i] = MOON_RGB[0]; roomLight[3 * i + 1] = MOON_RGB[1]; roomLight[3 * i + 2] = MOON_RGB[2]; }
+  if (townShade(player.rings)) return;   // when the cage fails, the lamps will not light (the campfire burns on, lower)
   for (const i of L.lamps) addLight(roomLight, MW, MH, blocks, { x: i % MW, y: Math.floor(i / MW), r: 6, i: 0.9, rgb: LAMP_RGB });
   L.shops.forEach((sh, k) => addLight(roomLight, MW, MH, blocks, { x: sh.door % MW, y: Math.floor(sh.door / MW), r: 4, i: 0.8, rgb: SHOPS[k].rgb.map(v => v * 0.7) }));
 }
@@ -2248,6 +2416,10 @@ function spawnMonster(awake, K = pickMonster(depth), at = freeSpot(10)){
 /* ---------- sight and light ---------- */
 function computeLight(field, t){
   field.set(roomLight);
+  if (depth === 0 && L.fire >= 0 && !isDay()){   // the town's campfire at night: wide and warm, lower when the cage fails
+    const f = t ? 0.08 * Math.sin(t * 0.013) + 0.06 * Math.sin(t * 0.037 + 2) + 0.04 * Math.sin(t * 0.09) : 0, low = townShade(player.rings) ? 0.7 : 1;
+    addLight(field, MW, MH, blocks, { x: L.fire % MW, y: Math.floor(L.fire / MW), r: (10 + f * 6) * low, i: 1.25 * (1 + f) * low, rgb: FIRE_RGB });
+  }
   const R = lightRadius();
   if (R > 0){
     const f = t ? 0.06 * Math.sin(t * 0.011) + 0.04 * Math.sin(t * 0.029 + 1.3) + 0.03 * Math.sin(t * 0.071) : 0;   // the flame flickers
@@ -2277,6 +2449,7 @@ function tryMove(dx, dy){
   if (m) return attack(m);
   if (workAt(x, y)) return work(x, y);
   if (t === T.DOOR){ L.tiles[i] = T.OPEN; say("You open the door."); sfx("door"); return true; }
+  if (isShrine(t) || t === T.LASTLAMP){ shrineDialog(i); return false; }
   if (!passable(t)){ say(t <= T.WALL || t >= T.RUBBLE ? "There is a wall in the way." : "Something is in the way."); return false; }
   player.x = x; player.y = y; sfx("step");
   if (L.trap[i]){ springTrap(i); if (state !== "play" || player.x !== x || player.y !== y || pendingLevel !== null) return true; }
@@ -2405,7 +2578,9 @@ function work(x, y){
   if (digging.done < HARDNESS[t]) return true;
   digging = null; L.tiles[i] = T.FLOOR; burst(x, y, RUBBLE_RGB, 10); sfx("rubble");
   say(t === T.RUBBLE ? "You have cleared the rubble." : "You have dug through the rock.");
-  if (t === T.MAGMA_T || t === T.QUARTZ_T){ dropAt(i, { k: "gold", n: rng.range(10, 30) * depth * (t === T.QUARTZ_T ? 2 : 1) }); floor[floor.length - 1].seen = true; say("You have found something!"); }
+  if (t === T.MAGMA_T || t === T.QUARTZ_T){ dropAt(i, { k: "gold", n: rng.range(10, 30) * depth * (t === T.QUARTZ_T ? 2 : 1) }); floor[floor.length - 1].seen = true; say("You have found something!");
+    if (rng.chance(0.25)){ dropAt(i, plainItem("crystal")); floor[floor.length - 1].seen = true; const k = ringHere(); dimRing(player.rings, k, DIG_CRYSTAL);
+      ringChanged("A glow crystal glitters in the broken rock: old lamplight, set into stone. " + ringWord(k) + " is a little dimmer for it."); } }
   else if (t === T.RUBBLE && rng.chance(0.08)){ dropAt(i, loot(depth)); floor[floor.length - 1].seen = true; say("You have found something in the rubble!"); }
   return true;
 }
@@ -2685,7 +2860,7 @@ const FX = {
   recall: () => {
     if (player.recall > 0){ player.recall = 0; say("A tension leaves the air around you."); return true; }
     if (depth === 0 && player.maxDepth < 1){ say("The air stirs, but there is nowhere for it to take you yet."); return true; }
-    player.recall = 15 + rng.int(20); say("The air about you becomes charged..."); return true;
+    player.recall = Math.max(5, 15 + rng.int(20) - (player.offerings || 0)); say("The air about you becomes charged..."); return true;
   },
   enchHit: () => enchant(weapon(), "tohit"), enchDam: () => enchant(weapon(), "todam"),
   enchAc: () => { const worn = ["body", "shield", "cloak", "head", "hands", "feet"].map(s => player.eq[s]).filter(Boolean); return enchant(worn.length ? rng.pick(worn) : null, "toac"); },
@@ -2953,6 +3128,11 @@ function everyTurn(){
   if (player.food === 0) say("You are starving!");
   if (player.food < 500 && !(player.t.paralyzed > 0) && rng.int(15) === 0){ player.t.paralyzed = 1 + rng.int(4); say("You faint from the lack of food."); disturbed = true; }
   if (player.food < 0 && player.food % 10 === 0) hurt(1, "starvation");
+  if (player.flame && lightRadius() === 0){ player.flame = null; say("The flame you carried has gone out with your light."); }
+  if (player.turns % DRAIN_EVERY === 0 && player.rings){   // Morrowgloom's hunger: slow, but it never stops
+    const before = townShade(player.rings); drainRings(player.rings); ringChanged();
+    if (state === "play" && townShade(player.rings) > before) say(depth ? "You feel the dark lean a little closer, far above as well as here." : "The lamps of Lanternhollow gutter, and some go out.");
+  }
   if (depth > 0) search(skillOf(player, "notice") / 4);   // now and then you notice something without looking
   if (player.t.poison > 0) hurt(1, "poison");
   if (player.t.cut > 0 && state === "play") hurt(player.t.cut > 20 ? 2 : 1, "bleeding");
@@ -3020,7 +3200,7 @@ function bury(){
   saveLore();
   if (slot){ store.del(slotKey(slot)); store.del(dyingKey(slot)); }
   slot = 0;   // the save goes, and the character dump goes to the hall of fame
-  const p = player, entry = { score: Math.floor(p.exp) + 100 * p.maxDepth + (p.won ? 10000 : 0), name: p.name, race: race().name, cls: cls().name, lvl: p.lvl, depth: feet(p.maxDepth), killer: killer + (p.won ? " (a winner)" : ""), days: clockOf(p.turns).day, dump: characterDump() };
+  const p = player, entry = { score: Math.floor(p.exp) + 100 * p.maxDepth + (p.won ? 10000 : 0) + (p.cage ? 20000 : 0) + (p.ending === "rich" ? Math.floor(p.gold / 10) : 0), ending: p.ending || "", name: p.name, race: race().name, cls: cls().name, lvl: p.lvl, depth: feet(p.maxDepth), killer: killer + (p.won ? " (a winner)" : ""), days: clockOf(p.turns).day, dump: characterDump() };
   tomb = { ...entry, best: scores.add(entry).rank === 0, at: depthName(depth) };
 }
 function monsterTurn(m){
@@ -3030,6 +3210,10 @@ function monsterTurn(m){
     const st = skillOf(player, "stealth");
     if (d < 16 - st) m.sleep -= rng.range(0, Math.max(1, 6 - st));
     return;
+  }
+  if (darkLover(K) && depth > 0 && rng.int(8) === 0) for (const k of [1, 2, 3, 4, 6, 7, 8, 9]){   // it puts out a burning shrine beside it
+    const [dx, dy] = DIRS[k], j = idx(m.x + dx, m.y + dy);
+    if (L.tiles[j] === T.SHRINE_LIT){ snuffShrine(j, seesMon(m) ? cap(theName(m)) + " snuffs out the shrine lamp!" : inFov[j] === turnNo ? "A shrine lamp goes out." : null); return; }
   }
   m.speed = K.speed - (m.slow > 0 ? 10 : 0) + (m.haste > 0 ? 10 : 0);
   if (m.slow > 0) m.slow--;
@@ -3368,6 +3552,7 @@ function begin(){
   if (C.bow) player.eq.bow = plainItem(C.bow);
   recalc();
   player.mhp = player.hp = firstHp(player); player.mmana = player.mana = maxMana(player);
+  player.rings = newRings(); player.lastLamp = true; player.flame = null; player.offerings = 0; player.flamesSold = 0;
   player.hot = Array(10).fill(null); player.slain = {}; player.ready = null; player.lore = Object.fromEntries(LORE_START.map(id => [id, 1]));
   log = []; msgs = []; killer = ""; tomb = null; cr = null;
   state = "play"; stateT = 0;
@@ -3448,8 +3633,10 @@ function characterDump(){
 
 /* ---------- shops: buying, and selling, which tells you what a thing was (the screens are in ui.js) ---------- */
 const shopName = it => itemName(it, { ...player.know, known: SHOP_KNOWS.known });
+// What a shop asks: the temple asks less the more flames you have given the Eternal Lamp.
+const shopPrice = (i, it) => Math.max(1, Math.round(buyPrice(it, SHOPS[i], player.stats.cha) * (i === 3 ? 1 - Math.min(0.3, 0.03 * (player.offerings || 0)) : 1)));
 function buy(i, it){
-  const S = SHOPS[i], price = buyPrice(it, S, player.stats.cha);
+  const S = SHOPS[i], price = shopPrice(i, it);
   msgs = [];
   if (player.gold < price) return say(S.keeper + ": \"Come back when you can afford it.\"");
   const one = { ...it, n: 1 }, got = carry(one);
@@ -3669,6 +3856,8 @@ const TUT_STEPS = [
         : p.spells.some(id => SPELL[id].aim) && ks === "modern" ? `Press ${kb(ks, "cast")} to cast ${SPELL[p.spells.find(id => SPELL[id].aim)].name} at it, or walk into it to fight.` : `Walk into it to fight${ks === "modern" ? `, or press ${kb(ks, "attack")}` : ""}.`;
       return `A cave rat sleeps in this room. ${kb(ks, "target")} targets it. ${how}`; },
     done: (p, f) => f.killed, goal: () => { const m = mons.find(m => m.tutorial); return m ? idx(m.x, m.y) : null; } },
+  { id: "shrine", text: (p, ks) => `A cold shrine lamp stands in this room: the rings of the Lampway hold the dark down only while their shrines burn. Walk into it and pour in the flask of oil I gave you. Every shrine you light makes its ring brighter.`,
+    done: (p, f) => f.relit || p.maxDepth >= 2, goal: () => { if (!depth) return null; let best = null, bd = 99; for (let i = 0; i < MW * MH; i++) if (L.tiles[i] === T.SHRINE && mem[i]){ const k = dist(i % MW, Math.floor(i / MW), player.x, player.y); if (k < bd){ bd = k; best = i; } } return best; } },
   { id: "grab", text: (p, ks) => `Things lie about down here. Stand on one and press ${kb(ks, "grab")} to pick it up; gold you pick up just by walking over it.`,
     done: (p, f, d) => f.picked || p.maxDepth >= 2, goal: () => { let best = null, bd = 99; for (const f of floor) if (f.seen && f.it.k !== "gold"){ const k = dist(f.x, f.y, player.x, player.y); if (k < bd){ bd = k; best = idx(f.x, f.y); } } return best; } },
   { id: "onward", text: (p, ks) => `Your light burns down as you go; ${kb(ks, "fuel")} lights a fresh torch. Go deeper by the stairs down (${kb(ks, "down")}), or climb back to town (${kb(ks, "up")} on the stairs up) to rest and shop.`,
@@ -3704,7 +3893,7 @@ function tutBegin(){
   if (store.get("tutorialSeen") === "1" || !guidanceOn()) return;
   player.tut = { flags: {}, done: {}, ratDone: false, finished: false };
   openDialog({ title: "Sister Ilvane", head: `<p class="lore">${esc(TUT_WELCOME)}</p>`, side: false, onBack: tutSkip,
-    cols: [[{ label: "Begin", select: closeDialog }, { label: "Skip: I know how to play", select: tutSkip }]], note: "Esc skips · the menu's Guidance option turns it back on" });
+    cols: [[{ label: "Begin", select: () => { closeDialog(); carry(plainItem("oil")); say("Sister Ilvane gives you a flask of oil. \"For the shrines below. You'll see.\""); } }, { label: "Skip: I know how to play", select: tutSkip }]], note: "Esc skips · the menu's Guidance option turns it back on" });
 }
 function tutSkip(){ if (player) player.tut = null; store.set("tutorialSeen", "1"); closeDialog(); msgs = []; say("Good luck down there, delver."); }
 // The menu's Guidance option: off hides the charge and the hints; on brings them back (and the charge, if this
@@ -3724,7 +3913,12 @@ function tutFirstRoom(){
   for (let r = 3; r <= 6; r++) for (let tries = 0; tries < 40; tries++){
     const x = player.x + rng.range(-r, r), y = player.y + rng.range(-r, r), i = idx(x, y);
     if (L.tiles[i] !== T.FLOOR || monAt(x, y) || dist(x, y, player.x, player.y) < 3 || (id >= 0 && L.room[i] !== id)) continue;
-    const m = newMon(MON.rat, x, y, 400); m.tutorial = true; updateSight(); return;
+    const m = newMon(MON.rat, x, y, 400); m.tutorial = true;
+    // and a cold shrine to light: in the same room if there is room for it, or else on open floor close by
+    const ok = j => L.tiles[j] === T.FLOOR && !monAt(j % MW, Math.floor(j / MW)) && dist(j % MW, Math.floor(j / MW), player.x, player.y) >= 2 && [1, -1, MW, -MW, MW + 1, MW - 1, -MW + 1, -MW - 1].every(d => L.tiles[j + d] === T.FLOOR);
+    const near = [...L.tiles.keys()].filter(j => ok(j) && dist(j % MW, Math.floor(j / MW), player.x, player.y) <= 16).sort((a, b) => (L.room[b] === id) - (L.room[a] === id) || dist(a % MW, Math.floor(a / MW), player.x, player.y) - dist(b % MW, Math.floor(b / MW), player.x, player.y));
+    if (near.length){ L.tiles[near[0]] = T.SHRINE; mem[near[0]] = 1; }
+    updateSight(); return;
   }
 }
 // The short hint that stays after the charge: the one key that matters right now, if any.
@@ -3828,6 +4022,9 @@ function drawWorld(t, dt){
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (shown(idx(x, y))) ctx.drawImage(tileImage(L, x, y, depth), x * TS, y * TS);
   if (title) return lightOverlay(x0, y0, x1, y1, lit, title);
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){ const i = idx(x, y); if (L.trapSeen[i] && L.trap[i] && mem[i]) ctx.drawImage(trapImage(TRAPS[L.trap[i] - 1]), x * TS, y * TS); }
+  if (depth === 0 && L.fire >= 0 && !title && !isDay() && Math.random() < dt * 4){   // sparks rise from the campfire at night
+    const fx = L.fire % MW, fy = Math.floor(L.fire / MW); parts.push({ x: fx + 0.3 + Math.random() * 0.4, y: fy + 0.5, z: 0.5, vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6, vz: 3 + Math.random() * 3, rgb: [1, 0.6 + Math.random() * 0.3, 0.2], life: 0.7 + Math.random() * 0.5, s: 1 });
+  }
   const bob = n => Math.round(Math.sin(t / 260 + n) * 0.6);
   for (const f of floor){ const i = idx(f.x, f.y); if (!visible(i) && !f.seen) continue;
     ctx.drawImage(itemIcon(f.it), f.x * TS + 2, f.y * TS + 2 + (visible(i) ? bob(f.x) : 0), 12, 12); }
@@ -3936,7 +4133,7 @@ function drawMinimap(c, s, focus){
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
     const i = idx(x, y), o = 4 * (y * w + x); if (!mem[i]) continue;
     const t = L.tiles[i], v = visible(i);
-    const col = t === T.DOWN || t === T.UP ? [240, 240, 240] : t === T.SHOP ? [240, 200, 90] : t === T.DOOR || t === T.OPEN ? [170, 110, 50] : L.trap[i] && L.trapSeen[i] ? [220, 90, 200] : t === T.MAGMA_T || t === T.QUARTZ_T ? [200, 170, 60] : opaque(t) ? [96, 92, 110] : v ? [70, 66, 58] : [40, 40, 52];
+    const col = t === T.DOWN || t === T.UP ? [240, 240, 240] : t === T.SHOP ? [240, 200, 90] : t === T.DOOR || t === T.OPEN ? [170, 110, 50] : L.trap[i] && L.trapSeen[i] ? [220, 90, 200] : t === T.SHRINE_LIT || t === T.LASTLAMP || t === T.FIRE ? [255, 200, 90] : t === T.SHRINE ? [120, 120, 150] : t === T.MAGMA_T || t === T.QUARTZ_T ? [200, 170, 60] : opaque(t) ? [96, 92, 110] : v ? [70, 66, 58] : [40, 40, 52];
     d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
   }
   for (const f of floor) if (f.seen || visible(idx(f.x, f.y))){ const o = 4 * (f.y * w + f.x); d[o] = 90; d[o + 1] = 170; d[o + 2] = 255; d[o + 3] = 255; }
@@ -4089,6 +4286,7 @@ function drawHud(){
   const T0 = p.t, chips = [[T0.fast, "Fast", "good"], [T0.hero, "Hero", "good"], [T0.berserk, "Berserk", "good"], [T0.bless, "Blessed", "good"], [T0.protEvil, "Warded", "good"],
     [T0.resFire, "Res. heat", "good"], [T0.resCold, "Res. cold", "good"], [T0.seeInv, "True sight", "good"], [T0.poison, "Poisoned", "bad"], [T0.confused, "Confused", "bad"], [T0.blind, "Blind", "bad"], [T0.asleep, "Asleep", "bad"],
     [T0.afraid, "Afraid", "bad"], [T0.paralyzed, "Paralysed", "bad"], [T0.slow, "Slowed", "bad"],
+    [p.flame, p.flame && "Carrying a flame", "good"], [depth > 0 && p.rings, depth > 0 && p.rings && "Ring light " + Math.round(p.rings[ringKey(depth)]), depth > 0 && p.rings && p.rings[ringKey(depth)] >= 50 ? "good" : "bad"],
     [T0.cut, "Bleeding", "bad"], [T0.stun, "Stunned", "bad"], [T0.halluc, "Seeing things", "bad"], [p.food >= 10000, "Full", "good"],
     [p.bonus.burden, "Burdened", "bad"], [food, food, "bad"], [p.recall, "Recall", "good"]].filter(c => c[0]);
   const xpNext = expNeeded(p, p.lvl + 1), xpPrev = p.lvl > 1 ? expNeeded(p, p.lvl) : 0;
@@ -4158,6 +4356,8 @@ function drawPanel(){
         <span>Infravision<b>${infra() ? infra() * 10 + " ft" : "none"}</b></span><span>Light<b>${lightRadius()}</b></span></div>
       ${b.res.size ? `<div class="ln">Resists ${[...b.res].join(", ")}.</div>` : ""}
       <h3>Skills</h3><div class="stats">${SKILLS.map(k => { const v = skillOf(p, k) + (k === "stealth" ? b.stealth : k === "search" ? b.search : 0); return `<span>${SKILL_NAMES[k]}<b>${k === "stealth" ? stealthWord(v) : skillWord(v)}</b></span>`; }).join("")}</div>
+      <h3>The rings of light</h3>${[...CAGE_RINGS, "unlit"].map(k => bar(cap(ringName(k)).replace(/^The /, ""), Math.round(p.rings[k]), 100, p.rings[k] >= 50 ? "ring" : "hp low")).join("")}
+      <div class="ln">${p.lastLamp ? "The Last Lamp burns." : "The Last Lamp is gone."} ${p.cage ? "The cage is finished." : ""} ${["", "Lanternhollow's lamps fail at night.", "Lanternhollow is afraid: two shops empty, the rest shut at dusk."][townShade(p.rings)]}${p.offerings ? " Flames given to the Eternal Lamp: " + p.offerings + "." : ""}${p.flamesSold ? " Flames sold: " + p.flamesSold + "." : ""}</div>
       <div class="ln dim">Deepest ${feet(p.maxDepth)} ft · ${p.kills} kills · ${clockOf(p.turns).text} (${p.turns} turns) · exp penalty +${R.xp + C.xp}%</div>`;
   } else if (tab === "pack"){
     const wt = totalWeight(), capW = capacity();
@@ -4299,10 +4499,53 @@ function studyDialog(can){ openDialog({ title: "Study which spell?", cols: [can.
 
 /* ---------- shops ---------- */
 let shopNow = -1;
-function openShop(i){ const S = SHOPS[i]; msgs = []; sfx("shop"); say("You enter the " + S.name + ". " + S.keeper + ": \"" + rng.pick(S.hello) + "\""); shopNow = i; shopDialog(i, 0, [0, 0]); }
+// Phase 13: as the cage fails, two keepers leave and the rest shutter at dusk; a flame you carry can go to the
+// Eternal Lamp (the Temple) or be sold to the Lantern Guild (through the General Store).
+const DARK_HELLO = ["Have you seen how dark the nights are now?", "We close early these days. You understand.", "Every night the lamps fail a little sooner.", "Do something about the dark, would you?"];
+function openShop(i){
+  const S = SHOPS[i], shade = townShade(player.rings); msgs = [];
+  if (shade >= 2 && (i === 1 || i === 5)){ say("The " + S.name + " stands empty and dark: " + S.keeper + " has left Lanternhollow."); return; }
+  if (shade >= 2 && !isDay()){ say("The shutters of the " + S.name + " are down. No one opens after dark now."); return; }
+  sfx("shop");
+  const open = () => { say("You enter the " + S.name + ". " + S.keeper + ": \"" + rng.pick(shade ? DARK_HELLO : S.hello) + "\""); shopNow = i; shopDialog(i, 0, [0, 0]); };
+  const k = player.flame;
+  if (!k || (i !== 3 && i !== 0)) return open();
+  const done = msg => { player.flame = null; closeDialog(); msgs = []; say(msg); open(); };
+  openDialog({ title: i === 3 ? "The Eternal Lamp" : "The Lantern Guild's counter", side: false, onBack: () => { closeDialog(); open(); },
+    head: `<p class="lore">${i === 3 ? "Sister Ilvane sees the flame in your light and holds out her hands. Given to the Eternal Lamp, it makes the temple stronger: Word of Recall comes faster, and her healing costs less."
+      : "Odda leans over the counter. \"The Lantern Guild pays well for a shrine's flame, dear, and asks no questions about where it came from.\""} It is a flame of ${esc(ringName(k))}.</p>`,
+    cols: [[i === 3 ? { label: "Give the flame to the Eternal Lamp", select: () => { player.offerings = (player.offerings || 0) + 1; sfx("light"); done("The flame joins the Eternal Lamp, which burns a little taller."); } }
+      : { label: "Sell the flame", right: flamePrice(k) + " gold", select: () => { player.gold += flamePrice(k); player.flamesSold = (player.flamesSold || 0) + 1; sfx("gold"); done("The Lantern Guild pays you " + flamePrice(k) + " gold for the flame."); } },
+      { label: "Keep it", select: () => { closeDialog(); open(); } }]] });
+}
+// Walking into a shrine: relight it, or take its flame. Walking into the Last Lamp: leave it, or end the world.
+function shrineDialog(i){
+  const t = L.tiles[i], p = player;
+  if (t === T.LASTLAMP){
+    const sure = () => openDialog({ title: "Take the Last Lamp?", side: false, onBack: closeDialog, head: `<p class="lore">If you take it, Morrowgloom breaks loose, and every light in the world goes out. There is no coming back from this.</p>`,
+      cols: [[{ label: "No, leave it burning", select: closeDialog }, { label: "Yes, take it", select: () => { closeDialog(); act(() => { takeLastLamp(); return true; }); } }]] });
+    return openDialog({ title: "The Last Lamp", side: false, onBack: closeDialog,
+      head: `<p class="lore">A great crystal, taller than you, blazing on its own in the raw rock. The last Keepers lit it before they left, and while it burns, Morrowgloom cannot leave the Pit. ${p.cage ? "Around it, the shrines of the Unlit Ring burn again." : "Relight the cold shrines of the Unlit Ring around it, and the cage will be finished at last."}</p>`,
+      cols: [[{ label: "Leave it burning", select: closeDialog }, { label: "Take the Last Lamp", right: "frees Morrowgloom", select: sure }]] });
+  }
+  const k = ringHere(), lit = t === T.SHRINE_LIT, rows = [];
+  if (lit){
+    const can = !!p.eq.light && lightRadius() > 0 && !p.flame;
+    rows.push({ label: "Take its flame into your light", right: "dims the ring", off: !can, select: () => { closeDialog(); act(() => { takeFlame(i); return true; }); } });
+  } else {
+    const oil = p.inv.find(it => ITEM[it.k].cat === "flask"), S = knownSpells().find(S => (S.fx === "refuel" || S.fx === "lightArea") && p.mana >= S.mana);
+    rows.push({ label: "Pour in a flask of oil", off: !oil, select: () => { closeDialog(); act(() => { takeOne(oil); lightShrine(i, "from your oil"); return true; }); } });
+    rows.push({ label: S ? (S.realm === "holy" ? "Pray " : "Cast ") + S.name : "Pray or cast a light", right: S ? S.mana + " mana" : "Tend the Flame, Sacred Light, Kindle", off: !S,
+      select: () => { closeDialog(); act(() => { p.mana -= S.mana; lightShrine(i, "at your word"); return true; }); } });
+    rows.push({ label: "Light it from the flame you carry", off: !p.flame, select: () => { closeDialog(); act(() => { p.flame = null; lightShrine(i, "from the flame you carried"); return true; }); } });
+  }
+  rows.push({ label: "Leave it", select: closeDialog });
+  openDialog({ title: lit ? "A burning shrine" : "A cold shrine", side: false, onBack: closeDialog, cols: [rows],
+    head: `<p class="lore">${lit ? "Its flame has burned here for longer than anyone remembers, holding the dark below this ring." : "Its bowl is cold and dry. Every shrine lit holds the dark a little further down."} ${esc(cap(ringName(k)))} burns at ${Math.round(p.rings[k])} of 100.</p>` });
+}
 function shopDialog(i, c, at){
   const S = SHOPS[i], stock = shops[i].stock, cha = player.stats.cha;
-  const buyRows = stock.map(it => ({ item: it, html: esc(cap(shopName(it))), right: buyPrice(it, S, cha) + " g", off: buyPrice(it, S, cha) > player.gold, select: () => { buy(i, it); shopDialog(i, 0, dlg.at); } }));
+  const buyRows = stock.map(it => ({ item: it, html: esc(cap(shopName(it))), right: shopPrice(i, it) + " g", off: shopPrice(i, it) > player.gold, select: () => { buy(i, it); shopDialog(i, 0, dlg.at); } }));
   const sellRows = player.inv.map(it => ({ item: it, label: cap(nameOf(it)), right: !shopBuys(S, it) ? "–" : it.id && kindKnown(ITEM[it.k], player.know) ? sellPrice(it, S, cha) + " g" : "? g", select: () => { sell(i, it); shopDialog(i, 1, dlg.at); } }));
   openDialog({ title: S.name + " · " + S.keeper, wide: true, heads: ["Buy", "Sell"], cols: [buyRows, sellRows], c, at, empty: "Nothing here.",
     head: `<div class="shopline"><span class="gold">● ${player.gold} gold</span><span>${esc(msgs.slice(-1)[0] || "")}</span></div>`, note: "Prices are for one · selling tells you what a thing is" });
@@ -4323,6 +4566,9 @@ function menuDialog(){
     ...Object.entries(OPTIONS).map(([k, label]) => ({ label, right: (opt(k) ? "On" : "Off") + "  ‹ ›", adjust: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); }, select: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); } })),
     { label: "Guidance for new delvers", right: (guidanceOn() ? "On" : "Off") + "  ‹ ›", adjust: () => { setGuidance(!guidanceOn()); menuDialog(); }, select: () => { setGuidance(!guidanceOn()); menuDialog(); } },
     { label: "Hall of fame", select: fameDialog },
+    ...(state === "play" && depth === 0 ? [{ label: "Retire from delving", right: "ends this game", select: () => openDialog({ title: "Retire from delving?", side: false, onBack: menuDialog,
+      head: `<p class="lore">You leave Lanternhollow for good, alive. ${player.gold >= 50000 || (player.flamesSold || 0) >= 5 ? "With your fortune, it will be remembered as a rich retirement." : "The Deep will go on without you."}</p>`,
+      cols: [[{ label: "No, keep delving", select: menuDialog }, { label: "Yes, retire", select: () => { closeDialog(); retire(); } }]] }) }] : []),
     ...(state === "play" ? [{ label: "Export this character to a file", select: () => { closeDialog(); exportSave(); } }, { label: "Character dump", right: "a text file", select: () => { closeDialog(); download(player.name + ".txt", characterDump()); } },
       { label: "Save and quit", select: () => { saveGame(); closeDialog(); toTitle(); } }] : [])
   ];
@@ -4371,6 +4617,7 @@ function helpDialog(){
     ["Magic", "Casters need their book in the pack. When you can learn more, open the Book (B) to study."],
     ["Hidden things", "Space waits and searches for secret doors and traps. Walk into a known trap to disarm it, and into a locked door to pick it."],
     ["Digging", "Walk into rubble or a vein of magma or quartz to dig it; T digs plain rock. A shovel or pick in your pack helps."],
+    ["The rings of light", "The dungeon is a cage of light, ring under ring. Walk into a cold shrine to relight it (oil, a prayer of light, or a carried flame): its ring grows brighter, and the Deep with it. You may take a burning shrine's flame home instead, to the Eternal Lamp or to sell, but its ring dims. The Character tab shows every ring."],
     ["Resting", "R rests until you are healed, but only in Lanternhollow: the dark will not let you sleep below. Down there, drink (D) or pray, or climb home."],
     ["Death", "The game saves as you play. If you die with enough gold, Sister Ilvane can call your soul back to the temple; the price rises with your level and every time. Otherwise death is for good, and the hall of fame keeps your story."],
     ["Guidance", "Sister Ilvane walks a new delver through a first trip, and short key hints show what to press. The menu turns both on or off."]];
@@ -4397,7 +4644,8 @@ function drawScreen(){
   } else if (state === "create") drawCreate();
   else if (state === "dead"){
     const T0 = tomb;
-    el.innerHTML = `<div class="titlecard tomb"><h1 class="rip">R.I.P.</h1><b>${esc(T0.name)}</b><div>the ${esc(T0.race)} ${esc(T0.cls)}, level ${T0.lvl}</div><div>killed by ${esc(T0.killer)}</div><div>${T0.at === "the town" ? "in the town" : "at " + T0.at}${T0.days ? ", on day " + T0.days + " of the delve" : ""}</div>
+    const head = { dark: "The world went dark", rich: "Rich and retired", retired: "Retired" }[T0.ending] || "R.I.P.";
+    el.innerHTML = `<div class="titlecard tomb"><h1 class="rip">${head}</h1><b>${esc(T0.name)}</b><div>the ${esc(T0.race)} ${esc(T0.cls)}, level ${T0.lvl}</div><div>${/^nothing/.test(T0.killer) ? esc(T0.killer.replace(/^nothing: /, "")) : "killed by " + esc(T0.killer)}</div><div>${T0.at === "the town" ? "in the town" : "at " + T0.at}${T0.days ? ", on day " + T0.days + " of the delve" : ""}</div>
       <h3>Score ${T0.score}${T0.best ? " · best!" : ""}</h3><p class="blink">Press Enter for the title</p><p class="dim">D saves a character dump</p></div>`;
   }
 }

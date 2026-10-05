@@ -14,6 +14,9 @@ Play it at [dungeon.hensap.id](https://dungeon.hensap.id), and read the lore of 
   paper-doll hero.
 - 60 spells and prayers in two realms; a town with six shops, day and night.
 - 267 kinds of monster in 50 families, 25 named uniques, and a final boss at 2,500 ft; monster recall.
+- The rings of light: relight the dungeon's cold shrines to strengthen the cage around Morrowgloom, or carry their
+  flames home to sell. The town feels it first; four endings, from finishing the cage to letting the world go dark.
+- A great campfire in the middle of town at night, and a leather finish on the panels.
 - A clock of days and hours: a day is 10,000 turns, about nine seconds each.
 - Death is for good, unless you can pay to have your soul called back to the Eternal Lamp (dearer every time);
   resting is for the town only.
@@ -53,7 +56,7 @@ Moria's own letter keys and the roguelike set are in the menu (Keys), as is Deta
 - `node tests/torch.js` checks the rules and data; `node tests/balance.js` (add `-v` for detail) fights every
   monster with every class at the level you would expect at its depth.
 - `src/`, by job:
-  - **Rules and data:** `rng.js` random numbers; `fov.js` sight and light; `turn.js` the speed scheduler; `gen.js` levels, rock, doors and the town; `data.js` townsfolk and traps; `bestiary.js` the dungeon's monsters and combat numbers; `items.js` items, flavours and names; `shops.js` shops and prices; `chars.js` peoples, callings, stats and skills; `spells.js` magic; `lore.js` the world's lore in short; `save.js` the save format.
+  - **Rules and data:** `rng.js` random numbers; `fov.js` sight and light; `turn.js` the speed scheduler; `gen.js` levels, rock, doors and the town; `data.js` townsfolk and traps; `bestiary.js` the dungeon's monsters and combat numbers; `items.js` items, flavours and names; `shops.js` shops and prices; `chars.js` peoples, callings, stats and skills; `spells.js` magic; `lore.js` the world's lore in short; `rings.js` the rules of the rings of light; `save.js` the save format.
   - **The tutorial:** `tutorial.js` Sister Ilvane's steps for a first game, and the key hints.
   - **The game:** `game.js` the rules of play and the keys.
   - **The look:** `sprites.js` tiles, figures and icons, drawn by code; `render.js` the map, light, animation and debris; `ui.js` the HTML HUD, panel, dialogs and screens; `head.html` the page markup and styles.

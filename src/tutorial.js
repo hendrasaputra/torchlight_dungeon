@@ -31,6 +31,8 @@ const TUT_STEPS = [
         : p.spells.some(id => SPELL[id].aim) && ks === "modern" ? `Press ${kb(ks, "cast")} to cast ${SPELL[p.spells.find(id => SPELL[id].aim)].name} at it, or walk into it to fight.` : `Walk into it to fight${ks === "modern" ? `, or press ${kb(ks, "attack")}` : ""}.`;
       return `A cave rat sleeps in this room. ${kb(ks, "target")} targets it. ${how}`; },
     done: (p, f) => f.killed, goal: () => { const m = mons.find(m => m.tutorial); return m ? idx(m.x, m.y) : null; } },
+  { id: "shrine", text: (p, ks) => `A cold shrine lamp stands in this room: the rings of the Lampway hold the dark down only while their shrines burn. Walk into it and pour in the flask of oil I gave you. Every shrine you light makes its ring brighter.`,
+    done: (p, f) => f.relit || p.maxDepth >= 2, goal: () => { if (!depth) return null; let best = null, bd = 99; for (let i = 0; i < MW * MH; i++) if (L.tiles[i] === T.SHRINE && mem[i]){ const k = dist(i % MW, Math.floor(i / MW), player.x, player.y); if (k < bd){ bd = k; best = i; } } return best; } },
   { id: "grab", text: (p, ks) => `Things lie about down here. Stand on one and press ${kb(ks, "grab")} to pick it up; gold you pick up just by walking over it.`,
     done: (p, f, d) => f.picked || p.maxDepth >= 2, goal: () => { let best = null, bd = 99; for (const f of floor) if (f.seen && f.it.k !== "gold"){ const k = dist(f.x, f.y, player.x, player.y); if (k < bd){ bd = k; best = idx(f.x, f.y); } } return best; } },
   { id: "onward", text: (p, ks) => `Your light burns down as you go; ${kb(ks, "fuel")} lights a fresh torch. Go deeper by the stairs down (${kb(ks, "down")}), or climb back to town (${kb(ks, "up")} on the stairs up) to rest and shop.`,
@@ -66,7 +68,7 @@ function tutBegin(){
   if (store.get("tutorialSeen") === "1" || !guidanceOn()) return;
   player.tut = { flags: {}, done: {}, ratDone: false, finished: false };
   openDialog({ title: "Sister Ilvane", head: `<p class="lore">${esc(TUT_WELCOME)}</p>`, side: false, onBack: tutSkip,
-    cols: [[{ label: "Begin", select: closeDialog }, { label: "Skip: I know how to play", select: tutSkip }]], note: "Esc skips · the menu's Guidance option turns it back on" });
+    cols: [[{ label: "Begin", select: () => { closeDialog(); carry(plainItem("oil")); say("Sister Ilvane gives you a flask of oil. \"For the shrines below. You'll see.\""); } }, { label: "Skip: I know how to play", select: tutSkip }]], note: "Esc skips · the menu's Guidance option turns it back on" });
 }
 function tutSkip(){ if (player) player.tut = null; store.set("tutorialSeen", "1"); closeDialog(); msgs = []; say("Good luck down there, delver."); }
 // The menu's Guidance option: off hides the charge and the hints; on brings them back (and the charge, if this
@@ -86,7 +88,12 @@ function tutFirstRoom(){
   for (let r = 3; r <= 6; r++) for (let tries = 0; tries < 40; tries++){
     const x = player.x + rng.range(-r, r), y = player.y + rng.range(-r, r), i = idx(x, y);
     if (L.tiles[i] !== T.FLOOR || monAt(x, y) || dist(x, y, player.x, player.y) < 3 || (id >= 0 && L.room[i] !== id)) continue;
-    const m = newMon(MON.rat, x, y, 400); m.tutorial = true; updateSight(); return;
+    const m = newMon(MON.rat, x, y, 400); m.tutorial = true;
+    // and a cold shrine to light: in the same room if there is room for it, or else on open floor close by
+    const ok = j => L.tiles[j] === T.FLOOR && !monAt(j % MW, Math.floor(j / MW)) && dist(j % MW, Math.floor(j / MW), player.x, player.y) >= 2 && [1, -1, MW, -MW, MW + 1, MW - 1, -MW + 1, -MW - 1].every(d => L.tiles[j + d] === T.FLOOR);
+    const near = [...L.tiles.keys()].filter(j => ok(j) && dist(j % MW, Math.floor(j / MW), player.x, player.y) <= 16).sort((a, b) => (L.room[b] === id) - (L.room[a] === id) || dist(a % MW, Math.floor(a / MW), player.x, player.y) - dist(b % MW, Math.floor(b / MW), player.x, player.y));
+    if (near.length){ L.tiles[near[0]] = T.SHRINE; mem[near[0]] = 1; }
+    updateSight(); return;
   }
 }
 // The short hint that stays after the charge: the one key that matters right now, if any.
