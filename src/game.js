@@ -143,7 +143,7 @@ const depthName = d => d ? feet(d) + " ft" : "the town";
 /* ---------- the town: day and night ---------- */
 // A day lasts DAY turns: daylight for the first half. By day the sun crosses from east to west and the buildings
 // cast shadows away from it; at night there is faint moonlight, and the lamp posts and shop doorways glow.
-const DAY = 10000, MOON_RGB = [0.035, 0.045, 0.08], LAMP_RGB = [1.0, 0.7, 0.35];
+const DAY = DAY_TURNS, MOON_RGB = [0.035, 0.045, 0.08], LAMP_RGB = [1.0, 0.7, 0.35];
 let shops = null, lastTown = 0, wasDay = true;
 const dayPhase = () => (player.turns % DAY) / DAY, isDay = () => dayPhase() < 0.5;
 function lightTown(){
@@ -975,7 +975,7 @@ function bury(){
   saveLore();
   if (slot){ store.del(slotKey(slot)); store.del(dyingKey(slot)); }
   slot = 0;   // the save goes, and the character dump goes to the hall of fame
-  const p = player, entry = { score: Math.floor(p.exp) + 100 * p.maxDepth + (p.won ? 10000 : 0), name: p.name, race: race().name, cls: cls().name, lvl: p.lvl, depth: feet(p.maxDepth), killer: killer + (p.won ? " (a winner)" : ""), dump: characterDump() };
+  const p = player, entry = { score: Math.floor(p.exp) + 100 * p.maxDepth + (p.won ? 10000 : 0), name: p.name, race: race().name, cls: cls().name, lvl: p.lvl, depth: feet(p.maxDepth), killer: killer + (p.won ? " (a winner)" : ""), days: clockOf(p.turns).day, dump: characterDump() };
   tomb = { ...entry, best: scores.add(entry).rank === 0, at: depthName(depth) };
 }
 function monsterTurn(m){
@@ -1391,7 +1391,7 @@ function characterDump(){
   return ["Torchlight Dungeons: character dump", "",
     p.name + " the " + race().name + " " + cls().name + " (" + titleOf(p) + ")",
     "Level " + p.lvl + ", " + Math.floor(p.exp) + " experience. Health " + Math.max(0, p.hp) + "/" + p.mhp + (p.mmana ? ", mana " + p.mana + "/" + p.mmana : "") + ". Gold " + p.gold + ".",
-    "Now " + (depth ? "at " : "in ") + depthName(depth) + "; deepest " + feet(p.maxDepth) + " ft. " + p.turns + " turns, " + p.kills + " kills." + (p.won ? " Slew Morrowgloom." : ""),
+    "Now " + (depth ? "at " : "in ") + depthName(depth) + "; deepest " + feet(p.maxDepth) + " ft. " + clockOf(p.turns).text + " (" + p.turns + " turns), " + p.kills + " kills." + (p.won ? " Slew Morrowgloom." : ""),
     ...(killer ? ["Killed by " + killer + "."] : []), "",
     "Stats: " + STATS.map(k => STAT_NAMES[k] + " " + p.stats[k]).join(", "),
     "Skills: " + SKILLS.map(k => SKILL_NAMES[k] + " " + skillOf(p, k)).join(", "), "",

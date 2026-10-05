@@ -32,6 +32,7 @@ header { color: var(--text); } #hud { color: var(--dim); }
 img.px { image-rendering: pixelated; width: 32px; height: 32px; display: block; }
 img.px.big { width: 48px; height: 48px; } img.px.face { width: 40px; height: 40px; } img.px.hero { width: 160px; height: 160px; filter: drop-shadow(0 6px 0 #0007); }
 #ov > * { position: absolute; }
+#status .facts.clock { color: var(--dim); margin-top: 2px; }
 #status .next { margin-top: 8px; padding: 7px 8px; border: 1px solid var(--gold); border-radius: 4px; background: #2a2010cc; font-size: 12px; line-height: 1.45; }
 #status .next b { display: block; color: var(--gold); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2px; }
 #status .hint { margin-top: 6px; font-size: 12px; color: #d8cfb8; }
@@ -313,6 +314,15 @@ const lum = (f, j) => 0.2126 * f[j] + 0.7152 * f[j + 1] + 0.0722 * f[j + 2];
 /* ---------- Torchlight Dungeons: turns ---------- */
 // Energy scheduler: every tick each actor gains energy by its speed, and whoever reaches 100 acts. Speed +10 acts
 // twice as often as speed 0, and -10 half as often.
+// The game's clock. A day is DAY_TURNS of the player's turns, so a turn is about nine seconds: a careful step in the
+// dark, or an exchange of blows. A new game starts at six in the morning, so daylight (06:00 to 18:00) is the first
+// half of every DAY_TURNS, and a new day begins at midnight.
+const DAY_TURNS = 10000;
+function clockOf(turns){
+  const mins = 360 + Math.floor(turns * 1440 / DAY_TURNS), day = Math.floor(mins / 1440) + 1, h = Math.floor(mins % 1440 / 60), m = mins % 60;
+  const part = h < 5 ? "night" : h < 12 ? "morning" : h < 17 ? "afternoon" : h < 21 ? "evening" : "night";
+  return { day, h, m, part, text: "Day " + day + " · " + String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") };
+}
 const energyGain = speed => 10 * Math.pow(2, speed / 10);
 function nextActor(actors){
   for (;;){
@@ -2178,7 +2188,7 @@ const depthName = d => d ? feet(d) + " ft" : "the town";
 /* ---------- the town: day and night ---------- */
 // A day lasts DAY turns: daylight for the first half. By day the sun crosses from east to west and the buildings
 // cast shadows away from it; at night there is faint moonlight, and the lamp posts and shop doorways glow.
-const DAY = 10000, MOON_RGB = [0.035, 0.045, 0.08], LAMP_RGB = [1.0, 0.7, 0.35];
+const DAY = DAY_TURNS, MOON_RGB = [0.035, 0.045, 0.08], LAMP_RGB = [1.0, 0.7, 0.35];
 let shops = null, lastTown = 0, wasDay = true;
 const dayPhase = () => (player.turns % DAY) / DAY, isDay = () => dayPhase() < 0.5;
 function lightTown(){
@@ -3010,7 +3020,7 @@ function bury(){
   saveLore();
   if (slot){ store.del(slotKey(slot)); store.del(dyingKey(slot)); }
   slot = 0;   // the save goes, and the character dump goes to the hall of fame
-  const p = player, entry = { score: Math.floor(p.exp) + 100 * p.maxDepth + (p.won ? 10000 : 0), name: p.name, race: race().name, cls: cls().name, lvl: p.lvl, depth: feet(p.maxDepth), killer: killer + (p.won ? " (a winner)" : ""), dump: characterDump() };
+  const p = player, entry = { score: Math.floor(p.exp) + 100 * p.maxDepth + (p.won ? 10000 : 0), name: p.name, race: race().name, cls: cls().name, lvl: p.lvl, depth: feet(p.maxDepth), killer: killer + (p.won ? " (a winner)" : ""), days: clockOf(p.turns).day, dump: characterDump() };
   tomb = { ...entry, best: scores.add(entry).rank === 0, at: depthName(depth) };
 }
 function monsterTurn(m){
@@ -3426,7 +3436,7 @@ function characterDump(){
   return ["Torchlight Dungeons: character dump", "",
     p.name + " the " + race().name + " " + cls().name + " (" + titleOf(p) + ")",
     "Level " + p.lvl + ", " + Math.floor(p.exp) + " experience. Health " + Math.max(0, p.hp) + "/" + p.mhp + (p.mmana ? ", mana " + p.mana + "/" + p.mmana : "") + ". Gold " + p.gold + ".",
-    "Now " + (depth ? "at " : "in ") + depthName(depth) + "; deepest " + feet(p.maxDepth) + " ft. " + p.turns + " turns, " + p.kills + " kills." + (p.won ? " Slew Morrowgloom." : ""),
+    "Now " + (depth ? "at " : "in ") + depthName(depth) + "; deepest " + feet(p.maxDepth) + " ft. " + clockOf(p.turns).text + " (" + p.turns + " turns), " + p.kills + " kills." + (p.won ? " Slew Morrowgloom." : ""),
     ...(killer ? ["Killed by " + killer + "."] : []), "",
     "Stats: " + STATS.map(k => STAT_NAMES[k] + " " + p.stats[k]).join(", "),
     "Skills: " + SKILLS.map(k => SKILL_NAMES[k] + " " + skillOf(p, k)).join(", "), "",
@@ -4085,6 +4095,7 @@ function drawHud(){
   $("status").innerHTML = `<div class="who">${pic(heroImage(), "face")}<div><b>${esc(p.name)}</b><small>Level ${p.lvl} ${esc(titleOf(p))}</small></div></div>
     ${bar("Health", Math.max(0, p.hp), p.mhp, p.hp < p.mhp * 0.3 ? "hp low" : "hp")}${p.mmana ? bar("Mana", p.mana, p.mmana, "mp") : ""}
     <div class="meter xp"><i><s style="width:${100 * (p.exp - xpPrev) / (xpNext - xpPrev)}%"></s></i></div>
+    <div class="facts clock"><span>${clockOf(p.turns).text}</span><span>${clockOf(p.turns).part}</span></div>
     <div class="facts"><span>${depth ? feet(depth) + " ft" : "Town · " + (isDay() ? "day" : "night")}</span><span class="${!lt || lt.fuel < 500 ? "bad" : ""}">${lt ? (lt.fuel !== undefined ? "🔥 " + lt.fuel : "🔥 steady") : "No light"}</span><span class="gold">● ${p.gold}</span></div>
     <div class="chips">${chips.map(([v, s, c]) => `<em class="${c}">${s}${typeof v === "number" && s !== "Burdened" ? " " + v : ""}</em>`).join("")}</div>
     ${tutHtml()}`;
@@ -4147,7 +4158,7 @@ function drawPanel(){
         <span>Infravision<b>${infra() ? infra() * 10 + " ft" : "none"}</b></span><span>Light<b>${lightRadius()}</b></span></div>
       ${b.res.size ? `<div class="ln">Resists ${[...b.res].join(", ")}.</div>` : ""}
       <h3>Skills</h3><div class="stats">${SKILLS.map(k => { const v = skillOf(p, k) + (k === "stealth" ? b.stealth : k === "search" ? b.search : 0); return `<span>${SKILL_NAMES[k]}<b>${k === "stealth" ? stealthWord(v) : skillWord(v)}</b></span>`; }).join("")}</div>
-      <div class="ln dim">Deepest ${feet(p.maxDepth)} ft · ${p.kills} kills · ${p.turns} turns · exp penalty +${R.xp + C.xp}%</div>`;
+      <div class="ln dim">Deepest ${feet(p.maxDepth)} ft · ${p.kills} kills · ${clockOf(p.turns).text} (${p.turns} turns) · exp penalty +${R.xp + C.xp}%</div>`;
   } else if (tab === "pack"){
     const wt = totalWeight(), capW = capacity();
     h += `<div class="meter ${wt > capW ? "hp low" : "wt"}"><span>Pack ${p.inv.length} / 22<b>${Math.round(wt)} / ${capW} lb</b></span><i><s style="width:${Math.min(100, 100 * wt / capW)}%"></s></i></div><div class="grid">`;
@@ -4386,7 +4397,7 @@ function drawScreen(){
   } else if (state === "create") drawCreate();
   else if (state === "dead"){
     const T0 = tomb;
-    el.innerHTML = `<div class="titlecard tomb"><h1 class="rip">R.I.P.</h1><b>${esc(T0.name)}</b><div>the ${esc(T0.race)} ${esc(T0.cls)}, level ${T0.lvl}</div><div>killed by ${esc(T0.killer)}</div><div>${T0.at === "the town" ? "in the town" : "at " + T0.at}</div>
+    el.innerHTML = `<div class="titlecard tomb"><h1 class="rip">R.I.P.</h1><b>${esc(T0.name)}</b><div>the ${esc(T0.race)} ${esc(T0.cls)}, level ${T0.lvl}</div><div>killed by ${esc(T0.killer)}</div><div>${T0.at === "the town" ? "in the town" : "at " + T0.at}${T0.days ? ", on day " + T0.days + " of the delve" : ""}</div>
       <h3>Score ${T0.score}${T0.best ? " · best!" : ""}</h3><p class="blink">Press Enter for the title</p><p class="dim">D saves a character dump</p></div>`;
   }
 }

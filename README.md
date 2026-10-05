@@ -14,6 +14,7 @@ Play it at [dungeon.hensap.id](https://dungeon.hensap.id), and read the lore of 
   paper-doll hero.
 - 60 spells and prayers in two realms; a town with six shops, day and night.
 - 267 kinds of monster in 50 families, 25 named uniques, and a final boss at 2,500 ft; monster recall.
+- A clock of days and hours: a day is 10,000 turns, about nine seconds each.
 - Death is for good, unless you can pay to have your soul called back to the Eternal Lamp (dearer every time);
   resting is for the town only.
 - A first game that teaches itself: Sister Ilvane walks a new delver through their first trip, step by step, and

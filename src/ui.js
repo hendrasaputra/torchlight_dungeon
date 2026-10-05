@@ -142,6 +142,7 @@ function drawHud(){
   $("status").innerHTML = `<div class="who">${pic(heroImage(), "face")}<div><b>${esc(p.name)}</b><small>Level ${p.lvl} ${esc(titleOf(p))}</small></div></div>
     ${bar("Health", Math.max(0, p.hp), p.mhp, p.hp < p.mhp * 0.3 ? "hp low" : "hp")}${p.mmana ? bar("Mana", p.mana, p.mmana, "mp") : ""}
     <div class="meter xp"><i><s style="width:${100 * (p.exp - xpPrev) / (xpNext - xpPrev)}%"></s></i></div>
+    <div class="facts clock"><span>${clockOf(p.turns).text}</span><span>${clockOf(p.turns).part}</span></div>
     <div class="facts"><span>${depth ? feet(depth) + " ft" : "Town · " + (isDay() ? "day" : "night")}</span><span class="${!lt || lt.fuel < 500 ? "bad" : ""}">${lt ? (lt.fuel !== undefined ? "🔥 " + lt.fuel : "🔥 steady") : "No light"}</span><span class="gold">● ${p.gold}</span></div>
     <div class="chips">${chips.map(([v, s, c]) => `<em class="${c}">${s}${typeof v === "number" && s !== "Burdened" ? " " + v : ""}</em>`).join("")}</div>
     ${tutHtml()}`;
@@ -204,7 +205,7 @@ function drawPanel(){
         <span>Infravision<b>${infra() ? infra() * 10 + " ft" : "none"}</b></span><span>Light<b>${lightRadius()}</b></span></div>
       ${b.res.size ? `<div class="ln">Resists ${[...b.res].join(", ")}.</div>` : ""}
       <h3>Skills</h3><div class="stats">${SKILLS.map(k => { const v = skillOf(p, k) + (k === "stealth" ? b.stealth : k === "search" ? b.search : 0); return `<span>${SKILL_NAMES[k]}<b>${k === "stealth" ? stealthWord(v) : skillWord(v)}</b></span>`; }).join("")}</div>
-      <div class="ln dim">Deepest ${feet(p.maxDepth)} ft · ${p.kills} kills · ${p.turns} turns · exp penalty +${R.xp + C.xp}%</div>`;
+      <div class="ln dim">Deepest ${feet(p.maxDepth)} ft · ${p.kills} kills · ${clockOf(p.turns).text} (${p.turns} turns) · exp penalty +${R.xp + C.xp}%</div>`;
   } else if (tab === "pack"){
     const wt = totalWeight(), capW = capacity();
     h += `<div class="meter ${wt > capW ? "hp low" : "wt"}"><span>Pack ${p.inv.length} / 22<b>${Math.round(wt)} / ${capW} lb</b></span><i><s style="width:${Math.min(100, 100 * wt / capW)}%"></s></i></div><div class="grid">`;
@@ -443,7 +444,7 @@ function drawScreen(){
   } else if (state === "create") drawCreate();
   else if (state === "dead"){
     const T0 = tomb;
-    el.innerHTML = `<div class="titlecard tomb"><h1 class="rip">R.I.P.</h1><b>${esc(T0.name)}</b><div>the ${esc(T0.race)} ${esc(T0.cls)}, level ${T0.lvl}</div><div>killed by ${esc(T0.killer)}</div><div>${T0.at === "the town" ? "in the town" : "at " + T0.at}</div>
+    el.innerHTML = `<div class="titlecard tomb"><h1 class="rip">R.I.P.</h1><b>${esc(T0.name)}</b><div>the ${esc(T0.race)} ${esc(T0.cls)}, level ${T0.lvl}</div><div>killed by ${esc(T0.killer)}</div><div>${T0.at === "the town" ? "in the town" : "at " + T0.at}${T0.days ? ", on day " + T0.days + " of the delve" : ""}</div>
       <h3>Score ${T0.score}${T0.best ? " · best!" : ""}</h3><p class="blink">Press Enter for the title</p><p class="dim">D saves a character dump</p></div>`;
   }
 }

@@ -2,7 +2,7 @@
 // Loads the game's logic files without a browser: random numbers, sight and light, turns, levels and data.
 const fs = require("fs"), vm = require("vm"), path = require("path");
 const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "lore.js", "save.js", "sprites.js", "tutorial.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
-const G = vm.runInNewContext("var depth = 1;\n" + files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, RINGS, ringOf, LORE_PAGES, LORE_START, FAMILY_LORE, EGO_LORE, BOOK_LORE, TUT_STEPS, TUT_KEYS, soulPrice, firstSpell, CLASSES, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
+const G = vm.runInNewContext("var depth = 1;\n" + files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, RINGS, ringOf, LORE_PAGES, LORE_START, FAMILY_LORE, EGO_LORE, BOOK_LORE, TUT_STEPS, TUT_KEYS, soulPrice, clockOf, DAY_TURNS, firstSpell, CLASSES, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
 
 let failed = 0;
 const check = (name, ok, detail) => { console.log((ok ? "ok    " : "FAIL  ") + name + (detail ? "  (" + detail + ")" : "")); if (!ok) failed++; };
@@ -272,6 +272,14 @@ const { MW, MH, T } = G;
 { // restoring a dead delver's soul costs gold: more with every level, and more every time
   const p1 = G.soulPrice(1), p10 = G.soulPrice(10), p40 = G.soulPrice(40), again = G.soulPrice(10, 1), third = G.soulPrice(10, 2);
   check("a restored soul costs more at higher levels and more each time", p1 > 0 && p1 < 250 && p10 > p1 && p40 > p10 && again === p10 * 2 && third === p10 * 3, `level 1: ${p1}, 10: ${p10}, 40: ${p40}; level 10 again: ${again}, a third time: ${third}`);
+}
+
+{ // the clock: a day is DAY_TURNS turns, the game starts at 06:00, and daylight matches the town's day and night
+  const c = t => G.clockOf(t).text;
+  check("the clock starts at day 1, 06:00, and a new day begins at midnight", c(0) === "Day 1 · 06:00" && c(G.DAY_TURNS / 2) === "Day 1 · 18:00" && c(G.DAY_TURNS * 0.75) === "Day 2 · 00:00" && c(G.DAY_TURNS) === "Day 2 · 06:00",
+    [0, 0.5, 0.75, 1].map(k => c(G.DAY_TURNS * k)).join(", "));
+  let clash = 0; for (let t = 0; t < 3 * G.DAY_TURNS; t += 37){ const day = (t % G.DAY_TURNS) / G.DAY_TURNS < 0.5, h = G.clockOf(t).h; if (day !== (h >= 6 && h < 18)) clash++; }
+  check("the clock's daylight hours match the town's day and night", !clash, clash + " disagreements");
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");

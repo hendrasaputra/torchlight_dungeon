@@ -67,6 +67,10 @@ We work from general knowledge of how Moria plays, not from its source. Each dat
   1, 1,000 at 10, 10,000 at 40) and again each time (twice, three times...). The save is kept until the player
   chooses: restoring carries on from it, and only letting go erases it. While the choice is open the save is marked
   "soul waiting", so closing the page and loading it again brings the same choice back rather than undoing the death.
+- Time: a day is 10,000 of the player's turns (`DAY_TURNS` and `clockOf` in `turn.js`), so a turn is about nine
+  seconds, and a game starts on day 1 at 06:00. The status panel, character sheet, dump and tombstone show the day
+  and hour. On this scale a ration feeds you for about 7 hours, a torch lasts about 9.5 and a lantern's oil 18; Word
+  of Recall takes 2 to 5 minutes. A first game to the Unlit Ring is likely to take a delver 2 to 5 weeks of game days.
 - Resting (R) works only in town: the dark will not let a delver sleep below. Health still comes back slowly on its
   own down there, and potions and prayers heal as before.
 - A town on the surface; the dungeon below gets deeper and harder.
