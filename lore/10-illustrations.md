@@ -6,15 +6,67 @@ references is copied; they only set the style.*
 
 ## How to use the prompts
 
-Each illustration names a **style** (A, B or C). Write the prompt as: **subject text, then the style block**. Every
+Each illustration names a **style** (A, B, C or D). Write the prompt as: **subject text, then the style block**. Every
 subject is written from the lore, so the creatures and people are original designs; keep the last line of each
 style block ("original design...") in the prompt, since it keeps generators from drifting towards famous
 characters.
 
-Suggested sizes: portraits 2:3 (for example 1024 × 1536), scenes and places 16:9 (1536 × 864), items 1:1. Save the
-results in `lore/art/` with the file names given here.
+Suggested sizes: portraits 2:3 (for example 1024 × 1536), scenes and places 16:9 (1536 × 864), items, emblems and
+family plates 1:1 (1024 × 1024). Save the results as PNG in `lore/art/` with the file names given here, then run
+`./build.sh`: the build makes the web copies and puts each picture in its place on the lore pages, and it prints how
+many of the illustrations exist so far.
 
-## The three styles
+## What every picture needs
+
+Add these to every prompt, after the style block, so the set looks like one book:
+
+> Single clear subject, centred, with a little empty margin on every side. No text, letters, numbers, labels,
+> captions, signatures, watermarks, borders or frames. Not a photograph, not 3D render.
+
+The pages add their own frames, captions and labels, so the pictures must not.
+
+**Keep the recurring faces the same.** These appear in more than one picture; copy the description word for word
+each time:
+
+| Who | Always looks like |
+|---|---|
+| Caedra, the First Keeper | A tall, weathered human woman with cropped white hair and a sea-wind-burned face, in a plain grey-blue lamplighter's coat, carrying a simple old brass lantern with a small steady flame. Old in the later pictures, about forty in the early ones. |
+| Sister Ilvane | A plump, kind-faced human woman of about sixty in cream Keeper's robes with a lamp sigil embroidered in gold, round spectacles, hands often cupped around a flame. |
+| The Eternal Lamp | A tall brass temple lamp on a stone altar, shaped like an open flower, with a soot mark on the wall above it from when its flame was larger. |
+| The Hollow Gate | A great round-arched stone door, carved with a ring of lamp shapes, under a broken dome, with dead lamp-posts on either side. |
+| Duke Ashvane | Tall and elegant, grey skin, two small swept-back horns, a plum velvet coat with gold buttons, a thin smile, and from 412 BH on a plain gold crown with lamp-shaped points. |
+| Morrowgloom | Not a body but a living darkness that fills space like ink in water, with a thousand small eyes in it, each holding a tiny reflected flame. Never give it a face, teeth or limbs. |
+| The lamp sigil | An oil lamp with a single flame inside a ring: the badge of the Order of the Lamp, seen on Keepers, Oathknights, the Marrow Guard and the Lamp Kings. |
+
+**Keep each people the same, whatever their calling.** When a prompt names a people, add their look:
+
+| People | Always looks like |
+|---|---|
+| Human | Ordinary human height and build, varied skin and hair; nothing marks them out. |
+| Sylvan | Tall and slender, keen grey eyes, long braided hair with leaves or beads woven in, slightly pointed ears. |
+| Stonekin | Short, very broad and solid, square jaw, a braided beard (the women's braids are bound the same way) with iron rings. |
+| Burrowfolk | Half a human's height, nimble, bare-footed with tough soles, bright eyes, round cheerful face. |
+| Tinkerling | Small and thin, large clever hands, magnifying spectacles or goggles, tools tucked everywhere. |
+| Ashborn | Human-sized, dark skin with faint cracks of orange light, ember-coloured glowing eyes, ash-grey hair. |
+| Marrowkin | Big-boned and heavy-browed, two small lower tusks, greyish skin, calm watchful eyes. |
+| Cragborn | Three times a human's height, skin like weathered granite with moss in the cracks, slow kind eyes. |
+
+**Mix the peoples.** No calling belongs to one people. The six calling portraits each show a different people (none
+of them human, since the human portrait already stands for the peoples page), and crowd scenes should always mix
+several.
+
+**Colour the rings consistently** in style C pictures (styles A, B and D stay monochrome):
+
+| Ring | Palette |
+|---|---|
+| The town, the surface | Warm ochre and honey, dusty pink stone, teal shadows, lamp-yellow at night |
+| Ring of Stone (50 to 450 ft) | Grey-brown dressed stone, torch orange |
+| Ring of Roots (500 to 950 ft) | Moss green, wet black, root brown, a little cold blue |
+| Ring of Rest (1,000 to 1,450 ft) | Bone, ash grey, verdigris, candle gold |
+| Ring of Forges (1,500 to 1,950 ft) | Soot black, magma red and orange |
+| Ring of Glass (2,000 to 2,450 ft) | Pale crystal blue fading to black, violet edges |
+
+## The four styles
 
 **Style A: pen and ink (old module page).**
 > Black-and-white pen-and-ink illustration in the manner of a 1980s fantasy adventure-module page: fine crosshatching,
@@ -34,8 +86,15 @@ results in `lore/art/` with the file names given here.
 > accent colour, low-angle heroic composition, characterful and a little humorous, detailed costume and gear. No
 > text. Original design, not based on any existing game, film or book character.
 
+**Style D: old map and cutaway (plate in an atlas).**
+> Hand-drawn fantasy map or cutaway diagram in brown and black ink on aged parchment: fine pen linework, hatching
+> for slopes and rock, small pictorial symbols for towns, forests, mountains and doors, a compass rose drawn as a
+> lamp with rays, empty scroll-shaped cartouches where labels would go. Seen from directly above (maps) or as a clean
+> side section (cutaways). No readable text. Original design.
+
 Use **A** for monsters, crypts and dread; **B** for places, legends and moments of mystery; **C** for the peoples,
-heroes, shopkeepers and anything with a personality.
+heroes, shopkeepers and anything with a personality; **D** for maps and plans. Emblems use **A** drawn as a
+heraldic badge.
 
 ---
 
@@ -56,12 +115,12 @@ heroes, shopkeepers and anything with a personality.
 
 | File | Subject |
 |---|---|
-| `calling-sellsword.png` | A scarred sellsword of the Free Companies leaning on a long sword in a rowdy inn called The Last Lamp; behind them a long wall painted with the names of fallen delvers. |
-| `calling-arcanist.png` | A young Arcanist of the Collegium of Sparks, ink-stained robes, a battered book open in one hand, a crackling spark of cold starlight jumping from the other hand, in a crooked library of unused rooms. |
-| `calling-lampwarden.png` | A Lampwarden of the Order of the Lamp in simple robes, a brass lantern held high casting a warm halo, mace at the belt, stepping down a dark stair while shadows recoil from the light. |
-| `calling-delver.png` | A Delver of the Quiet Hand in grey, half in shadow, kneeling at a locked chest with picks, a sleeping monster's huge clawed foot just visible at the edge of the frame. |
-| `calling-wayfinder.png` | A Wayfinder of the Wardens of Roads with a sling and a quiver of darts, studying a hand-drawn map that is visibly wrong, at a fork in a mossy cavern with three tunnels. |
-| `calling-oathknight.png` | An Oathknight in worn plate with a lamp sigil, kneeling to swear on a sword before the Eternal Lamp in a small stone temple. |
+| `calling-sellsword.png` | An **Ashborn** sellsword of the Free Companies (ember-coloured glowing eyes, dark skin with faint orange cracks of light), a broad-shouldered woman with a scarred jaw and a notched long sword over her shoulder, leaning on the bar of a rowdy inn called The Last Lamp; behind her a long wall painted with the names of fallen delvers. |
+| `calling-arcanist.png` | A young **Tinkerling** Arcanist of the Collegium of Sparks (small, quick-handed, magnifying spectacles pushed up on the forehead), in ink-stained robes too long for them, a battered book open in one hand and a crackling spark of cold starlight jumping from the other, in a crooked library of unused rooms. |
+| `calling-lampwarden.png` | A **Stonekin** Lampwarden of the Order of the Lamp (broad, square-jawed, braided beard bound in iron rings) in simple cream robes with the lamp sigil, a brass lantern held high casting a warm halo, a mace at the belt, stepping down a dark stair while the shadows recoil from the light. |
+| `calling-delver.png` | A **Burrowfolk** Delver of the Quiet Hand (small, bare-footed, bright-eyed and nimble) in grey, half in shadow, kneeling at a locked chest with a roll of lockpicks, a sleeping monster's huge clawed foot just visible at the edge of the frame. |
+| `calling-wayfinder.png` | A **Sylvan** Wayfinder of the Wardens of Roads (tall and slender, keen grey eyes, long braided hair with leaves woven in) with a sling and a quiver of darts, frowning at a hand-drawn map that is visibly wrong, at a fork in a mossy cavern with three tunnels. |
+| `calling-oathknight.png` | A **Marrowkin** Oathknight (small tusks, heavy brow, thick bones, calm eyes) in worn plate with the lamp sigil, kneeling to swear on a sword before the Eternal Lamp in a small stone temple. |
 
 ## 3. The named monsters (style A unless noted, portraits 2:3)
 
@@ -143,10 +202,120 @@ One plate per family that defines a ring, for a bestiary page.
 | `moment-the-wager.png` | **Style C.** The Fall of Aurenhold (412 BH): King Ysmer the Last at a dice table in a candlelit throne room, losing to an elegant merchant whose shadow on the wall has horns. |
 | `moment-the-guttering.png` | Lanternhollow in 1204 YH: every torch and lamp in the street leaning towards the Hollow Gate as if pulled by a wind. |
 
+## 7. Maps and plans (style D, 16:9)
+
+| File | Subject |
+|---|---|
+| `map-hollowmark.png` | A map of the Hollowmark: a bowl of low stony hills; the Greenroof forest to the west, the Crag Roots mountains to the north, the Deephalls in the eastern mountains, the river Tarrow running south-east to the coast; in the centre the ruined city of Aurenhold with the walled town of Lanternhollow on its southern edge, and a dark sinkhole marked with a lamp symbol. |
+| `map-lanternhollow.png` | A bird's-eye plan of Lanternhollow: a walled timber town on old stone foundations, one main street with six shop fronts, lamp posts along it, a small temple, the stairs down to the Hollow Gate, and the broken towers of Aurenhold beyond the north wall. |
+| `diagram-lampway.png` | **Style D, 2:3.** A tall cutaway of the Lampway seen from the side: the town at the surface, then five stacked rings going down (worked stone halls; drowned caverns with roots; crypts; forges by a magma lake; crystal walls), each ring a flat band of corridors with small lamp symbols, a long stair linking them, and at the bottom a black pit with many small eyes. |
+| `diagram-lamp-ring.png` | **Style D, 1:1.** The plan of one lamp-ring from above: corridors and chambers linked into a loose circuit, a lamp symbol in each shrine chamber, hidden lamplighters' passages drawn as dotted lines, stairs up and down. |
+
+## 8. Emblems (style A, square 1:1, drawn as a heraldic badge on a plain ground)
+
+| File | Subject |
+|---|---|
+| `emblem-order-of-the-lamp.png` | The lamp sigil: an oil lamp with a single flame inside a ring, rays around it. |
+| `emblem-aurenhold.png` | The arms of Aurenhold: a plain crown with lamp-shaped points above a gate, on a shield. |
+| `emblem-lanternhollow.png` | The town seal of Lanternhollow: a lantern hanging from a miner's pick, inside a ring of small stars. |
+| `emblem-collegium.png` | The Collegium of Sparks: an open book with a single spark rising from its pages, inside a ring of stars. |
+| `emblem-free-companies.png` | The Free Companies: two crossed swords below a lamp, on a battered round shield. |
+| `emblem-quiet-hand.png` | The Quiet Hand: an open hand with a closed eye in the palm, drawn faintly, as if half erased. |
+| `emblem-wardens-of-roads.png` | The Wardens of Roads: a compass rose whose north point is a flame, over a winding road. |
+| `emblem-oath.png` | The Oath of the Unbroken Flame: an upright sword whose blade is a tall flame, inside the lamp-sigil ring. |
+| `emblem-deephall.png` | The Deephall clans: a square-cut stone with a glow crystal at its heart, framed by mason's hammers. |
+| `emblem-lantern-guild.png` | The Lantern Guild: a lantern made of gears and glass, a crystal inside it. |
+
+## 9. The shopkeepers of Lanternhollow (style C, portraits 2:3)
+
+| File | Subject |
+|---|---|
+| `keeper-odda.png` | Odda the Provisioner, a small, round Burrowfolk grandmother with a shawl and an apron full of string, at a counter stacked with torches, rations and oil flasks, smiling and wagging a finger. |
+| `keeper-bram.png` | Bram Ironside, a broad Stonekin smith with a braided beard and burn-scarred forearms, holding up a dented breastplate in his armoury, a clan mark stamped on everything around him. |
+| `keeper-kessa.png` | Kessa Edgewright, a lean human weaponsmith with two fingers missing on her left hand, testing a blade's edge on a hair at her bench, a boar's tusk hung over the forge. |
+| `keeper-ilvane.png` | Sister Ilvane (see her fixed look above) at the temple altar beside the Eternal Lamp (fixed look), watching its flame with worry. |
+| `keeper-thorne.png` | Thorne Vialkeeper, a Tinkerling alchemist with goggles and singed eyebrows, among shelves of coloured bottles all labelled in a strange cipher, a green one smoking. |
+| `keeper-maelis.png` | Maelis of the Blue Door, an ageless small figure whose face is always half in shadow under a wide hat, behind a counter of wands and rings, a bright blue door behind them. |
+
+## 10. Heroes, founders and kings (style C, portraits 2:3)
+
+| File | Subject |
+|---|---|
+| `hero-caedra.png` | Caedra the First Keeper at about forty (fixed look), standing at the lip of a black sinkhole in the hills with her lantern raised, a cold wind tugging her coat. |
+| `hero-ithrel.png` | Ithrel Silverstring, a Sylvan archer with silver-white braids, drawing Starfall (a pale bow with a sparkling silver string) under a sky thick with stars. |
+| `hero-orsolya.png` | Dame Orsolya Vell, an Oathknight in lamp-sigil plate, holding up Embersong (a sword glowing like a coal) in a crypt full of reaching hands. |
+| `hero-gorran.png` | Thane Gorran Deephall, a Stonekin lord wearing the Stonehelm of the Deep Halls (a great helm cut from one block of dark stone), directing masons cutting a vast hall. |
+| `hero-quill.png` | "Nobody" Quill, a Delver in the grey Mantle of Quiet Steps, slipping out of a bank vault with a sack of coins, the iron golem guard looking the other way. |
+| `hero-wren.png` | Wren Hallow, a Burrowfolk runner with the silver Band of Swift Feet on her finger, sprinting up an endless stair, a trail of motion behind her. |
+| `hero-marla.png` | Marla Tunnick, a sturdy human prospector with a pick and a lantern, holding up the first glow crystal in a ruined hollow, delighted. |
+| `king-aldren.png` | Aldren the Kindler, the first Lamp King, being crowned by Keepers before the Hollow Gate (fixed look), swearing on a lamp. |
+| `king-tamsin.png` | Queen Tamsin the Wise studying the great Mirror of Aurenhold, an ornate mirror whose glass shows dark rings of lamps far below. |
+| `king-ysmer.png` | Ysmer the Last, a pale, nervous young king at a dice table, his crown already in the hand of Duke Ashvane (fixed look). |
+
+## 11. Chapter openers (style B, 16:9)
+
+| File | Subject |
+|---|---|
+| `opener-peoples.png` | **Style C, 16:9.** The eight peoples gathered round a long table in a lamplit inn: a human, a tall Sylvan, a broad Stonekin, a tiny Burrowfolk, a Tinkerling with spectacles, an ember-eyed Ashborn, a tusked Marrowkin, and a huge Cragborn hunched under the beams. |
+| `opener-callings.png` | **Style C, 16:9.** The inn called The Last Lamp at night, full of delvers of every people and calling: an Ashborn sellsword arm-wrestling a huge Cragborn, a Tinkerling arcanist reading by candlelight, a Stonekin lampwarden with a lantern, a Burrowfolk delver under a table, a Sylvan wayfinder with a map, a tusked Marrowkin oathknight, and a human barkeep; a long wall behind them painted with the names of the fallen. |
+| `opener-rulers.png` | The Hall of the Lamp Kings in the Ring of Rest: a long row of stone thrones and tombs, a cold lamp before each, one still lit at the far end. |
+| `opener-bestiary.png` | **Style A, 16:9.** A delver's notebook page come to life: sketches of a dozen monsters of the Deep crowding round a single candle. |
+| `opener-magic.png` | **Style C, 16:9.** Inside the Blue Door: a cluttered magic shop of wands, rings, staffs and spell books, everything faintly glowing, a blue door at the back. |
+| `opener-contents.png` | A lone delver with a torch at the top of a long stair going down into the dark, the whole Lampway opening below like a well. |
+
+## 12. The rest of the monster families (style A, square 1:1)
+
+Together with the ten in section 4, every family in the game has a plate.
+
+| File | Subject |
+|---|---|
+| `family-rodent.png` | Rats of the upper workings: a cave rat, a bristle rat with needle quills and a pink wrinkled giant mole-rat chewing through rock, among candle stubs and mine rails. |
+| `family-bat.png` | Bats boiling out of a crack in a shrine ceiling, a screech bat in front with its mouth open in a shriek. |
+| `family-insect.png` | Moths and lantern flies swarming a guttering lamp, one wick moth drinking the flame through a long curled tongue. |
+| `family-spider.png` | A wolf spider and a web weaver in a dark corner of a pillared hall, a phase spider half faded out beside them. |
+| `family-beetle.png` | A lamp beetle with a softly glowing shell gnawing at a glow crystal in a shrine wall, fire ants marching past. |
+| `family-worm.png` | A rock borer bursting out of a tunnel floor, rings of grinding teeth, mire slugs leaving trails on the walls. |
+| `family-mould.png` | Shrine carvings overgrown with memory moss and puffballs, a gilded mould creeping over a pile of coins. |
+| `family-jelly.png` | A translucent cave ooze sliding along a corridor with bones and a helmet floating inside it. |
+| `family-snake.png` | A spitting cobra rearing on warm stones near a vent of heat, a rock python coiled around a pillar. |
+| `family-canine.png` | A pack of ash hounds with smouldering fur running through a tunnel, a cinder mastiff leading. |
+| `family-feline.png` | A dusk panther crouched on a ledge above a passage, eyes catching the torchlight. |
+| `family-beast.png` | A cave bear rearing up in a cavern, a tusked boar charging beneath it. |
+| `family-bird.png` | Deep rooks and a storm owl roosting on a broken lamp-post at the bottom of a shaft. |
+| `family-goblin.png` | A goblin raiding party: a brute, an archer and a shaman with a bone rattle, crouched around a stolen lantern. |
+| `family-brigand.png` | Brigands of the Deep playing dice on an upturned coffin, a captain counting a delver's purse. |
+| `family-thief.png` | A sneak thief lifting a coin pouch from a sleeping delver's belt, finger to lips. |
+| `family-mage.png` | A runaway apprentice and a pyromancer in burnt robes arguing over a smoking spellbook. |
+| `family-priest.png` | A grave priest in tattered Keeper's robes with the lamp sigil scratched out, leading a dark prayer before a cold altar. |
+| `family-ogre.png` | Ogres around a cooking fire in a cavern, one gnawing a whole leg of something. |
+| `family-troll.png` | A moss troll rising out of a heap of rubble, stones still falling from its shoulders. |
+| `family-skeleton.png` | Skeleton knights of the Marrow Guard in rusted lamp-sigil armour, still standing in formation. |
+| `family-zombie.png` | Shamblers in miners' clothes climbing a ladder out of a dark shaft, picks still in hand. |
+| `family-ghost.png` | A keening woman, translucent, drifting along a crypt corridor, candles bending away from her. |
+| `family-vampire.png` | A vampire in old court clothes of Aurenhold at a crypt banquet table set for guests who never came. |
+| `family-lich.png` | A lich at a lectern of stacked bones, reading a book bound in black metal by the light of its own eyes. |
+| `family-elemental.png` | A magma spirit rising out of a lava pool beside a fallen Ashborn anvil. |
+| `family-vortex.png` | A dust devil of grit and bone fragments spinning down an empty hall. |
+| `family-eye.png` | A watcher orb floating in a dark chamber, one great eye with a tiny reflected flame in its pupil. |
+| `family-plant.png` | Strangler vines and a bloodroot wrapped around a shrine statue in a dripping cavern. |
+| `family-arachnid.png` | A giant scorpion and a cave crab facing each other on the bank of an underground river. |
+| `family-reptile.png` | A five-headed hydra in a steaming pool, each head looking a different way. |
+| `family-horror.png` | A tentacled horror squeezing up through a crack in the floor, too many arms. |
+| `family-golem.png` | A stone golem and an iron golem standing guard at a sealed forge door, moss on their shoulders. |
+| `family-fiend.png` | Imps and a horned fiend playing cards on a crate in a magma-lit cave, a gold crown as the stake. |
+| `family-drake.png` | A clutch of wyrmlings in four colours squabbling on a small heap of coins. |
+| `family-dragon.png` | A rime dragon coiled around a crystal pillar, frost spreading across the floor. |
+| `family-deadhound.png` | Bone hounds of the Marrow Guard, skeletal war dogs in spiked collars, sniffing at a crypt door. |
+| `family-were.png` | A man halfway through turning into a wolf, hiding in a side tunnel, clutching his torn shirt. |
+| `family-sporefolk.png` | Sporelings and a puffcap elder, walking mushrooms, gathered around a faint glow crystal like a campfire. |
+
 ---
 
-**72 illustrations in all:** 8 peoples, 6 callings, 26 named monsters (with the boss), 10 families, 10 items and 12
-places and moments. A good first batch is the cover subjects for each file of the lore: `place-the-kindling`
-(cosmology), `moment-the-wager` (timeline), `place-lanternhollow` (world), `place-hollow-gate` (the Lampway),
-`people-stonekin` (peoples), `calling-lampwarden` (callings), `item-first-lantern` (heroes), `boss-morrowgloom`
-(bestiary) and `item-embersong` (magic and artifacts).
+**147 illustrations in all:** 8 peoples, 6 callings, 26 named monsters (with the boss), 49 family plates, 10 items,
+12 places and moments, 4 maps and plans, 10 emblems, 6 shopkeepers, 10 heroes and kings, and 6 chapter openers.
+Drawn so far: the peoples and the callings.
+
+**Order of work that makes the pages whole fastest:** the chapter openers and the pictures at the top of each page
+(`place-the-kindling`, `moment-the-guttering`, `place-lanternhollow`, `place-hollow-gate`, `opener-peoples`,
+`opener-callings`, `opener-rulers`, `opener-bestiary`, `opener-magic`, `opener-contents`), then the 26 named monsters,
+then the maps and emblems, then everything else.

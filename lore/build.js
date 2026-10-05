@@ -20,21 +20,26 @@ const PICS = {};
     let subject = r[2], s = style, sh = shape;
     const o = /^\*\*Style (\w)(, (16:9|1:1|2:3))?\.\*\* /.exec(subject);
     if (o){ s = o[1]; if (o[3]) sh = o[3].replace(":", "/"); subject = subject.slice(o[0].length); }
-    PICS[r[1]] = { subject, style: s, shape: sh };
+    PICS[r[1]] = { subject: subject.replace(/\*\*/g, ""), style: s, shape: sh };
   }
 }
 // Page => { heading text it starts with (or "top"): [files] }. A file may appear on more than one page.
 const ART = {
   "01-cosmology": { top: ["place-the-kindling.png"], "Morrowgloom, the Lantern-Eater": ["boss-morrowgloom.png"], "The two lights": ["item-spellbooks.png"] },
   "02-timeline": { top: ["moment-the-guttering.png"], "The Founding": ["moment-sealing.png"], "The Long Dusk": ["moment-the-wager.png"], "The Years of the Hollow": ["moment-open-doors.png"] },
-  "03-world": { top: ["place-lanternhollow.png"], "Lanternhollow": ["item-eternal-lamp.png"], "The ruins of Aurenhold": ["place-hollow-gate.png"] },
-  "04-the-lampway": { top: ["place-hollow-gate.png"], "The mines": ["item-glow-crystal.png"], "The Ring of Stone": ["place-ring-of-stone.png"], "The Ring of Roots": ["place-ring-of-roots.png"],
+  index: { top: ["opener-contents.png"] },
+  "03-world": { top: ["place-lanternhollow.png"], "The Hollowmark": ["map-hollowmark.png", "emblem-lanternhollow.png"],
+    "Lanternhollow": ["map-lanternhollow.png", "keeper-odda.png", "keeper-bram.png", "keeper-kessa.png", "keeper-ilvane.png", "keeper-thorne.png", "keeper-maelis.png", "item-eternal-lamp.png"],
+    "The ruins of Aurenhold": ["place-hollow-gate.png", "emblem-aurenhold.png"] },
+  "04-the-lampway": { top: ["place-hollow-gate.png"], "What it was for": ["diagram-lampway.png"], "How it was built": ["diagram-lamp-ring.png"], "The mines": ["item-glow-crystal.png"], "The Ring of Stone": ["place-ring-of-stone.png"], "The Ring of Roots": ["place-ring-of-roots.png"],
     "The Ring of Rest": ["place-ring-of-rest.png"], "The Ring of Forges": ["place-ring-of-forges.png"], "The Ring of Glass": ["place-ring-of-glass.png"], "The Pit of the Gloam": ["boss-morrowgloom.png"] },
-  "05-peoples": { Humans: ["people-human.png"], Sylvan: ["people-sylvan.png"], Stonekin: ["people-stonekin.png"], Burrowfolk: ["people-burrowfolk.png"], Tinkerlings: ["people-tinkerling.png"],
+  "05-peoples": { top: ["opener-peoples.png", "emblem-deephall.png", "emblem-lantern-guild.png"], Humans: ["people-human.png"], Sylvan: ["people-sylvan.png"], Stonekin: ["people-stonekin.png"], Burrowfolk: ["people-burrowfolk.png"], Tinkerlings: ["people-tinkerling.png"],
     Ashborn: ["people-ashborn.png"], Marrowkin: ["people-marrowkin.png"], Cragborn: ["people-cragborn.png"] },
-  "06-callings": { Sellsword: ["calling-sellsword.png"], Arcanist: ["calling-arcanist.png"], Lampwarden: ["calling-lampwarden.png"], Delver: ["calling-delver.png"], Wayfinder: ["calling-wayfinder.png"], Oathknight: ["calling-oathknight.png"] },
-  "07-rulers-and-heroes": { "The First Keeper": ["moment-sealing.png"], "The Lamp Kings": ["item-crown.png", "family-tomb-kings.png"] },
-  "08-bestiary": { "The families": ["family-kobolds.png", "family-shades.png", "family-lantern-eater.png", "family-tomb-kings.png", "family-gargoyles.png", "family-scalekin.png", "family-mimics.png",
+  "06-callings": { top: ["opener-callings.png", "emblem-free-companies.png", "emblem-collegium.png", "emblem-order-of-the-lamp.png", "emblem-quiet-hand.png", "emblem-wardens-of-roads.png", "emblem-oath.png"], Sellsword: ["calling-sellsword.png"], Arcanist: ["calling-arcanist.png"], Lampwarden: ["calling-lampwarden.png"], Delver: ["calling-delver.png"], Wayfinder: ["calling-wayfinder.png"], Oathknight: ["calling-oathknight.png"] },
+  "07-rulers-and-heroes": { top: ["opener-rulers.png"], "The First Keeper": ["hero-caedra.png", "moment-sealing.png"],
+    "The Lamp Kings": ["king-aldren.png", "king-tamsin.png", "king-ysmer.png", "item-crown.png", "family-tomb-kings.png"], "The founders": ["hero-marla.png"],
+    "Heroes of song": ["hero-ithrel.png", "hero-orsolya.png", "hero-gorran.png", "hero-quill.png", "hero-wren.png"] },
+  "08-bestiary": { top: ["opener-bestiary.png"], "The families": ["family-rodent.png", "family-bat.png", "family-insect.png", "family-spider.png", "family-beetle.png", "family-worm.png", "family-mould.png", "family-jelly.png", "family-snake.png", "family-canine.png", "family-feline.png", "family-beast.png", "family-bird.png", "family-goblin.png", "family-brigand.png", "family-thief.png", "family-mage.png", "family-priest.png", "family-ogre.png", "family-troll.png", "family-skeleton.png", "family-zombie.png", "family-ghost.png", "family-vampire.png", "family-lich.png", "family-elemental.png", "family-vortex.png", "family-eye.png", "family-plant.png", "family-arachnid.png", "family-reptile.png", "family-horror.png", "family-golem.png", "family-fiend.png", "family-drake.png", "family-dragon.png", "family-deadhound.png", "family-were.png", "family-sporefolk.png", "family-kobolds.png", "family-shades.png", "family-lantern-eater.png", "family-tomb-kings.png", "family-gargoyles.png", "family-scalekin.png", "family-mimics.png",
       "family-hybrids.png", "family-star-wisps.png", "family-deep-giants.png"],
     "Old Whiskers": ["unique-old-whiskers.png"], "Fenwick": ["unique-fenwick.png"], "Snag": ["unique-snag.png"], "Old Tusk": ["unique-old-tusk.png"], "Mother Bristle": ["unique-mother-bristle.png"],
     "Varn": ["unique-varn.png"], "The Lantern Thief": ["unique-lantern-thief.png"], "Corvane": ["unique-corvane.png"], "Sister Vesper": ["unique-vesper.png"], "Kettlemaw": ["unique-kettlemaw.png"],
@@ -42,7 +47,7 @@ const ART = {
     "The Grey Widow": ["unique-grey-widow.png"], "Thessaly": ["unique-thessaly-glass.png"], "Ironjaw": ["unique-ironjaw.png"], "The Pale Bride": ["unique-pale-bride.png"],
     "The Drowned King": ["unique-drowned-king.png"], "Rimeheart": ["unique-rimeheart.png"], "The Many-Mouthed": ["unique-many-mouthed.png"], "Skarth": ["unique-skarth.png"],
     "The Ember Queen": ["unique-ember-queen.png"], "Duke Ashvane": ["unique-ashvane.png"], "Morrowgloom": ["boss-morrowgloom.png"] },
-  "09-magic-and-artifacts": { "The arcane books": ["item-spellbooks.png"], Devices: ["item-glow-crystal.png"], Embersong: ["item-embersong.png"], "The Mantle": ["item-mantle.png"],
+  "09-magic-and-artifacts": { top: ["opener-magic.png"], "The arcane books": ["item-spellbooks.png"], Devices: ["item-glow-crystal.png"], Embersong: ["item-embersong.png"], "The Mantle": ["item-mantle.png"],
     "The Stonehelm": ["item-stonehelm.png"], "The Lantern of the First Keeper": ["item-first-lantern.png"], Starfall: ["item-starfall.png"], "The Band of Swift Feet": ["item-swift-band.png"] }
 };
 const unplaced = Object.keys(PICS).filter(f => !Object.values(ART).some(p => Object.values(p).flat().includes(f)));
@@ -98,7 +103,8 @@ const inline = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\
 function render(md, page){
   const lines = md.split("\n"), out = [], art = ART[page] || {}, used = new Set();
   let i = 0, first = true, intro = true, open = false;
-  const placeArt = h => { for (const [k, files] of Object.entries(art)) if (k !== "top" && !used.has(k) && h.startsWith(k)){ used.add(k); out.push(`<div class="plates n${files.length > 1 ? "many" : 1}">${files.map(figure).join("")}</div>`); } };
+  const plates = files => out.push(`<div class="plates n${files.length > 1 ? "many" : 1}">${files.map(figure).join("")}</div>`);
+  const placeArt = h => { for (const [k, files] of Object.entries(art)) if (k !== "top" && !used.has(k) && h.startsWith(k)){ used.add(k); plates(files); } };
   while (i < lines.length){
     const l = lines[i];
     if (!l.trim()){ i++; continue; }
@@ -107,7 +113,7 @@ function render(md, page){
       const n = m[1].length, text = m[2];
       if (open) out.push("</div>");   // each heading's text is its own short block of two columns, so you never scroll back up to read on
       out.push(`<h${n}>${inline(text)}</h${n}>`, '<div class="flow">'); open = true;
-      if (n === 1 && art.top) out.push(art.top.map(figure).join(""));
+      if (n === 1 && art.top) plates(art.top);
       if (n > 1) placeArt(text);
       if (n === 3 && page === "08-bestiary"){ const K = monsterFor(text); if (K) out.push(statBlock(K)); }
       i++; continue;

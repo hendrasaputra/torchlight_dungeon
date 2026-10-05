@@ -18,7 +18,7 @@ flow back into item and monster descriptions, level feelings, book titles and th
 | [07-rulers-and-heroes.md](07-rulers-and-heroes.md) | The Lamp Kings, the Keepers, and the heroes of song |
 | [08-bestiary.md](08-bestiary.md) | A repository of every monster family, the named uniques, and the Lantern-Eater |
 | [09-magic-and-artifacts.md](09-magic-and-artifacts.md) | The two realms, the spell books, flavours, special kinds and the six artifacts |
-| [10-illustrations.md](10-illustrations.md) | A list of 72 illustrations (monsters, peoples, items, places) with prompts in three ink styles |
+| [10-illustrations.md](10-illustrations.md) | A list of 147 illustrations (monsters, peoples, items, places, maps, emblems) with prompts in four styles and rules that keep them consistent |
 
 ## The web pages
 

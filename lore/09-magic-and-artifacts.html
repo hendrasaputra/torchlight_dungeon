@@ -68,7 +68,7 @@ figure.cover { column-span: all; margin: 0 auto 26px; max-width: 520px; }
 figure.cover img { width: 100%; display: block; box-shadow: 0 8px 26px #0007; border: 6px solid var(--paper); }
 .plates { break-inside: avoid; }
 .plates.nmany { column-span: all; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
-.plates.nmany figure { margin: 0; }
+.plates.nmany figure { margin: 0; } .plates.nmany figure.wide { grid-column: 1 / -1; } .plates.nmany { align-items: start; }
 figure.art.wide { column-span: all; }
 .art img, .art .slot { width: 100%; aspect-ratio: var(--ratio); display: block; object-fit: cover; }
 .art img { border: 1px solid #0006; box-shadow: 0 4px 14px #0004; }
@@ -114,6 +114,7 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 <body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html" aria-current="page">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
 <main class="09-magic-and-artifacts"><h1>Magic, devices and artifacts</h1>
 <div class="flow">
+<div class="plates n1"><figure class="art wide style-C" style="--ratio:16/9"><img src="art/web/opener-magic.jpg" alt="Inside the Blue Door: a cluttered magic shop of wands, rings, staffs and spell books, everything faintly glowing, a blue door at the back." loading="lazy"></figure></div>
 <p class="intro"><i>Draft. How the game's magic and items fit the world: the two realms and their eight books, why unknown things look different to every delver, who made the wands, staffs and rods, where the special kinds come from, and the six artifacts. The cosmology behind the two realms is in <a href="01-cosmology.html">Cosmology</a>.</i></p>
 </div>
 <h2>The two realms</h2>
