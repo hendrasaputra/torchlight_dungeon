@@ -11,7 +11,7 @@ const SHOPS = [
     buys: ["weapon", "bow", "ammo", "dart"], hello: ["Every blade here is sharp. I checked.", "Point the sharp end away from you.", "Bring me something good from below."] },
   { name: "Temple", keeper: "Sister Ilvane", greed: 1.15, rgb: [1.3, 1.2, 0.9], size: [10, 14], always: ["heal", "hbook1"],
     sells: ["hbook1", "hbook2", "heal", "bigheal", "pclear", "ppoisoncure", "sbless", "schant", "suncurse", "srecall", "mace", "flail", "morningstar", "warhammer"],
-    buys: ["potion", "scroll", "book"], hello: ["May your light never fail.", "The flame keeps watch over all of us.", "Rest here a while, if you need."] },
+    buys: ["potion", "scroll", "book", "tome"], hello: ["May your light never fail.", "The flame keeps watch over all of us.", "Rest here a while, if you need."] },
   { name: "Alchemist", keeper: "Thorne Vialkeeper", greed: 1.3, rgb: [0.7, 1.2, 0.8], size: [10, 15], always: ["heal", "sident", "srecall"],
     sells: ["heal", "bigheal", "pfire", "pcold", "pinfra", "phero", "pspeed", "sident", "slight", "sphase", "smap", "sobj", "smon", "sfood", "srecall", "senchhit", "senchdam", "senchac", "stele", "sfind"],
     buys: ["potion", "scroll"], hello: ["Don't touch the green ones.", "Every bottle has a story. Some of them explode.", "Read the label. Then read it again."] },

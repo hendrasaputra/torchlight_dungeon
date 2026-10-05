@@ -1,8 +1,8 @@
 // Checks for Torchlight Dungeons' rules. Run: node tests/torch.js
 // Loads the game's logic files without a browser: random numbers, sight and light, turns, levels and data.
 const fs = require("fs"), vm = require("vm"), path = require("path");
-const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "save.js", "sprites.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
-const G = vm.runInNewContext(files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
+const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "lore.js", "save.js", "sprites.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
+const G = vm.runInNewContext(files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, RINGS, ringOf, LORE_PAGES, LORE_START, FAMILY_LORE, EGO_LORE, BOOK_LORE, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
 
 let failed = 0;
 const check = (name, ok, detail) => { console.log((ok ? "ok    " : "FAIL  ") + name + (detail ? "  (" + detail + ")" : "")); if (!ok) failed++; };
@@ -239,6 +239,23 @@ const { MW, MH, T } = G;
     a.replace('"v":' + G.SAVE_VERSION, '"v":' + (G.SAVE_VERSION + 1)), a.replace('"v":' + G.SAVE_VERSION, '"v":0')].map(refused);
   check("damaged, foreign, newer and unreadably old saves are refused with a message", bad.every(m => m.length > 10), bad.join(" | "));
   // ponytail: no older save version exists yet; when SAVE_VERSION goes to 2, keep a version 1 save here and check it loads
+}
+
+{ // phase 11: the lore in the game
+  const page = id => G.LORE_PAGES[id] && G.LORE_PAGES[id].title && G.LORE_PAGES[id].text.length > 40;
+  const noU = G.MONSTERS.filter(K => (K.unique || K.boss) && !page("u-" + K.id)).map(K => K.id);
+  check("every named monster and the boss has a Lore page", !noU.length, noU.join(", "));
+  const noA = G.ARTIFACTS.filter(A => !page("a-" + A.id)).map(A => A.id);
+  check("every artifact has a Lore page", !noA.length, noA.join(", "));
+  const tomes = G.ITEMS.filter(K => K.cat === "tome"), noT = tomes.filter(K => !page("t-" + K.id.slice(1))).map(K => K.id);
+  const orphan = Object.values(G.LORE_PAGES).filter(P => P.sec === "book" && !tomes.some(K => "t-" + K.id.slice(1) === P.id)).map(P => P.id);
+  check("every lore book is an item with a page, and every book page has its item", tomes.length >= 10 && !noT.length && !orphan.length, [...noT, ...orphan].join(", "));
+  let gaps = []; for (let d = 1; d <= 120; d++){ const R = G.ringOf(d); if (!R || !page("ring-" + R.id) || !R.feel.length) gaps.push(d); }
+  check("every depth belongs to a ring with a page and level feelings", !gaps.length, gaps.slice(0, 5).join(" "));
+  const fams = [...new Set(G.MONSTERS.filter(K => !K.town && !K.unique && !K.boss).map(K => K.fam))].filter(f => !G.FAMILY_LORE[f]);
+  const egos = G.EGOS.filter(E => !G.EGO_LORE[E.id]).map(E => E.id), books = G.ITEMS.filter(K => K.cat === "book" && !G.BOOK_LORE[K.id]).map(K => K.id);
+  check("every monster family, special kind and spell book has its line of lore", !fams.length && !egos.length && !books.length, [...fams, ...egos, ...books].join(", "));
+  check("the starting pages exist", G.LORE_START.every(page));
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nall checks passed");

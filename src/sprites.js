@@ -327,6 +327,7 @@ function icon(K, rgb){
     else { p.line(3, 13, 12, 4, hex(WOOD)); p.rect(11, 3, 2, 2, "#ccd"); p.px(3, 12, "#d44"); p.px(4, 13, "#d44"); if (c === "ammo"){ p.line(4, 11, 13, 2, hex(WOOD)); } } }
   else if (c === "potion" || c === "flask"){ const cc = c === "flask" ? hex([0.9, 0.75, 0.3]) : col; p.rect(7, 2, 2, 3, "#ccd"); p.rect(6, 1, 4, 1, hex([0.5, 0.35, 0.2])); p.disc(8, 10, 4, cc); p.rect(5, 7, 6, 1, c === "flask" ? "#fe9" : light); p.px(6, 9, "#fff"); }
   else if (c === "scroll"){ p.rect(3, 4, 10, 8, "#e8dcc0"); p.rect(2, 3, 2, 10, "#c8b890"); p.rect(12, 3, 2, 10, "#c8b890"); for (let y = 6; y < 11; y += 2) p.rect(5, y, 6, 1, "#8a7a60"); p.px(8, 12, "#b33"); }
+  else if (c === "tome"){ p.rect(3, 3, 10, 11, hex([0.5, 0.33, 0.2])); p.rect(3, 3, 2, 11, hex([0.35, 0.22, 0.13])); p.rect(12, 7, 2, 3, "#c8a040"); p.rect(6, 6, 5, 1, "#e8dcc0"); p.rect(6, 8, 4, 1, "#e8dcc0"); }
   else if (c === "book"){ const bc = K.realm === "holy" ? [0.95, 0.85, 0.45] : [0.45, 0.4, 0.9]; p.rect(3, 3, 10, 11, hex(bc)); p.rect(3, 3, 2, 11, hex(bc, 0.6)); p.rect(6, 6, 5, 1, hex(bc, 1.4)); p.rect(6, 8, 4, 1, hex(bc, 1.4)); }
   else if (c === "ring"){ p.disc(8, 10, 4, hex([0.95, 0.8, 0.35])); p.g.clearRect(7, 9, 3, 3); p.disc(8, 5, 2, col); p.px(7, 4, "#fff"); }
   else if (c === "amulet"){ p.line(3, 2, 8, 9, "#ccb070"); p.line(13, 2, 8, 9, "#ccb070"); p.disc(8, 11, 3, col); p.px(7, 10, "#fff"); }

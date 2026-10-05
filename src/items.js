@@ -14,7 +14,7 @@ const CAT = {   // per category: glyph, colour, slot, and whether its kinds are 
   mushroom: { glyph: ",", flavour: true }, potion: { glyph: "!", flavour: true }, scroll: { glyph: "?", flavour: true },
   wand: { glyph: "-", flavour: true }, staff: { glyph: "_", flavour: true }, rod: { glyph: "-", flavour: true },
   ring: { glyph: "=", flavour: true, slot: "ring" }, amulet: { glyph: "\"", flavour: true, slot: "neck" },
-  book: { glyph: "?", rgb: [0.8, 0.8, 0.8] }
+  book: { glyph: "?", rgb: [0.8, 0.8, 0.8] }, tome: { glyph: "?", rgb: [0.6, 0.45, 0.3] }
 };
 const ARMOUR_CATS = ["body", "shield", "head", "hands", "feet", "cloak"];
 const I = (cat, id, name, depth, rarity, wt, cost, o = {}) => ({ cat, id, name, depth, rarity, wt, cost, ...o });
@@ -115,6 +115,11 @@ const ITEMS = [
     .map(([id, n, dep, r, c], i) => I("book", id, n, dep, r, 3, c, { realm: "arcane", book: i + 1, rgb: [0.55, 0.65, 1.3] })),
   ...[["hbook1", "Lamp Psalter", 1, 1, 25], ["hbook2", "Hymns of the Hearth", 10, 2, 150], ["hbook3", "Litany of Dawn", 20, 3, 800], ["hbook4", "Rites of the Unbroken Flame", 35, 4, 2500]]
     .map(([id, n, dep, r, c], i) => I("book", id, n, dep, r, 3, c, { realm: "holy", book: i + 1, rgb: [1.3, 1.1, 0.55] })),
+  // lore books (phase 11): found below, not magic; reading one adds its page to the Lore tab (text in lore.js)
+  ...[["tletter", "A miner's last letter", 1], ["tnotes", "Lecture notes on starlight", 2], ["tcharter", "A copy of the Delving Charter", 3], ["tdaybook", "A Keeper's day-book", 4],
+      ["trunner", "A runner's message, never delivered", 8], ["tledger", "A ledger of Brassle & Vane", 12], ["thymn", "A hymn for the Drowned King", 18],
+      ["twatch", "The Marrow Guard's roll of watch", 22], ["tforgesong", "An Ashborn forge-song", 30], ["tcaedra", "A page in Caedra's hand", 40], ["tunlit", "Notes on the Unlit Ring", 46],
+      ["telder", "A page in no known hand", 52]].map(([id, n, dep]) => I("tome", id, n, dep, 3, 1, 5)),
   // rings and amulets: worn; pval is rolled when made
   ...[["rprot", "Protection", 5, 1, { pac: true }, 400], ["rstr", "Strength", 20, 3, { pstat: "str" }, 1500], ["rint", "Intellect", 20, 3, { pstat: "int" }, 1500],
       ["rdex", "Dexterity", 20, 3, { pstat: "dex" }, 1500], ["rcon", "Constitution", 22, 3, { pstat: "con" }, 1500], ["racc", "Accuracy", 8, 2, { phit: true }, 500],

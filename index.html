@@ -77,6 +77,7 @@ i.up { color: #7adc6a; font-style: normal; margin-left: 4px; } i.down { color: #
 h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12em; text-transform: uppercase; font-weight: normal; }
 .grid { display: grid; grid-template-columns: repeat(6, 52px); gap: 4px; justify-content: center; margin: 8px 0; }
 .sel { outline: 2px solid var(--gold); outline-offset: 1px; }
+.spell.page { grid-template-columns: 1fr auto; padding: 5px 8px; }
 .spell { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 8px; padding: 3px 6px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; }
 .spell.off { opacity: .5; } .spell.ready { border-color: var(--gold); background: #2a2010; } .spell small { color: var(--dim); } .spell em { color: var(--gold); font-style: normal; font-size: 11px; }
 .msgs div { font-size: 12px; padding: 2px 0; border-bottom: 1px solid #2a2636; }
@@ -89,7 +90,7 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
 #dlg, #screen { position: absolute; inset: 0; display: grid; place-items: center; z-index: 10; }
 #dlg { background: #0008; } #dlg[hidden], #screen[hidden], #target[hidden], #prompt[hidden], #ov[hidden] { display: none; }
 #dlg .box { background: var(--panel); border: 2px solid var(--gold); border-radius: 8px; padding: 14px 16px; min-width: 520px; max-width: 92%; max-height: 92%; display: flex; flex-direction: column; }
-#dlg .box.wide { min-width: 860px; } #dlg h2 { margin: 0 0 8px; font-size: 16px; color: var(--gold); font-weight: normal; }
+#dlg .box.wide { min-width: min(860px, 92%); overflow: auto; } #dlg .box.wide .cols { flex-wrap: wrap; overflow: auto; } #dlg .box.wide .list { min-width: 220px; } #dlg p.lore { max-width: 560px; line-height: 1.6; font-size: 14px; margin: 0 0 12px; } #dlg h2 { margin: 0 0 8px; font-size: 16px; color: var(--gold); font-weight: normal; }
 #dlg .cols { display: flex; gap: 12px; min-height: 0; flex: 1; } #dlg .list { flex: 1; overflow: auto; min-width: 240px; max-height: 60vh; }
 #dlg .side { width: 290px; flex: none; } #dlg .side .card { border-color: var(--edge); }
 .row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border: 2px solid transparent; border-radius: 4px; cursor: pointer; }
@@ -115,7 +116,7 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
 <body>
 <header>
   <h1>Torchlight Dungeons</h1>
-  <div id="hud">arrows move &middot; A attack &middot; S spell &middot; D drink &middot; W grab &middot; Tab target &middot; I C B J M panel &middot; ? keys &middot; Esc menu</div>
+  <div id="hud">arrows move &middot; A attack &middot; S spell &middot; D drink &middot; W grab &middot; Tab target &middot; I C B J K M panel &middot; ? keys &middot; Esc menu</div>
 </header>
 <div id="main">
   <div id="stage">
@@ -952,7 +953,7 @@ const CAT = {   // per category: glyph, colour, slot, and whether its kinds are 
   mushroom: { glyph: ",", flavour: true }, potion: { glyph: "!", flavour: true }, scroll: { glyph: "?", flavour: true },
   wand: { glyph: "-", flavour: true }, staff: { glyph: "_", flavour: true }, rod: { glyph: "-", flavour: true },
   ring: { glyph: "=", flavour: true, slot: "ring" }, amulet: { glyph: "\"", flavour: true, slot: "neck" },
-  book: { glyph: "?", rgb: [0.8, 0.8, 0.8] }
+  book: { glyph: "?", rgb: [0.8, 0.8, 0.8] }, tome: { glyph: "?", rgb: [0.6, 0.45, 0.3] }
 };
 const ARMOUR_CATS = ["body", "shield", "head", "hands", "feet", "cloak"];
 const I = (cat, id, name, depth, rarity, wt, cost, o = {}) => ({ cat, id, name, depth, rarity, wt, cost, ...o });
@@ -1053,6 +1054,11 @@ const ITEMS = [
     .map(([id, n, dep, r, c], i) => I("book", id, n, dep, r, 3, c, { realm: "arcane", book: i + 1, rgb: [0.55, 0.65, 1.3] })),
   ...[["hbook1", "Lamp Psalter", 1, 1, 25], ["hbook2", "Hymns of the Hearth", 10, 2, 150], ["hbook3", "Litany of Dawn", 20, 3, 800], ["hbook4", "Rites of the Unbroken Flame", 35, 4, 2500]]
     .map(([id, n, dep, r, c], i) => I("book", id, n, dep, r, 3, c, { realm: "holy", book: i + 1, rgb: [1.3, 1.1, 0.55] })),
+  // lore books (phase 11): found below, not magic; reading one adds its page to the Lore tab (text in lore.js)
+  ...[["tletter", "A miner's last letter", 1], ["tnotes", "Lecture notes on starlight", 2], ["tcharter", "A copy of the Delving Charter", 3], ["tdaybook", "A Keeper's day-book", 4],
+      ["trunner", "A runner's message, never delivered", 8], ["tledger", "A ledger of Brassle & Vane", 12], ["thymn", "A hymn for the Drowned King", 18],
+      ["twatch", "The Marrow Guard's roll of watch", 22], ["tforgesong", "An Ashborn forge-song", 30], ["tcaedra", "A page in Caedra's hand", 40], ["tunlit", "Notes on the Unlit Ring", 46],
+      ["telder", "A page in no known hand", 52]].map(([id, n, dep]) => I("tome", id, n, dep, 3, 1, 5)),
   // rings and amulets: worn; pval is rolled when made
   ...[["rprot", "Protection", 5, 1, { pac: true }, 400], ["rstr", "Strength", 20, 3, { pstat: "str" }, 1500], ["rint", "Intellect", 20, 3, { pstat: "int" }, 1500],
       ["rdex", "Dexterity", 20, 3, { pstat: "dex" }, 1500], ["rcon", "Constitution", 22, 3, { pstat: "con" }, 1500], ["racc", "Accuracy", 8, 2, { phit: true }, 500],
@@ -1247,7 +1253,7 @@ const SHOPS = [
     buys: ["weapon", "bow", "ammo", "dart"], hello: ["Every blade here is sharp. I checked.", "Point the sharp end away from you.", "Bring me something good from below."] },
   { name: "Temple", keeper: "Sister Ilvane", greed: 1.15, rgb: [1.3, 1.2, 0.9], size: [10, 14], always: ["heal", "hbook1"],
     sells: ["hbook1", "hbook2", "heal", "bigheal", "pclear", "ppoisoncure", "sbless", "schant", "suncurse", "srecall", "mace", "flail", "morningstar", "warhammer"],
-    buys: ["potion", "scroll", "book"], hello: ["May your light never fail.", "The flame keeps watch over all of us.", "Rest here a while, if you need."] },
+    buys: ["potion", "scroll", "book", "tome"], hello: ["May your light never fail.", "The flame keeps watch over all of us.", "Rest here a while, if you need."] },
   { name: "Alchemist", keeper: "Thorne Vialkeeper", greed: 1.3, rgb: [0.7, 1.2, 0.8], size: [10, 15], always: ["heal", "sident", "srecall"],
     sells: ["heal", "bigheal", "pfire", "pcold", "pinfra", "phero", "pspeed", "sident", "slight", "sphase", "smap", "sobj", "smon", "sfood", "srecall", "senchhit", "senchdam", "senchac", "stele", "sfind"],
     buys: ["potion", "scroll"], hello: ["Don't touch the green ones.", "Every bottle has a story. Some of them explode.", "Read the label. Then read it again."] },
@@ -1483,6 +1489,129 @@ const bookOf = S => (S.realm === "arcane" ? "abook" : "hbook") + S.book;
 // Spells you could study now: your realm, your level reached, its book in your pack, not yet known.
 const learnable = (p, carried) => SPELLS.filter(S => S.realm === CLASS[p.cls].realm && !p.spells.includes(S.id) && spellLevel(S, CLASS[p.cls]) <= p.lvl && carried.has(bookOf(S)));
 const firstSpell = C => C.realm ? SPELLS.find(S => S.realm === C.realm) : null;
+/* ---------- Torchlight Dungeons: the world's lore in the game (phase 11) ---------- */
+// Short versions of the lore in lore/*.md, where the long ones live. Original content, like everything else.
+// RINGS: the dungeon's depth bands, which are the rings of the Lampway. LORE_PAGES: the pages of the Lore tab, each
+// unlocked when you reach a ring, meet a unique, find an artifact or read a lore book (or from the start). The rest
+// are single lines for item cards and monster recall.
+
+const RINGS = [
+  { id: "stone", name: "the Ring of Stone", from: 1, to: 9, feel: ["The halls here were cut by Stonekin hands.", "Old mine rails cross the Keepers' flagstones here.", "Somewhere a shrine lamp still burns in these upper halls."] },
+  { id: "roots", name: "the Ring of Roots", from: 10, to: 19, feel: ["Roots of the Greenroof hang through the ceiling.", "Water drips on old shrine stones, green with moss.", "You hear the underground river somewhere close."] },
+  { id: "rest", name: "the Ring of Rest", from: 20, to: 29, feel: ["Cold lamps sit on stone coffins all around.", "This is the Ring of Rest. The dead keep a poor watch here.", "Somewhere a tomb lamp still burns, and its king lies quiet."] },
+  { id: "forges", name: "the Ring of Forges", from: 30, to: 39, feel: ["The air shakes with heat from the deep fires.", "Abandoned Ashborn forges glow on the edge of the magma.", "A hammer rings somewhere, struck by no living hand."] },
+  { id: "glass", name: "the Ring of Glass", from: 40, to: 49, feel: ["The crystal walls glow a cold, failing blue.", "Your light shines back at you from the glass, weaker than it should.", "The walls here hold light, and something has been drinking it."] },
+  { id: "pit", name: "the Pit of the Gloam", from: 50, to: 50, feel: ["The dark here is thick enough to lean on. Something below it is awake."] },
+  { id: "unlit", name: "the Unlit Ring", from: 51, to: 1e9, feel: ["Half-cut tunnels, empty lamp niches: the ring the Keepers never finished.", "Far off, one great light burns alone in the dark.", "Chisel marks two thousand years old, and no lamp to show them."] }
+];
+const ringOf = d => RINGS.find(R => d >= R.from && d <= R.to);
+
+// Pages: [id, section, title, text]. Sections: world (known from the start), ring, named, artifact, book.
+const LORE_PAGES = Object.fromEntries([
+  ["world-fire", "world", "The Gloam and the First Fire", "Before the world there was only the Gloam, a still sea with no light in it. Then the First Fire burned and pushed the dark back, and the world formed inside the hollow it made. The Fire burst: its far sparks are the stars, its heavy sparks the deep fires, and one ember fell on the land to be carried by hand. Every light since is a spark of it. That is why the world's old name is Torchlight."],
+  ["world-gloom", "world", "Morrowgloom", "The last of the Gloam was trapped under the world when the Fire burst. That pool is Morrowgloom, the Lantern-Eater. It does not think: it is a will that is only hunger for light. Every flame it swallows goes into it and burns on as one of its thousand eyes, and every light it eats is a dawn that will not come."],
+  ["world-lampway", "world", "The Lampway", "The dungeon is not a mine. It is the Lampway, a cage of light built downward by Caedra, the First Keeper, and the Order of the Lamp: ring under ring of lamp-shrines, each holding the dark beneath it while its lamps burn. Five rings held Morrowgloom down for a thousand years. Then the kingdom that fed the lamps fell, and the rings began to go dark."],
+  ["world-hollow", "world", "Lanternhollow and the Guttering", "Lanternhollow grew up over the Lampway's mouth when miners found glow crystals there: the cage's own lamplight, set into stone. They dug until they broke into the crypts. Now only delvers go down. Since the Guttering of 1204, every torch in town leans towards the Hollow Gate, and the Keepers have called for anyone who can carry a light and a blade."],
+  ["ring-stone", "ring", "The Ring of Stone (50 to 450 ft)", "The top ring and the best built: Stonekin halls, pillared shrines and wide stairs, broken through everywhere by the miners' tunnels. Kobolds, goblins, brigands and rats live here, close enough to the surface to rob those going down. The Hall of First Light, where Caedra lit the first ring, has never been found again."],
+  ["ring-roots", "ring", "The Ring of Roots (500 to 950 ft)", "Below the worked halls the masons met natural caverns, drowned and dripping, where the roots of the Greenroof reach down through the rock. The Keepers lined them with shrines instead of cutting new halls. Moulds, trolls, harpies and shades live here now, and the underground river runs through it."],
+  ["ring-rest", "ring", "The Ring of Rest (1,000 to 1,450 ft)", "The burial ring. The Keepers' dead and every Lamp King of Aurenhold were laid here, each with a lamp, to keep watch even in death. When the lamps failed the dead kept watching and lost their minds. Relight a king's tomb lamp, the Keepers say, and he will rest."],
+  ["ring-forges", "ring", "The Ring of Forges (1,500 to 1,950 ft)", "Where the Lampway reaches the deep fires. Under the Pact of the Forge the Ashborn kept these fires burning as a wall of light and forged the Keepers' weapons at the Anvil of the Pact. When they left, the fires ran wild. Fire giants, drakes and golems still working for dead masters live here now."],
+  ["ring-glass", "ring", "The Ring of Glass (2,000 to 2,450 ft)", "The last ring, grown rather than dug: crystal walls that hold light, raised by Tinkerling glassmakers and the first Arcanists right over Morrowgloom. Its lamps went out around 960 BH, and Morrowgloom has been drinking the light stored in the walls ever since. What is left glows a cold, failing blue."],
+  ["ring-pit", "ring", "The Pit of the Gloam (2,500 ft)", "At the bottom of the Ring of Glass is a hollow that was never lit, because no one was ever meant to enter it. Morrowgloom waits there, with everything it has eaten shining in its thousand eyes."],
+  ["ring-unlit", "ring", "The Unlit Ring (below 2,500 ft)", "The sixth ring, begun to close the cage from below and never finished. Its shrines were cut and never lit, and fiends came into the world through it. One great crystal burns here, the Last Lamp, lit by the last Keepers before they left; while it burns, Morrowgloom cannot leave the Pit. Deeper still, the Keepers once saw the glow of an older ring, lit by hands no one knows."],
+  ["u-whiskers", "named", "Old Whiskers, King of Rats", "His thimble crown belonged to Marla Tunnick, who founded Lanternhollow; his line has passed it down for a thousand years. Kill him and the rats crown another within a week."],
+  ["u-fenwick", "named", "Fenwick Gutterking", "His great-great-grandmother took the east galleries in 412 YH. Fenwick runs them as a toll road and a loan office, and lays traps for anyone who will not pay."],
+  ["u-snag", "named", "Snag the Quick", "The three kings he robbed were Fenwick, a goblin warchief and Old Whiskers. The cooks took it worse."],
+  ["u-oldtusk", "named", "Old Tusk", "Lost his eye to Kessa Edgewright, the weaponsmith, who lost two fingers to him. Neither has forgiven the other."],
+  ["u-bristle", "named", "Mother Bristle", "The great spider of the Ring of Stone. The Grey Widow, far below, is said to be her mother."],
+  ["u-varn", "named", "Varn the Flayer", "A sellsword of the Free Companies who stopped going down for treasure when he saw that delvers coming up carry more of it."],
+  ["u-lanternthief", "named", "The Lantern Thief", "The first of the dark things to climb, seen since about 900 BH. Everything it snuffs goes into its sack, and everything in the sack goes down to Morrowgloom. It put out every lamp in Lanternhollow on the Night of Open Doors. Kill it, the Keepers believe, and the lights in the sack go free."],
+  ["u-corvane", "named", "Corvane, Crow of the Deep", "It eats the dead of the upper workings and keeps their voices. Since 1150 YH the crows of the Hollow Gate have obeyed it."],
+  ["u-vesper", "named", "Sister Vesper", "A Keeper of Lanternhollow who listened at the temple floor until something listened back. In 911 YH she put out every lamp in the temple except the Eternal Lamp, which would not go out, and walked into the Deep."],
+  ["u-kettlemaw", "named", "Kettlemaw", "Cooks for the ogres of the Ring of Roots, and argues with them about seasoning."],
+  ["u-hollowjack", "named", "Hollow Jack", "Walked off its pole at the harvest fair in 1199 YH. The candle in its chest is a light Morrowgloom cannot eat, which is why the dark things avoid it, and why it is so lonely."],
+  ["u-grimsby", "named", "Grimsby Coldhand", "Expelled from the Collegium of Sparks in 1052 YH for keeping the bodies of his failed students. He has never stopped taking students."],
+  ["u-brakka", "named", "Brakka Stoneteeth", "She was rubble in the Ring of Stone when the masons cut it, if the trolls' own story is true: the oldest troll in the Deep, and mother of half of them."],
+  ["u-ysolde", "named", "Ysolde of the Ashes", "A pyromancer bound by oath to her tower, who burned it down in 1183 YH to be free. Free, she found she had nowhere to go but down."],
+  ["u-maulwyrm", "named", "The Maul-Wyrm", "Some say it, not the masons, cut half the passages of the lower rings, and that the Lampway's shifting is only the Maul-Wyrm rearranging its home."],
+  ["u-greywidow", "named", "The Grey Widow", "Mother Bristle's mother. The Pale Bride passed safely through her web, they say, because the two brides did not quarrel."],
+  ["u-thessaly", "named", "Thessaly Glass", "What became of Queen Tamsin's Mirror, which showed the rings below. Left among the hungry dead for a thousand years, it learned hunger. If it still sees what the Mirror saw, it knows the whole Deep."],
+  ["u-ironjaw", "named", "Ironjaw", "Built by the bankers Brassle & Vane in 700 YH, sunk with their vault in the Great Subsidence of 803. The vault was broken and scattered long ago. Ironjaw guards the place where it thinks the vault is."],
+  ["u-palebride", "named", "The Pale Bride", "Princess Lisette of Aurenhold, who walked into the Deep on her wedding day around 600 BH to find her betrothed, a captain of the Marrow Guard. She is still looking. She may be the first vampire."],
+  ["u-drownedking", "named", "The Drowned King", "King Oswy the Faithful, who drowned relighting his fathers' tomb lamps when the river broke into the Ring of Rest in 640 BH. The flood carried him down to the Ring of Forges, where he walks the riverbed waiting to be carried home."],
+  ["u-rimeheart", "named", "Rimeheart", "A Cragborn hauler's son who went down with the digging. When word came, centuries later, that his family above had died, he froze his own heart. The Cragborn still sing about him."],
+  ["u-manymouthed", "named", "The Many-Mouthed", "A horror that came up through the Unlit Ring. It was the voice Sister Vesper heard under the temple floor."],
+  ["u-skarth", "named", "Skarth the Unsleeping", "A Collegium scholar who went down in 307 YH looking for the light that does not die, and found a way not to die himself. He believes that the moment he closes his eyes, Morrowgloom will take him."],
+  ["u-emberqueen", "named", "The Ember Queen", "Hatched in the deep fires when the First Fire burst: the oldest living thing in the world. She allowed the Pact of the Forge for a price no one wrote down. The Ashborn half-believe she is what is left of the First Fire, and her hoard may hold its last true ember."],
+  ["u-ashvane", "named", "Duke Ashvane", "A fiend of the Unlit Ring who came to Aurenhold as a merchant prince and won the kingdom from Ysmer the Last at dice in 412 BH. He took the crown into the Deep and wears it still. The Oathknights want it back."],
+  ["u-morrowgloom", "named", "Morrowgloom, the Lantern-Eater", "The last pool of the Gloam, trapped under the world when the First Fire burst. It eats light, and its thousand eyes are every light it has eaten, still burning; Caedra's is among them. If it is slain, the swallowed lights go home."],
+  ["a-embersong", "artifact", "Embersong", "Forged by Ashborn smiths at the Anvil of the Pact for the Order of the Lamp. Dame Orsolya Vell carried it into the Ring of Rest after the Fall to relight the tomb of the first king; the blade came back up the river without her. The hum is the forge-song of the Pact, still being sung."],
+  ["a-mantle", "artifact", "The Mantle of Quiet Steps", "The cloak of \"Nobody\" Quill, the only delver ever to rob the Brassle & Vane vault before it fell. The Quiet Hand claims it as its founding relic, and also denies it."],
+  ["a-stonehelm", "artifact", "The Stonehelm of the Deep Halls", "Thane Gorran Deephall's helm, carved from the first stone of the Ring of Stone ever to hold light. The Deephall clans want it back, and will be very polite until they get it."],
+  ["a-firstlamp", "artifact", "The Lantern of the First Keeper", "Caedra's lantern, which she carried down to light the Ring of Glass around 2100 BH. It is not the oldest lamp, but its flame was lit from the First Lamp itself, which is why it cannot go out. It was found, still burning, in the Ring of Forges, far above where she took it. The Eternal Lamp in the temple was lit from it."],
+  ["a-starfall", "artifact", "Starfall", "Made by the Sylvan archer Ithrel Silverstring around 1150 BH from Greenroof wood grown under the brightest stars, and strung with silver drawn from captured starlight. It shoots truest in the dark."],
+  ["a-swiftband", "artifact", "The Band of Swift Feet", "Worn by Wren Hallow, the Burrowfolk runner who carried word of a failing ring from the Ring of Glass to the surface in one night. Wren said it made the world seem slow, and lonely, and gave it back."],
+  ["t-letter", "book", "A miner's last letter", "\"Dear Ma. The seam goes on and on, and the foreman says one more week and we'll all be rich. There's a draught down here that smells like old flowers. Hob says he heard bells. Tonight we break through the last wall. I'll write when I'm up. Your Ned.\" It is dated the Night of Open Doors, 612 YH."],
+  ["t-notes", "book", "Lecture notes on starlight", "A student's notes from the Collegium of Sparks: \"Starlight is the far sparks of the First Fire. It does not care what we do with it. Spark is the first lesson because it is the smallest borrowing. NB: every spell is a loan. Light is never made, only moved.\" In the margin: \"Then where does it go when the Gloam eats it?\""],
+  ["t-charter", "book", "A copy of the Delving Charter", "\"By order of the Council of Lanternhollow, 640 YH: the lower workings being closed after the Collapse, any person may go below on licence, and bring up and sell what they find, save only that no public lamp be put out, on pain of the law.\" Signed by Councillor Pell Arran and four others."],
+  ["t-daybook", "book", "A Keeper's day-book", "\"Fourth round of the second ring. Six lamps trimmed, two refilled, one relit at the root shrine where the drip had drowned it. Saw the dark lean in at the stair head while the lamp was out, the way a cat leans in at a door. Keep it lit. Keep it down.\" The hand is neat, and very old."],
+  ["t-runner", "book", "A runner's message, never delivered", "Burrowfolk shorthand on a scrap of hide: \"To the Keepers above, from the glass ring. Lamps failing east of the great stair. Oil short three rounds. Send more before the cold comes up.\" The courier's name has worn away. The message is over a thousand years old."],
+  ["t-ledger", "book", "A ledger of Brassle & Vane", "Columns of deposits in a tidy Tinkerling hand, and at the back: \"Paid to the foundry for one iron guardian, jaw of vault steel, never to sleep, never to leave the vault: 4,000 gold. Worth every coin.\" The last entry is dated the day before the Great Subsidence."],
+  ["t-hymn", "book", "A hymn for the Drowned King", "\"He went down for his fathers' sake / with oil and wick and flame; / the river rose, the king went down, / and none came up again. / Light a lamp for Oswy, / light it on the stair; / he waits for the flood to carry him home, / and the water does not care.\""],
+  ["t-watch", "book", "The Marrow Guard's roll of watch", "Names in rows, each with a span of years: forty, fifty, sixty years of watch in the Ring of Rest. The last line reads: \"The kingdom has fallen. We are ordered up. Some of us will not go. Someone must keep the old kings company.\""],
+  ["t-forgesong", "book", "An Ashborn forge-song", "Words for working at the Anvil of the Pact, to be sung in time with the hammer: \"Strike for the Queen who remembers. Strike for the wall of fire. Strike, and the dark stays under, as long as the forge burns higher.\""],
+  ["t-caedra", "book", "A page in Caedra's hand", "\"I have lit every ring on the way down. The last is the hardest, for the glass drinks the light as fast as I give it. Below the Pit I saw a glow I did not make. Someone was here before us. Keep it lit, keep it down, and do not come looking for me.\""],
+  ["t-unlit", "book", "Notes on the Unlit Ring", "A Keeper's plan for a sixth ring, to close the cage from below, with the last page added in a shakier hand: \"The Tithe is cut. We go up tomorrow and will not come back. We have lit the great crystal to hold what we could not finish. Let it be the Last Lamp, and let no one ever take it.\""],
+  ["t-elder", "book", "A page in no known hand", "Not ink but scorch marks, in a script no scholar has read, around a drawing of a ring of lamps under a pool of dark. Holding the page, you feel warmth in your fingers, as if someone had only just put down a lamp."]
+].map(([id, sec, title, text]) => [id, { id, sec, title, text }]));
+const LORE_SECTIONS = { world: "The world", ring: "The rings", named: "The named", artifact: "Artifacts", book: "Books found below" };
+const LORE_START = ["world-fire", "world-gloom", "world-lampway", "world-hollow"];
+
+// One line on where each family of monsters comes from, for recall.
+const FAMILY_LORE = {
+  rodent: "Rats were in the mines before the miners.", bat: "They steer by sound, so the dark cannot blind them.",
+  insect: "Drawn to every light; some drink the flame itself.", spider: "They love the shrines' dark corners.",
+  beetle: "Lamp beetles grow glowing shells by eating glow crystal.", worm: "Borers that cut more tunnels than the masons ever did.",
+  mould: "Memory moss grows over the Keepers' carvings and is said to hold what they said.", jelly: "Let loose by the Keepers to clean the rings; now they eat everything.",
+  snake: "They followed the warmth down towards the deep fires.", canine: "Wolves from the hills, and hounds bred by the deep giants.",
+  feline: "Hill cats that followed the rats down and found bigger prey.", beast: "Beasts of the Hollowmark that moved into the empty halls.",
+  bird: "They nest in the Hollow Gate's broken dome.", kobold: "Scavengers who took the east galleries in 412 YH and lay most of the upper traps.",
+  goblin: "Hill raiders who moved into the Deep after the Collapse; no kin to the Marrowkin.", brigand: "Failed delvers and deserters who rob the living instead of the dead.",
+  thief: "They follow delvers down to steal what they find.", mage: "The Collegium's dropouts and outcasts.",
+  priest: "Keepers and scholars who went down and began to pray to the dark.", ogre: "Hill ogres, who move in wherever there is food.",
+  troll: "They grow out of rubble left in the dark, the miners say, which is why they mend themselves.", giant: "Cragborn who went down with the digging and were changed by each ring they reached.",
+  skeleton: "Workers, soldiers and the Marrow Guard of the Ring of Rest.", zombie: "Miners who died on the Night of Open Doors, and those they killed since.",
+  ghost: "Those whose last spark was caught on its way up to the stars.", mummy: "The Keepers and the Lamp Kings themselves, still on watch.",
+  vampire: "The dead who learned to take life instead of light.", lich: "Scholars who chose not to die.",
+  elemental: "The deep fires' own spirits, loose since the Ashborn left the forges.", vortex: "Winds that rise where hot rock meets cold.",
+  shade: "Scraps of Morrowgloom that came loose and climbed.", eye: "Some say they are Morrowgloom's eyes, broken off and looking for the way up.",
+  mimic: "Grave goods left so long among the hungry dead that they learned hunger.", plant: "The Greenroof's roots, grown wild without light.",
+  arachnid: "Crabs came up the river; scorpions came down from the hot hills.", reptile: "Old creatures of the deep, warmed by the fires.",
+  hybrid: "The royal menagerie of Aurenhold, released at the Fall.", horror: "Things from the Unlit Ring, crawled up through the cracks.",
+  golem: "Built to guard shrines, forges and vaults, and still guarding.", fiend: "Fiends of the Unlit Ring, who want the world above.",
+  drake: "The Ember Queen's grandchildren, or so the drakes believe.", dragon: "The great dragons of the deep fires.",
+  wisp: "Lost sparks: lamplight that wandered off, or starlight caught in the glass.", deadhound: "The Marrow Guard's war dogs, still following their masters.",
+  were: "Hill folk under an old curse, hiding what they become.", scalekin: "A river people older than the Lampway, who think it was built around their country.",
+  sporefolk: "Walking fungus of the Ring of Roots; the elders dream for the colony.", gargoyle: "Carved guardians of the crypt chapels, woken when the lamps went out."
+};
+// Where special kinds come from, for item cards.
+const EGO_LORE = {
+  burning: "Tempered at the Anvil of the Pact in the Ring of Forges.", frost: "Quenched in frost-giant ice.", storms: "Struck by Collegium lightning.",
+  slaybeast: "Blessed by the Order for the hunts in the Ring of Roots.", slayundead: "Blessed by the Order against the dead of the Ring of Rest.", slayevil: "Blessed by the Order against the fiends below.",
+  warding: "A Keeper's ward, cut into the blade for lamplighters who went down alone.", sharp: "Stonekin edge-work, honed on stone that held light.",
+  blessed: "Laid for a night on the altar of the Eternal Lamp.", rfire: "Ashborn ash-cloth work.", rcold: "Cragborn work, from the cold steads of the Crag Roots.",
+  racid: "Tinkerling oilskin work.", relec: "Tinkerling work, wound with copper.", resistance: "Made for the lamplighters, who had to pass through every ring.",
+  stealth: "The Quiet Hand's work, though no one admits it.", speed: "Burrowfolk runners' gear from the Age of Lamps.", free: "Burrowfolk runners' gear, made so no message could be held up.",
+  seeing: "A Keeper's helm for watching the dark.", intellect: "A gift of old Aurenhold to its scholars.", wisdom: "A gift of old Aurenhold to its Keepers.",
+  might: "A gift of old Aurenhold to its champions.", power: "A gift of old Aurenhold to its champions.", accuracy: "A gift of old Aurenhold to its archers."
+};
+// Who wrote each spell book.
+const BOOK_LORE = {
+  abook1: "Written by the Collegium's founders around 1700 BH; every Arcanist's first book.", abook2: "Written around 1400 BH. The Stonekin call Melt Stone a crime.",
+  abook3: "Written by the Collegium's battle-mages in the Long Dusk.", abook4: "No one admits to writing it. Some say Duke Ashvane left a copy at court.",
+  hbook1: "The first Keepers' prayers, from the building of the Lampway.", hbook2: "Prayers for the lamplighters of the rings.",
+  hbook3: "Written after the Night the River Rose, in grief.", hbook4: "Caedra's own rites, the Order says, spoken as she lit the Ring of Glass."
+};
 /* ---------- Torchlight Dungeons: save games (phase 9) ---------- */
 // A save is versioned JSON: the character (with what they know), the shops, and the level they are on. Levels are
 // not kept, so the current one is all there is; its map arrays are run-length encoded. decodeSave refuses anything
@@ -1866,6 +1995,7 @@ function icon(K, rgb){
     else { p.line(3, 13, 12, 4, hex(WOOD)); p.rect(11, 3, 2, 2, "#ccd"); p.px(3, 12, "#d44"); p.px(4, 13, "#d44"); if (c === "ammo"){ p.line(4, 11, 13, 2, hex(WOOD)); } } }
   else if (c === "potion" || c === "flask"){ const cc = c === "flask" ? hex([0.9, 0.75, 0.3]) : col; p.rect(7, 2, 2, 3, "#ccd"); p.rect(6, 1, 4, 1, hex([0.5, 0.35, 0.2])); p.disc(8, 10, 4, cc); p.rect(5, 7, 6, 1, c === "flask" ? "#fe9" : light); p.px(6, 9, "#fff"); }
   else if (c === "scroll"){ p.rect(3, 4, 10, 8, "#e8dcc0"); p.rect(2, 3, 2, 10, "#c8b890"); p.rect(12, 3, 2, 10, "#c8b890"); for (let y = 6; y < 11; y += 2) p.rect(5, y, 6, 1, "#8a7a60"); p.px(8, 12, "#b33"); }
+  else if (c === "tome"){ p.rect(3, 3, 10, 11, hex([0.5, 0.33, 0.2])); p.rect(3, 3, 2, 11, hex([0.35, 0.22, 0.13])); p.rect(12, 7, 2, 3, "#c8a040"); p.rect(6, 6, 5, 1, "#e8dcc0"); p.rect(6, 8, 4, 1, "#e8dcc0"); }
   else if (c === "book"){ const bc = K.realm === "holy" ? [0.95, 0.85, 0.45] : [0.45, 0.4, 0.9]; p.rect(3, 3, 10, 11, hex(bc)); p.rect(3, 3, 2, 11, hex(bc, 0.6)); p.rect(6, 6, 5, 1, hex(bc, 1.4)); p.rect(6, 8, 4, 1, hex(bc, 1.4)); }
   else if (c === "ring"){ p.disc(8, 10, 4, hex([0.95, 0.8, 0.35])); p.g.clearRect(7, 9, 3, 3); p.disc(8, 5, 2, col); p.px(7, 4, "#fff"); }
   else if (c === "amulet"){ p.line(3, 2, 8, 9, "#ccb070"); p.line(13, 2, 8, 9, "#ccb070"); p.disc(8, 11, 3, col); p.px(7, 10, "#fff"); }
@@ -1948,7 +2078,7 @@ let DETAIL = Math.max(1, Math.min(3, +store.get("detail", 1) || 1));   // the De
 /* ---------- items: names, carrying, and what worn things add ---------- */
 const nameOf = (it, n) => itemName(it, player.know, n);
 const cap = s => s[0].toUpperCase() + s.slice(1);
-const sameItem = (a, b) => a.k === b.k && (["potion", "scroll", "food", "mushroom", "flask", "book"].includes(ITEM[a.k].cat) || a.fuel === b.fuel && a.charges === undefined && b.charges === undefined && a.timeout === undefined && b.timeout === undefined
+const sameItem = (a, b) => a.k === b.k && (["potion", "scroll", "food", "mushroom", "flask", "book", "tome"].includes(ITEM[a.k].cat) || a.fuel === b.fuel && a.charges === undefined && b.charges === undefined && a.timeout === undefined && b.timeout === undefined
   && !!a.id === !!b.id && a.sense === b.sense && (a.tohit || 0) === (b.tohit || 0) && (a.todam || 0) === (b.todam || 0) && (a.toac || 0) === (b.toac || 0)
   && a.ego === b.ego && !a.art && !b.art && a.pval === b.pval && !!a.cursed === !!b.cursed);
 function carry(it){
@@ -2218,6 +2348,7 @@ function pickUp(){
     if (!got){ say("You cannot carry any more."); break; }
     floor.splice(floor.indexOf(f), 1);
     say("You have " + nameOf(got) + " (" + String.fromCharCode(97 + player.inv.indexOf(got)) + ").");
+    if (got.art) unlockLore("a-" + got.art);
   }
   recalc();
   if (player.bonus.burden) say("You are carrying too much and slow down.");
@@ -2326,8 +2457,14 @@ const TRAP_FX = {
   summonrune: () => { say("Shapes rise out of the rune!"); summonNear(MONSTERS.filter(K => !K.town && !K.unique && !K.boss && K.depth <= depth + 2), 2 + rng.int(3)); L.trap[idx(player.x, player.y)] = 0; }
 };
 function springTrap(i){ sfx("trap"); L.trapSeen[i] = 1; mem[i] = 1; disturbed = true; TRAP_FX[trapAt(i).id](); }
-// On arrival: a feeling for how dangerous the level's monsters are for its depth.
+// The Lore tab (phase 11): a page opens when you reach a ring, meet a unique, find an artifact or read a lore book.
+function unlockLore(id){
+  const P = LORE_PAGES[id]; if (!P || player.lore[id]) return;
+  player.lore[id] = player.turns || 1; say("A new page in your Lore: " + P.title.replace(/ \(.*\)$/, "") + (keySet === "modern" ? " (K)." : "."));
+}
+// On arrival: where you are, and a feeling for how dangerous the level's monsters are for its depth.
 function levelFeeling(d){
+  const R = ringOf(d); say(rng.pick(R.feel)); unlockLore("ring-" + R.id);
   const danger = mons.reduce((s, m) => s + (m.K ? Math.max(0, m.K.depth - d) + (m.K.unique ? 8 : 0) + (m.K.boss ? 30 : 0) : 0), 0);
   say(danger > 40 ? "Your torch gutters as if afraid. Something terrible waits here." : danger > 20 ? "The air is thick with menace." : danger > 10 ? "You have a bad feeling about this level."
     : danger > 4 ? "Something stirs in the dark." : "The level feels still and quiet.");
@@ -2355,6 +2492,7 @@ function useItem(it, how, quick){
   if (how === "read"){
     if (player.t.blind){ say("You can't see to read!"); return false; }
     if (player.t.confused){ say("You are too confused to read."); return false; }
+    if (K.cat === "tome"){ const id = "t-" + K.id.slice(1); say("You read: " + K.name + "."); if (player.lore[id]) say("You have read it before."); unlockLore(id); return true; }
     takeOne(it); learn(it, FX[K.effect]({ K, it })); return true;
   }
   if (how === "fuel"){
@@ -2784,7 +2922,7 @@ function endTurn(){
   if (rng.int(300) === 0) spawnMonster(true);   // the dungeon is never quite empty
   if (player.turns % 200 === 0) saveGame();
   updateSight();
-  for (const m of mons) if (m.K){ const v = seesMon(m); if (v && !m.seen){ disturbed = true; lore(m.K).seen++; if (depth) sfx(cryOf(m.K)); } m.seen = v; }
+  for (const m of mons) if (m.K){ const v = seesMon(m); if (v && !m.seen){ disturbed = true; lore(m.K).seen++; if (depth) sfx(cryOf(m.K)); if (m.K.unique) unlockLore("u-" + m.K.id); } m.seen = v; }
 }
 let disturbed = false, pendingLevel = null;
 function everyTurn(){
@@ -3184,7 +3322,7 @@ function begin(){
   if (C.bow) player.eq.bow = plainItem(C.bow);
   recalc();
   player.mhp = player.hp = firstHp(player); player.mmana = player.mana = maxMana(player);
-  player.hot = Array(10).fill(null); player.slain = {}; player.ready = null;
+  player.hot = Array(10).fill(null); player.slain = {}; player.ready = null; player.lore = Object.fromEntries(LORE_START.map(id => [id, 1]));
   log = []; msgs = []; killer = ""; tomb = null; cr = null;
   state = "play"; stateT = 0;
   shops = newShops(rng, player.know); lastTown = 0; depth = 0; slot = newSlot;
@@ -3216,6 +3354,7 @@ function loadGame(n){
   let g; try { g = decodeSave(store.get(slotKey(n))); } catch (e){ return noteDialog("Slot " + n, e.message); }
   ({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log } = g);
   rng = new RNG(g.rng); target = mons[g.target] || null; slot = n;
+  player.lore = player.lore || Object.fromEntries(LORE_START.map(id => [id, 1]));   // saves from before phase 11 have no Lore pages yet
   msgs = []; killer = ""; tomb = null; cr = null; aiming = null; pendingLevel = null; digging = null; parts = []; floats = []; shots = []; flashes = []; later = [];
   seenAt.fill(0); inFov.fill(0); audio.music(depth ? "depths" : "town");
   state = "play"; stateT = 0; recalc(); relight(); updateSight(); snapView();
@@ -3280,7 +3419,7 @@ function sell(i, it){
   const same = shops[i].stock.find(o => sameItem(o, one)); if (same) same.n++; else shops[i].stock.push(one);
   say("You sell " + nameOf(one) + " for " + price + " gold."); recalc();
 }
-const VERB_FILTER = { eat: it => ITEM[it.k].cat === "food" || ITEM[it.k].cat === "mushroom", quaff: it => ITEM[it.k].cat === "potion", read: it => ITEM[it.k].cat === "scroll",
+const VERB_FILTER = { eat: it => ITEM[it.k].cat === "food" || ITEM[it.k].cat === "mushroom", quaff: it => ITEM[it.k].cat === "potion", read: it => ITEM[it.k].cat === "scroll" || ITEM[it.k].cat === "tome",
   fuel: it => ITEM[it.k].cat === "flask", wield: it => !!ITEM[it.k].slot && player.inv.includes(it), drop: it => player.inv.includes(it),
   wand: it => ITEM[it.k].cat === "wand", staff: it => ITEM[it.k].cat === "staff", rod: it => ITEM[it.k].cat === "rod", throw: it => player.inv.includes(it), inspect: () => true };
 function useWhich(verb){   // the item lists behind single keys: q drink, r read, a aim and so on
@@ -3293,7 +3432,7 @@ function verbsFor(it){
   const K = ITEM[it.k], v = [];
   if (K.cat === "food" || K.cat === "mushroom") v.push(["eat", "Eat"]);
   if (K.cat === "potion") v.push(["quaff", "Drink"]);
-  if (K.cat === "scroll") v.push(["read", "Read"]);
+  if (K.cat === "scroll" || K.cat === "tome") v.push(["read", "Read"]);
   if (K.cat === "flask") v.push(["fuel", "Fill lantern"]);
   if (K.cat === "wand" || K.cat === "staff" || K.cat === "rod") v.push(["use", { wand: "Aim", staff: "Use", rod: "Zap" }[K.cat]]);
   if (K.cat === "ammo" && player.eq.bow && ITEM[player.eq.bow.k].ammo === K.ammo) v.push(["fire", "Fire"]);
@@ -3379,7 +3518,7 @@ function onKey(e){
     const lk = k.toLowerCase(), digit = /^Digit([0-9])$/.exec(e.code);
     if (digit){ done(); return useHot((+digit[1] + 9) % 10); }
     const keys = { a: attackKey, s: spellKey, d: drinkKey, w: grabKey, e: eatKey, r: rest, f: fuelKey, l: look, p: togglePanel,
-      i: () => openTab("pack"), c: () => openTab("char"), b: () => openTab("book"), j: () => openTab("journal"), m: () => openTab("map"), "?": helpDialog };
+      i: () => openTab("pack"), c: () => openTab("char"), b: () => openTab("book"), j: () => openTab("journal"), k: () => openTab("lore"), m: () => openTab("map"), "?": helpDialog };
     if (lk === "q"){ done(); return nextSpell(e.shiftKey ? -1 : 1); }
     if (k === " "){ done(); return act(waitAndSearch); }
     if (lk === "t"){ done(); return tunnelKey(); }
@@ -3708,9 +3847,12 @@ function card(it, compare = true){
     if (it.cursed) lines.push("It is cursed.");
   } else if ((K.dice || K.ac !== undefined || K.mult) && K.cat !== "dart") lines.push(it.sense ? "You feel it is " + it.sense + "." : "Its quality is unknown.");
   if (K.cat === "book") lines.push("Holds " + SPELLS.filter(S => bookOf(S) === K.id).map(S => S.name).join(", ") + ".");
-  if (A) lines.push(A.desc);
+  if (A) lines.push(A.desc, LORE_PAGES["a-" + it.art].text.split(/(?<=\.) /)[0]);   // where it comes from, the first line of its Lore page
+  else if (it.ego && it.id && EGO_LORE[it.ego]) lines.push(EGO_LORE[it.ego]);
+  if (BOOK_LORE[K.id]) lines.push(BOOK_LORE[K.id]);
+  if (K.cat === "tome") lines.push("A book of lore, not magic. Reading it adds a page to your Lore." + (player.lore["t-" + K.id.slice(1)] ? " You have read it." : ""));
   if (K.desc) lines.push(K.desc);
-  const kind = K.slot ? SLOT_NAMES[slotFor(K)] : { potion: "Potion", scroll: "Scroll", food: "Food", mushroom: "Mushroom", wand: "Wand", staff: "Staff", rod: "Rod", ammo: "Ammunition", dart: "Thrown", flask: "Oil", book: "Spell book" }[K.cat] || "";
+  const kind = K.slot ? SLOT_NAMES[slotFor(K)] : { potion: "Potion", scroll: "Scroll", food: "Food", mushroom: "Mushroom", wand: "Wand", staff: "Staff", rod: "Rod", ammo: "Ammunition", dart: "Thrown", flask: "Oil", book: "Spell book", tome: "Lore book" }[K.cat] || "";
   return `<div class="card q-${q}"><div class="ct">${itemPic(it, "big")}<div><b>${esc(cap(nameOf(it)))}</b><small>${kind}${worn && worn !== it ? " · compared with what you wear" : ""}</small></div></div>
     ${rows.map(([a, b]) => `<p><span>${a}</span><span>${b}</span></p>`).join("")}${lines.length ? "<hr>" + lines.map(s => `<div class="ln">${esc(s)}</div>`).join("") : ""}</div>`;
 }
@@ -3746,6 +3888,7 @@ function spellWord(S){ const [k, a] = S.split(":");
 function recall(K){
   const l = LORE[K.id] || { seen: 0, kills: 0, deaths: 0, blows: [], spells: [], res: [] }, out = [];
   out.push(K.town ? "Lives in the town." : "Found from " + feet(K.depth) + " ft" + (K.unique ? "; there is only one." : "."));
+  if (l.seen){ const story = K.unique ? LORE_PAGES["u-" + K.id] && LORE_PAGES["u-" + K.id].text : FAMILY_LORE[K.fam]; if (story) out.push(story); }
   if (l.seen >= 2){
     const sp = K.speed; out.push(sp >= 20 ? "Very fast." : sp >= 10 ? "Fast." : sp <= -10 ? "Slow." : sp < 0 ? "A little slow." : "Normal speed.");
     const f = [K.pack && "hunts in packs", K.breed && "multiplies", K.invis && "is invisible", K.passWall && "passes through walls", K.killWall && "tunnels through rock", K.still && "never moves",
@@ -3812,7 +3955,8 @@ function drawBar(){
 }
 
 /* ---------- the side panel ---------- */
-const TABS = [["char", "Character", "C"], ["pack", "Pack", "I"], ["book", "Book", "B"], ["journal", "Journal", "J"], ["map", "Map", "M"]];
+const TABS = [["char", "Character", "C"], ["pack", "Pack", "I"], ["book", "Book", "B"], ["journal", "Journal", "J"], ["lore", "Lore", "K"], ["map", "Map", "M"]];
+const loreDialog = P => openDialog({ title: P.title, head: `<p class="lore">${esc(P.text)}</p>`, cols: [[{ label: "Close", select: () => { closeDialog(); } }]], side: false, onBack: closeDialog });
 let panelSel = [];   // what the arrow keys move through on this tab: { el index, open() }
 function drawPanel(){
   const A = $("panel"); A.hidden = !panelOn; if (!panelOn) return;
@@ -3863,6 +4007,15 @@ function drawPanel(){
     h += `<h3>Creatures you know (${met.length} of ${MONSTERS.length})</h3>${met.map(K => `<div class="beast">${pic(creatureImage(K))}<div><b class="${K.unique ? "gold" : ""}">${esc(cap(K.name))}</b><div class="ln">${esc(K.desc)}</div>${recall(K).map(s => `<div class="ln dim">${esc(s)}</div>`).join("")}</div></div>`).join("")}`;
     const known = ITEMS.filter(K => K.flavoured && p.know.known[K.id]);
     h += `<h3>Kinds you have identified (${known.length})</h3><div class="ln">${known.map(K => esc(K.name)).join(", ") || "None yet."}</div>`;
+  } else if (tab === "lore"){
+    const pages = Object.values(LORE_PAGES), have = pages.filter(P => p.lore[P.id]);
+    h += `<div class="ln dim">${have.length} of ${pages.length} pages. They open as you reach new rings, meet the named, find artifacts and read the books you find below.</div>`;
+    for (const [sec, title] of Object.entries(LORE_SECTIONS)){
+      const all = pages.filter(P => P.sec === sec), got = all.filter(P => p.lore[P.id]);
+      h += `<h3>${title} <small>${got.length} / ${all.length}</small></h3>`;
+      for (const P of got) h += `<div class="spell page" ${selectable(() => loreDialog(P), null)}><span>${esc(P.title)}</span><small>read</small></div>`;
+      if (got.length < all.length) h += `<div class="ln dim">${all.length - got.length} still to find.</div>`;
+    }
   } else if (tab === "map"){
     h += `<canvas id="bigmap"></canvas><div class="ln dim">${depth ? feet(depth) + " ft" : "Lanternhollow"}. White: stairs; blue: items; red: monsters you sense.</div>`;
   }
@@ -4017,7 +4170,7 @@ function helpDialog(){
   const modern = [["Arrow keys", "move; into a monster attacks, into a door opens"], ["Two arrows", "move diagonally (or numpad, Home, End, PgUp, PgDn)"], ["Shift + arrow", "run"],
     ["A", "attack the target: melee, or fire / throw if it is further"], ["S", "cast the readied spell"], ["D", "drink the best-fitting healing potion"], ["W", "grab: pick up, stairs, shop"],
     ["Q / Shift+Q", "ready the next / previous spell"], ["E", "eat"], ["R", "rest"], ["F", "refill your lantern, or a fresh torch"], ["Tab / Shift+Tab", "next / previous target"],
-    ["Space", "wait a turn and search"], ["T", "dig in a direction (walking into rubble or a vein digs it)"], ["1 to 0", "use a hotbar slot"], ["I C B J M", "Pack, Character, Book, Journal, Map"], ["P", "show or hide the panel"], ["L", "look"], ["Esc", "close, or the menu"]];
+    ["Space", "wait a turn and search"], ["T", "dig in a direction (walking into rubble or a vein digs it)"], ["1 to 0", "use a hotbar slot"], ["I C B J K M", "Pack, Character, Book, Journal, Lore, Map"], ["P", "show or hide the panel"], ["L", "look"], ["Esc", "close, or the menu"]];
   const ro = keySet === "roguelike";
   const classic = [[ro ? "hjklyubn" : "Arrows / numpad", "move (Shift runs)"], ["g or ,", "pick up"], ["i  e", "pack, equipment"], ["w  " + (ro ? "T" : "t") + "  d", "wear, take off, drop"],
     ["E  q  r", "eat, drink, read"], ["a  " + (ro ? "Z" : "u") + "  z", "aim a wand, use a staff, zap a rod"], ["F", "fill lantern"], ["f  v  I", "fire, throw, inspect"], ["m or p  S", "cast or pray, study"],
@@ -4029,8 +4182,15 @@ function helpDialog(){
     ["Hidden things", "Space waits and searches for secret doors and traps. Walk into a known trap to disarm it, and into a locked door to pick it."],
     ["Digging", "Walk into rubble or a vein of magma or quartz to dig it; T digs plain rock. A shovel or pick in your pack helps."],
     ["Saving", "The game saves as you play. Death is for good: the save is erased and the hall of fame keeps your story."]];
-  openDialog({ title: "Help · " + KEYSETS[keySet], heads: ["Keys", "How to play"], cols: [(keySet === "modern" ? modern : classic).map(([a, b]) => ({ html: `<kbd>${esc(a)}</kbd> ${esc(b)}` })),
-    guide.map(([a, b]) => ({ html: `<b class="gold">${esc(a)}</b><br><span class="dim">${esc(b)}</span>` }))], side: false, wide: true, onBack: closeDialog, note: "Change the key set in the menu" });
+  const world = [["The Gloam and the First Fire", "Before the world there was only dark. A first fire burned it back; every light since is a spark of it."],
+    ["Morrowgloom", "The last of that dark, trapped under the world at 2,500 ft. It does not think. It only hungers for light, and eats it."],
+    ["The Lampway", "The dungeon is a cage of light built downward, ring under ring of lamp-shrines, to keep Morrowgloom down. It is failing."],
+    ["The rings", "Stone, Roots, Rest, Forges and Glass, then the Pit, and below it the Unlit Ring the Keepers never finished."],
+    ["Lanternhollow", "The town over the dungeon's mouth. Since the Guttering its torches lean towards the Hollow Gate."],
+    ["Why you are here", "The Keepers have called for anyone who can carry a light and a blade. The Lore tab (K) gathers what you learn."]];
+  openDialog({ title: "Help · " + KEYSETS[keySet], heads: ["Keys", "How to play", "The world"], cols: [(keySet === "modern" ? modern : classic).map(([a, b]) => ({ html: `<kbd>${esc(a)}</kbd> ${esc(b)}` })),
+    guide.map(([a, b]) => ({ html: `<b class="gold">${esc(a)}</b><br><span class="dim">${esc(b)}</span>` })), world.map(([a, b]) => ({ html: `<b class="gold">${esc(a)}</b><br><span class="dim">${esc(b)}</span>` }))],
+    side: false, wide: true, onBack: closeDialog, note: "Change the key set in the menu" });
 }
 
 /* ---------- title, a new character, and the tombstone ---------- */

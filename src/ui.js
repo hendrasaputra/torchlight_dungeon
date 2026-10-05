@@ -64,9 +64,12 @@ function card(it, compare = true){
     if (it.cursed) lines.push("It is cursed.");
   } else if ((K.dice || K.ac !== undefined || K.mult) && K.cat !== "dart") lines.push(it.sense ? "You feel it is " + it.sense + "." : "Its quality is unknown.");
   if (K.cat === "book") lines.push("Holds " + SPELLS.filter(S => bookOf(S) === K.id).map(S => S.name).join(", ") + ".");
-  if (A) lines.push(A.desc);
+  if (A) lines.push(A.desc, LORE_PAGES["a-" + it.art].text.split(/(?<=\.) /)[0]);   // where it comes from, the first line of its Lore page
+  else if (it.ego && it.id && EGO_LORE[it.ego]) lines.push(EGO_LORE[it.ego]);
+  if (BOOK_LORE[K.id]) lines.push(BOOK_LORE[K.id]);
+  if (K.cat === "tome") lines.push("A book of lore, not magic. Reading it adds a page to your Lore." + (player.lore["t-" + K.id.slice(1)] ? " You have read it." : ""));
   if (K.desc) lines.push(K.desc);
-  const kind = K.slot ? SLOT_NAMES[slotFor(K)] : { potion: "Potion", scroll: "Scroll", food: "Food", mushroom: "Mushroom", wand: "Wand", staff: "Staff", rod: "Rod", ammo: "Ammunition", dart: "Thrown", flask: "Oil", book: "Spell book" }[K.cat] || "";
+  const kind = K.slot ? SLOT_NAMES[slotFor(K)] : { potion: "Potion", scroll: "Scroll", food: "Food", mushroom: "Mushroom", wand: "Wand", staff: "Staff", rod: "Rod", ammo: "Ammunition", dart: "Thrown", flask: "Oil", book: "Spell book", tome: "Lore book" }[K.cat] || "";
   return `<div class="card q-${q}"><div class="ct">${itemPic(it, "big")}<div><b>${esc(cap(nameOf(it)))}</b><small>${kind}${worn && worn !== it ? " · compared with what you wear" : ""}</small></div></div>
     ${rows.map(([a, b]) => `<p><span>${a}</span><span>${b}</span></p>`).join("")}${lines.length ? "<hr>" + lines.map(s => `<div class="ln">${esc(s)}</div>`).join("") : ""}</div>`;
 }
@@ -102,6 +105,7 @@ function spellWord(S){ const [k, a] = S.split(":");
 function recall(K){
   const l = LORE[K.id] || { seen: 0, kills: 0, deaths: 0, blows: [], spells: [], res: [] }, out = [];
   out.push(K.town ? "Lives in the town." : "Found from " + feet(K.depth) + " ft" + (K.unique ? "; there is only one." : "."));
+  if (l.seen){ const story = K.unique ? LORE_PAGES["u-" + K.id] && LORE_PAGES["u-" + K.id].text : FAMILY_LORE[K.fam]; if (story) out.push(story); }
   if (l.seen >= 2){
     const sp = K.speed; out.push(sp >= 20 ? "Very fast." : sp >= 10 ? "Fast." : sp <= -10 ? "Slow." : sp < 0 ? "A little slow." : "Normal speed.");
     const f = [K.pack && "hunts in packs", K.breed && "multiplies", K.invis && "is invisible", K.passWall && "passes through walls", K.killWall && "tunnels through rock", K.still && "never moves",
@@ -168,7 +172,8 @@ function drawBar(){
 }
 
 /* ---------- the side panel ---------- */
-const TABS = [["char", "Character", "C"], ["pack", "Pack", "I"], ["book", "Book", "B"], ["journal", "Journal", "J"], ["map", "Map", "M"]];
+const TABS = [["char", "Character", "C"], ["pack", "Pack", "I"], ["book", "Book", "B"], ["journal", "Journal", "J"], ["lore", "Lore", "K"], ["map", "Map", "M"]];
+const loreDialog = P => openDialog({ title: P.title, head: `<p class="lore">${esc(P.text)}</p>`, cols: [[{ label: "Close", select: () => { closeDialog(); } }]], side: false, onBack: closeDialog });
 let panelSel = [];   // what the arrow keys move through on this tab: { el index, open() }
 function drawPanel(){
   const A = $("panel"); A.hidden = !panelOn; if (!panelOn) return;
@@ -219,6 +224,15 @@ function drawPanel(){
     h += `<h3>Creatures you know (${met.length} of ${MONSTERS.length})</h3>${met.map(K => `<div class="beast">${pic(creatureImage(K))}<div><b class="${K.unique ? "gold" : ""}">${esc(cap(K.name))}</b><div class="ln">${esc(K.desc)}</div>${recall(K).map(s => `<div class="ln dim">${esc(s)}</div>`).join("")}</div></div>`).join("")}`;
     const known = ITEMS.filter(K => K.flavoured && p.know.known[K.id]);
     h += `<h3>Kinds you have identified (${known.length})</h3><div class="ln">${known.map(K => esc(K.name)).join(", ") || "None yet."}</div>`;
+  } else if (tab === "lore"){
+    const pages = Object.values(LORE_PAGES), have = pages.filter(P => p.lore[P.id]);
+    h += `<div class="ln dim">${have.length} of ${pages.length} pages. They open as you reach new rings, meet the named, find artifacts and read the books you find below.</div>`;
+    for (const [sec, title] of Object.entries(LORE_SECTIONS)){
+      const all = pages.filter(P => P.sec === sec), got = all.filter(P => p.lore[P.id]);
+      h += `<h3>${title} <small>${got.length} / ${all.length}</small></h3>`;
+      for (const P of got) h += `<div class="spell page" ${selectable(() => loreDialog(P), null)}><span>${esc(P.title)}</span><small>read</small></div>`;
+      if (got.length < all.length) h += `<div class="ln dim">${all.length - got.length} still to find.</div>`;
+    }
   } else if (tab === "map"){
     h += `<canvas id="bigmap"></canvas><div class="ln dim">${depth ? feet(depth) + " ft" : "Lanternhollow"}. White: stairs; blue: items; red: monsters you sense.</div>`;
   }
@@ -373,7 +387,7 @@ function helpDialog(){
   const modern = [["Arrow keys", "move; into a monster attacks, into a door opens"], ["Two arrows", "move diagonally (or numpad, Home, End, PgUp, PgDn)"], ["Shift + arrow", "run"],
     ["A", "attack the target: melee, or fire / throw if it is further"], ["S", "cast the readied spell"], ["D", "drink the best-fitting healing potion"], ["W", "grab: pick up, stairs, shop"],
     ["Q / Shift+Q", "ready the next / previous spell"], ["E", "eat"], ["R", "rest"], ["F", "refill your lantern, or a fresh torch"], ["Tab / Shift+Tab", "next / previous target"],
-    ["Space", "wait a turn and search"], ["T", "dig in a direction (walking into rubble or a vein digs it)"], ["1 to 0", "use a hotbar slot"], ["I C B J M", "Pack, Character, Book, Journal, Map"], ["P", "show or hide the panel"], ["L", "look"], ["Esc", "close, or the menu"]];
+    ["Space", "wait a turn and search"], ["T", "dig in a direction (walking into rubble or a vein digs it)"], ["1 to 0", "use a hotbar slot"], ["I C B J K M", "Pack, Character, Book, Journal, Lore, Map"], ["P", "show or hide the panel"], ["L", "look"], ["Esc", "close, or the menu"]];
   const ro = keySet === "roguelike";
   const classic = [[ro ? "hjklyubn" : "Arrows / numpad", "move (Shift runs)"], ["g or ,", "pick up"], ["i  e", "pack, equipment"], ["w  " + (ro ? "T" : "t") + "  d", "wear, take off, drop"],
     ["E  q  r", "eat, drink, read"], ["a  " + (ro ? "Z" : "u") + "  z", "aim a wand, use a staff, zap a rod"], ["F", "fill lantern"], ["f  v  I", "fire, throw, inspect"], ["m or p  S", "cast or pray, study"],
@@ -385,8 +399,15 @@ function helpDialog(){
     ["Hidden things", "Space waits and searches for secret doors and traps. Walk into a known trap to disarm it, and into a locked door to pick it."],
     ["Digging", "Walk into rubble or a vein of magma or quartz to dig it; T digs plain rock. A shovel or pick in your pack helps."],
     ["Saving", "The game saves as you play. Death is for good: the save is erased and the hall of fame keeps your story."]];
-  openDialog({ title: "Help · " + KEYSETS[keySet], heads: ["Keys", "How to play"], cols: [(keySet === "modern" ? modern : classic).map(([a, b]) => ({ html: `<kbd>${esc(a)}</kbd> ${esc(b)}` })),
-    guide.map(([a, b]) => ({ html: `<b class="gold">${esc(a)}</b><br><span class="dim">${esc(b)}</span>` }))], side: false, wide: true, onBack: closeDialog, note: "Change the key set in the menu" });
+  const world = [["The Gloam and the First Fire", "Before the world there was only dark. A first fire burned it back; every light since is a spark of it."],
+    ["Morrowgloom", "The last of that dark, trapped under the world at 2,500 ft. It does not think. It only hungers for light, and eats it."],
+    ["The Lampway", "The dungeon is a cage of light built downward, ring under ring of lamp-shrines, to keep Morrowgloom down. It is failing."],
+    ["The rings", "Stone, Roots, Rest, Forges and Glass, then the Pit, and below it the Unlit Ring the Keepers never finished."],
+    ["Lanternhollow", "The town over the dungeon's mouth. Since the Guttering its torches lean towards the Hollow Gate."],
+    ["Why you are here", "The Keepers have called for anyone who can carry a light and a blade. The Lore tab (K) gathers what you learn."]];
+  openDialog({ title: "Help · " + KEYSETS[keySet], heads: ["Keys", "How to play", "The world"], cols: [(keySet === "modern" ? modern : classic).map(([a, b]) => ({ html: `<kbd>${esc(a)}</kbd> ${esc(b)}` })),
+    guide.map(([a, b]) => ({ html: `<b class="gold">${esc(a)}</b><br><span class="dim">${esc(b)}</span>` })), world.map(([a, b]) => ({ html: `<b class="gold">${esc(a)}</b><br><span class="dim">${esc(b)}</span>` }))],
+    side: false, wide: true, onBack: closeDialog, note: "Change the key set in the menu" });
 }
 
 /* ---------- title, a new character, and the tombstone ---------- */

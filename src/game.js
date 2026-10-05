@@ -49,7 +49,7 @@ let DETAIL = Math.max(1, Math.min(3, +store.get("detail", 1) || 1));   // the De
 /* ---------- items: names, carrying, and what worn things add ---------- */
 const nameOf = (it, n) => itemName(it, player.know, n);
 const cap = s => s[0].toUpperCase() + s.slice(1);
-const sameItem = (a, b) => a.k === b.k && (["potion", "scroll", "food", "mushroom", "flask", "book"].includes(ITEM[a.k].cat) || a.fuel === b.fuel && a.charges === undefined && b.charges === undefined && a.timeout === undefined && b.timeout === undefined
+const sameItem = (a, b) => a.k === b.k && (["potion", "scroll", "food", "mushroom", "flask", "book", "tome"].includes(ITEM[a.k].cat) || a.fuel === b.fuel && a.charges === undefined && b.charges === undefined && a.timeout === undefined && b.timeout === undefined
   && !!a.id === !!b.id && a.sense === b.sense && (a.tohit || 0) === (b.tohit || 0) && (a.todam || 0) === (b.todam || 0) && (a.toac || 0) === (b.toac || 0)
   && a.ego === b.ego && !a.art && !b.art && a.pval === b.pval && !!a.cursed === !!b.cursed);
 function carry(it){
@@ -319,6 +319,7 @@ function pickUp(){
     if (!got){ say("You cannot carry any more."); break; }
     floor.splice(floor.indexOf(f), 1);
     say("You have " + nameOf(got) + " (" + String.fromCharCode(97 + player.inv.indexOf(got)) + ").");
+    if (got.art) unlockLore("a-" + got.art);
   }
   recalc();
   if (player.bonus.burden) say("You are carrying too much and slow down.");
@@ -427,8 +428,14 @@ const TRAP_FX = {
   summonrune: () => { say("Shapes rise out of the rune!"); summonNear(MONSTERS.filter(K => !K.town && !K.unique && !K.boss && K.depth <= depth + 2), 2 + rng.int(3)); L.trap[idx(player.x, player.y)] = 0; }
 };
 function springTrap(i){ sfx("trap"); L.trapSeen[i] = 1; mem[i] = 1; disturbed = true; TRAP_FX[trapAt(i).id](); }
-// On arrival: a feeling for how dangerous the level's monsters are for its depth.
+// The Lore tab (phase 11): a page opens when you reach a ring, meet a unique, find an artifact or read a lore book.
+function unlockLore(id){
+  const P = LORE_PAGES[id]; if (!P || player.lore[id]) return;
+  player.lore[id] = player.turns || 1; say("A new page in your Lore: " + P.title.replace(/ \(.*\)$/, "") + (keySet === "modern" ? " (K)." : "."));
+}
+// On arrival: where you are, and a feeling for how dangerous the level's monsters are for its depth.
 function levelFeeling(d){
+  const R = ringOf(d); say(rng.pick(R.feel)); unlockLore("ring-" + R.id);
   const danger = mons.reduce((s, m) => s + (m.K ? Math.max(0, m.K.depth - d) + (m.K.unique ? 8 : 0) + (m.K.boss ? 30 : 0) : 0), 0);
   say(danger > 40 ? "Your torch gutters as if afraid. Something terrible waits here." : danger > 20 ? "The air is thick with menace." : danger > 10 ? "You have a bad feeling about this level."
     : danger > 4 ? "Something stirs in the dark." : "The level feels still and quiet.");
@@ -456,6 +463,7 @@ function useItem(it, how, quick){
   if (how === "read"){
     if (player.t.blind){ say("You can't see to read!"); return false; }
     if (player.t.confused){ say("You are too confused to read."); return false; }
+    if (K.cat === "tome"){ const id = "t-" + K.id.slice(1); say("You read: " + K.name + "."); if (player.lore[id]) say("You have read it before."); unlockLore(id); return true; }
     takeOne(it); learn(it, FX[K.effect]({ K, it })); return true;
   }
   if (how === "fuel"){
@@ -885,7 +893,7 @@ function endTurn(){
   if (rng.int(300) === 0) spawnMonster(true);   // the dungeon is never quite empty
   if (player.turns % 200 === 0) saveGame();
   updateSight();
-  for (const m of mons) if (m.K){ const v = seesMon(m); if (v && !m.seen){ disturbed = true; lore(m.K).seen++; if (depth) sfx(cryOf(m.K)); } m.seen = v; }
+  for (const m of mons) if (m.K){ const v = seesMon(m); if (v && !m.seen){ disturbed = true; lore(m.K).seen++; if (depth) sfx(cryOf(m.K)); if (m.K.unique) unlockLore("u-" + m.K.id); } m.seen = v; }
 }
 let disturbed = false, pendingLevel = null;
 function everyTurn(){
@@ -1285,7 +1293,7 @@ function begin(){
   if (C.bow) player.eq.bow = plainItem(C.bow);
   recalc();
   player.mhp = player.hp = firstHp(player); player.mmana = player.mana = maxMana(player);
-  player.hot = Array(10).fill(null); player.slain = {}; player.ready = null;
+  player.hot = Array(10).fill(null); player.slain = {}; player.ready = null; player.lore = Object.fromEntries(LORE_START.map(id => [id, 1]));
   log = []; msgs = []; killer = ""; tomb = null; cr = null;
   state = "play"; stateT = 0;
   shops = newShops(rng, player.know); lastTown = 0; depth = 0; slot = newSlot;
@@ -1317,6 +1325,7 @@ function loadGame(n){
   let g; try { g = decodeSave(store.get(slotKey(n))); } catch (e){ return noteDialog("Slot " + n, e.message); }
   ({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log } = g);
   rng = new RNG(g.rng); target = mons[g.target] || null; slot = n;
+  player.lore = player.lore || Object.fromEntries(LORE_START.map(id => [id, 1]));   // saves from before phase 11 have no Lore pages yet
   msgs = []; killer = ""; tomb = null; cr = null; aiming = null; pendingLevel = null; digging = null; parts = []; floats = []; shots = []; flashes = []; later = [];
   seenAt.fill(0); inFov.fill(0); audio.music(depth ? "depths" : "town");
   state = "play"; stateT = 0; recalc(); relight(); updateSight(); snapView();
@@ -1381,7 +1390,7 @@ function sell(i, it){
   const same = shops[i].stock.find(o => sameItem(o, one)); if (same) same.n++; else shops[i].stock.push(one);
   say("You sell " + nameOf(one) + " for " + price + " gold."); recalc();
 }
-const VERB_FILTER = { eat: it => ITEM[it.k].cat === "food" || ITEM[it.k].cat === "mushroom", quaff: it => ITEM[it.k].cat === "potion", read: it => ITEM[it.k].cat === "scroll",
+const VERB_FILTER = { eat: it => ITEM[it.k].cat === "food" || ITEM[it.k].cat === "mushroom", quaff: it => ITEM[it.k].cat === "potion", read: it => ITEM[it.k].cat === "scroll" || ITEM[it.k].cat === "tome",
   fuel: it => ITEM[it.k].cat === "flask", wield: it => !!ITEM[it.k].slot && player.inv.includes(it), drop: it => player.inv.includes(it),
   wand: it => ITEM[it.k].cat === "wand", staff: it => ITEM[it.k].cat === "staff", rod: it => ITEM[it.k].cat === "rod", throw: it => player.inv.includes(it), inspect: () => true };
 function useWhich(verb){   // the item lists behind single keys: q drink, r read, a aim and so on
@@ -1394,7 +1403,7 @@ function verbsFor(it){
   const K = ITEM[it.k], v = [];
   if (K.cat === "food" || K.cat === "mushroom") v.push(["eat", "Eat"]);
   if (K.cat === "potion") v.push(["quaff", "Drink"]);
-  if (K.cat === "scroll") v.push(["read", "Read"]);
+  if (K.cat === "scroll" || K.cat === "tome") v.push(["read", "Read"]);
   if (K.cat === "flask") v.push(["fuel", "Fill lantern"]);
   if (K.cat === "wand" || K.cat === "staff" || K.cat === "rod") v.push(["use", { wand: "Aim", staff: "Use", rod: "Zap" }[K.cat]]);
   if (K.cat === "ammo" && player.eq.bow && ITEM[player.eq.bow.k].ammo === K.ammo) v.push(["fire", "Fire"]);
@@ -1480,7 +1489,7 @@ function onKey(e){
     const lk = k.toLowerCase(), digit = /^Digit([0-9])$/.exec(e.code);
     if (digit){ done(); return useHot((+digit[1] + 9) % 10); }
     const keys = { a: attackKey, s: spellKey, d: drinkKey, w: grabKey, e: eatKey, r: rest, f: fuelKey, l: look, p: togglePanel,
-      i: () => openTab("pack"), c: () => openTab("char"), b: () => openTab("book"), j: () => openTab("journal"), m: () => openTab("map"), "?": helpDialog };
+      i: () => openTab("pack"), c: () => openTab("char"), b: () => openTab("book"), j: () => openTab("journal"), k: () => openTab("lore"), m: () => openTab("map"), "?": helpDialog };
     if (lk === "q"){ done(); return nextSpell(e.shiftKey ? -1 : 1); }
     if (k === " "){ done(); return act(waitAndSearch); }
     if (lk === "t"){ done(); return tunnelKey(); }
