@@ -104,7 +104,11 @@ const inline = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\
 function render(md, page){
   const lines = md.split("\n"), out = [], art = ART[page] || {}, used = new Set();
   let i = 0, first = true, intro = true, open = false;
-  const plates = files => out.push(`<div class="plates n${files.length > 1 ? "many" : 1}">${files.map(figure).join("")}</div>`);
+  // Anything as wide as the page (wide pictures, galleries, tables, the intro) closes the two-column block and opens a
+  // new one after it, instead of spanning the columns: Safari draws column-spanning elements over the text around them.
+  const outside = html => { if (open) out.push("</div>"); out.push(html, '<div class="flow">'); open = true; };
+  const plates = files => { const html = `<div class="plates n${files.length > 1 ? "many" : 1}">${files.map(figure).join("")}</div>`;
+    if (files.length > 1 || PICS[files[0]].shape === "16/9") outside(html); else out.push(html); };
   const placeArt = h => { for (const [k, files] of Object.entries(art)) if (k !== "top" && !used.has(k) && h.startsWith(k)){ used.add(k); plates(files); } };
   while (i < lines.length){
     const l = lines[i];
@@ -119,11 +123,11 @@ function render(md, page){
       if (n === 3 && page === "08-bestiary"){ const K = monsterFor(text); if (K) out.push(statBlock(K)); }
       i++; continue;
     }
-    if (/^---+$/.test(l)){ out.push("<hr class=\"rule\">"); i++; continue; }
+    if (/^---+$/.test(l)){ outside("<hr class=\"rule\">"); i++; continue; }
     if (l.startsWith("|")){
       const rows = []; while (i < lines.length && lines[i].startsWith("|")) rows.push(lines[i++]);
       const cells = r => r.slice(1, -1).split(" | ").map(c => c.trim());
-      out.push(`<table><thead><tr>${cells(rows[0]).map(c => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>${rows.slice(2).map(r => `<tr>${cells(r).map(c => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
+      outside(`<table><thead><tr>${cells(rows[0]).map(c => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>${rows.slice(2).map(r => `<tr>${cells(r).map(c => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
       continue;
     }
     if (l.startsWith(">")){
@@ -140,7 +144,8 @@ function render(md, page){
     }
     const p = []; while (i < lines.length && lines[i].trim() && !/^(#|\||>|- |\d+\. |---)/.test(lines[i])) p.push(lines[i++]);
     const text = p.join(" "), isIntro = intro && /^\*[^*]/.test(text);
-    out.push(`<p${isIntro ? ' class="intro"' : first && !isIntro ? ' class="first"' : ""}>${inline(text)}</p>`);
+    const para = `<p${isIntro ? ' class="intro"' : first && !isIntro ? ' class="first"' : ""}>${inline(text)}</p>`;
+    if (isIntro) outside(para); else out.push(para);
     if (!isIntro) first = false; intro = false;
   }
   if (open) out.push("</div>");

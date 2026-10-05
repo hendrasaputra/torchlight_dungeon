@@ -36,20 +36,20 @@ main {
 }
 .flow { columns: 2 300px; column-gap: 40px; }
 h1, h2, h3, h4 { font-family: "Cinzel", serif; color: var(--red); font-weight: 800; break-after: avoid; }
-h1 { column-span: all; font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
-h2 { column-span: all; font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
+h1 { font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
+h2 { font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
 h3 { font-size: 19px; margin: 22px 0 6px; border-bottom: 1px solid var(--gold); }
 p { margin: 0 0 12px; text-align: justify; hyphens: auto; }
-p.intro { column-span: all; text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
+p.intro { text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
 p.first::first-letter {
   float: left; font: 800 64px/0.82 "Cinzel", serif; color: var(--red); padding: 6px 8px 0 0;
 }
 ul, ol { margin: 0 0 12px; padding-left: 22px; } li { margin: 0 0 6px; }
 code { font: 13px ui-monospace, Menlo, monospace; background: #00000010; padding: 1px 4px; border-radius: 2px; }
-hr.rule { column-span: all; border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
+hr.rule { border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
 
 /* tables: full width, tinted rows */
-table { column-span: all; width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
 th { font: 800 13px "Cinzel", serif; color: var(--red); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--gold); }
 td { padding: 7px 10px; vertical-align: top; }
 tbody tr:nth-child(odd) { background: var(--row); }
@@ -64,12 +64,12 @@ blockquote {
 
 /* illustrations: a drawn picture, or a placeholder frame until it exists */
 figure { margin: 6px 0 18px; break-inside: avoid; }
-figure.cover { column-span: all; margin: 0 auto 26px; max-width: 520px; }
+figure.cover { margin: 0 auto 26px; max-width: 520px; }
 figure.cover img { width: 100%; display: block; box-shadow: 0 8px 26px #0007; border: 6px solid var(--paper); }
 .plates { break-inside: avoid; }
-.plates.nmany { column-span: all; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
+.plates.nmany { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
 .plates.nmany figure { margin: 0; } .plates.nmany figure.wide { grid-column: 1 / -1; } .plates.nmany { align-items: start; }
-figure.art.wide { column-span: all; }
+figure.art.wide { }
 .art img, .art .slot { width: 100%; aspect-ratio: var(--ratio); display: block; object-fit: cover; }
 .art img { border: 1px solid #0006; box-shadow: 0 4px 14px #0004; }
 .art.style-A img, .art.style-B img { filter: sepia(.08) contrast(1.02); mix-blend-mode: multiply; }
@@ -114,8 +114,12 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 <body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html">Contents</a><a href="01-cosmology.html" aria-current="page">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
 <main class="01-cosmology"><h1>Cosmology: the Gloam and the First Fire</h1>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-B" style="--ratio:16/9"><img src="art/web/place-the-kindling.jpg" alt="The creation myth: a single flame bursting in an endless black sea, sparks flying outward to become stars, heavy sparks falling into a forming world." loading="lazy"></figure></div>
+<div class="flow">
+</div>
 <p class="intro"><i>Draft. What the Keepers teach, what the Collegium argues, and what the miners say over their ale. They do not agree.</i></p>
+<div class="flow">
 </div>
 <h2>Before anything: the Gloam</h2>
 <div class="flow">
@@ -134,7 +138,9 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 </div>
 <h2>Morrowgloom, the Lantern-Eater</h2>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-A" style="--ratio:16/9"><img src="art/web/boss-morrowgloom.jpg" alt="Morrowgloom, the Lantern-Eater: a vast living darkness filling a cavern, a thousand small eyes in it each holding a tiny reflected flame, a lone delver's torch at the bottom of the frame, its light bending towards the dark." loading="lazy"></figure></div>
+<div class="flow">
 <p>Morrowgloom is what the Gloam becomes when it is cornered. Out among the stars the Gloam is patient. Trapped beneath the world it is starving, and it has learned the one thing that can feed it: <b>light</b>. When it swallows a flame, the flame does not go out. It goes <i>into</i> Morrowgloom and stays there, and Morrowgloom grows by that much.</p>
 <p>The Keepers' name for it means &quot;the gloom of tomorrow.&quot; Every light it eats is a dawn that will not come. If it ate enough, the old teaching goes, it would rise to the surface, put out the hearths, then the sun, then the stars, and the world would close up again into the still sea it came from.</p>
 <p><b>It does not think.</b> Morrowgloom is a will that is only hunger for light. It makes no plans, speaks no words and holds no grudge; it does not hate the world, any more than a drain hates water. Everything it does is reaching for the nearest light. That is what makes it so hard to fight: it cannot be bargained with, frightened, tricked or persuaded, and it never stops. Things that do think, like the fiends and the Many-Mouthed, have learned to use its hunger for their own ends, but none of them can command it.</p>

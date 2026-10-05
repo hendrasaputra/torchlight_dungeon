@@ -36,20 +36,20 @@ main {
 }
 .flow { columns: 2 300px; column-gap: 40px; }
 h1, h2, h3, h4 { font-family: "Cinzel", serif; color: var(--red); font-weight: 800; break-after: avoid; }
-h1 { column-span: all; font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
-h2 { column-span: all; font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
+h1 { font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
+h2 { font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
 h3 { font-size: 19px; margin: 22px 0 6px; border-bottom: 1px solid var(--gold); }
 p { margin: 0 0 12px; text-align: justify; hyphens: auto; }
-p.intro { column-span: all; text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
+p.intro { text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
 p.first::first-letter {
   float: left; font: 800 64px/0.82 "Cinzel", serif; color: var(--red); padding: 6px 8px 0 0;
 }
 ul, ol { margin: 0 0 12px; padding-left: 22px; } li { margin: 0 0 6px; }
 code { font: 13px ui-monospace, Menlo, monospace; background: #00000010; padding: 1px 4px; border-radius: 2px; }
-hr.rule { column-span: all; border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
+hr.rule { border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
 
 /* tables: full width, tinted rows */
-table { column-span: all; width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
 th { font: 800 13px "Cinzel", serif; color: var(--red); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--gold); }
 td { padding: 7px 10px; vertical-align: top; }
 tbody tr:nth-child(odd) { background: var(--row); }
@@ -64,12 +64,12 @@ blockquote {
 
 /* illustrations: a drawn picture, or a placeholder frame until it exists */
 figure { margin: 6px 0 18px; break-inside: avoid; }
-figure.cover { column-span: all; margin: 0 auto 26px; max-width: 520px; }
+figure.cover { margin: 0 auto 26px; max-width: 520px; }
 figure.cover img { width: 100%; display: block; box-shadow: 0 8px 26px #0007; border: 6px solid var(--paper); }
 .plates { break-inside: avoid; }
-.plates.nmany { column-span: all; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
+.plates.nmany { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
 .plates.nmany figure { margin: 0; } .plates.nmany figure.wide { grid-column: 1 / -1; } .plates.nmany { align-items: start; }
-figure.art.wide { column-span: all; }
+figure.art.wide { }
 .art img, .art .slot { width: 100%; aspect-ratio: var(--ratio); display: block; object-fit: cover; }
 .art img { border: 1px solid #0006; box-shadow: 0 4px 14px #0004; }
 .art.style-A img, .art.style-B img { filter: sepia(.08) contrast(1.02); mix-blend-mode: multiply; }
@@ -114,30 +114,50 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 <body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html" aria-current="page">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
 <main class="02-timeline"><h1>Timeline</h1>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-B" style="--ratio:16/9"><img src="art/web/moment-the-guttering.jpg" alt="Lanternhollow in 1204 YH: every torch and lamp in the street leaning towards the Hollow Gate as if pulled by a wind." loading="lazy"></figure></div>
+<div class="flow">
+</div>
 <p class="intro"><i>Draft. Dates before the founding of Lanternhollow are counted back as BH (&quot;before the Hollow&quot;); after it, forward as YH (&quot;years of the Hollow&quot;). The present is <b>1207 YH</b>. Dates older than about 2600 BH are myth: no one wrote them down, and the peoples tell them differently.</i></p>
+<div class="flow">
 </div>
 <h2>The Age of Embers (myth)</h2>
 <div class="flow">
+</div>
 <table><thead><tr><th>When</th><th>What happened</th></tr></thead><tbody><tr><td>—</td><td><b>The Gloam.</b> A still, lightless sea; nothing else.</td></tr><tr><td>—</td><td><b>The Kindling.</b> The First Fire burns and pushes the Gloam back; the world forms inside the hollow it makes.</td></tr><tr><td>—</td><td><b>The Bursting.</b> The Fire bursts. Its far sparks become the stars, its heavy sparks sink and become the deep fires, and one ember falls on the land to be carried. The last of the Gloam is trapped under the world: Morrowgloom.</td></tr><tr><td>—</td><td><b>The First Lamp.</b> Unknown hands catch the fallen ember in a lamp. Every flame since is lit from it.</td></tr><tr><td>—</td><td><b>The Elder Ring.</b> The same unknown hands light a ring of lamps far below the world, around the trapped dark. No record says who they were.</td></tr><tr><td>—</td><td>The <b>Ember Queen</b>, a red dragon, hatches in the deep fires. She is the only living thing that claims to remember the First Fire.</td></tr><tr><td>—</td><td><b>The first peoples.</b> The Cragborn cool out of the mountain roots; the Stonekin wake in the deep halls; the Sylvan come where starlight falls thickest, in the old forests; the Ashborn are born at the edges of the deep fires. Humans, Burrowfolk and Tinkerlings come later, from beyond the hills, carrying the ember with them.</td></tr></tbody></table>
+<div class="flow">
 </div>
 <h2>The Founding (about 2600 to 2100 BH)</h2>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-B" style="--ratio:16/9"><img src="art/web/moment-sealing.jpg" alt="Caedra, an old woman with a lantern, descending a crystal stair into darkness, every ring above her lit." loading="lazy"></figure></div>
+<div class="flow">
+</div>
 <table><thead><tr><th>When</th><th>What happened</th></tr></thead><tbody><tr><td>~2600 BH</td><td>A cold black wind starts to breathe out of a sinkhole in the hills of the Hollowmark. Crops fail within a mile of it; lamps gutter. People call it <b>the Breath</b>.</td></tr><tr><td>~2580 BH</td><td><b>Caedra</b>, a human lamplighter from the coast, carries a lantern lit from the First Lamp into the sinkhole and comes back. She says the dark below is alive, and hungry, and rising.</td></tr><tr><td>~2560 BH</td><td>Caedra founds the <b>Order of the Lamp</b>. Her rule is short: <i>&quot;Keep it lit, and keep it down.&quot;</i></td></tr><tr><td>~2550 BH</td><td><b>The Building of the Lampway begins.</b> Keepers, Stonekin masons of the Deephall clans and Cragborn haulers dig downward from the sinkhole, ring under ring, each ring a circuit of lamp-shrines that holds the dark beneath it.</td></tr><tr><td>~2400 BH</td><td>The <b>Ring of Stone</b> (the top ring) and the <b>Ring of Roots</b> (the drowned caverns) are finished.</td></tr><tr><td>~2300 BH</td><td>The <b>Ring of Rest</b> is cut. The Order's dead are laid in it, each with a lamp, as wardens who keep watch even in death.</td></tr><tr><td>~2200 BH</td><td>The <b>Pact of the Forge.</b> The Ashborn agree to keep the deep fires of the <b>Ring of Forges</b> burning as a wall of heat and light. The Ember Queen allows it, for a price no one wrote down.</td></tr><tr><td>~2120 BH</td><td>The <b>Ring of Glass</b> is grown, not cut: Tinkerling glassmakers and Arcanists of the young Collegium raise walls of crystal that hold light, right over Morrowgloom.</td></tr><tr><td>~2110 BH</td><td>Digging below the Ring of Glass, the Keepers see a faint light in the rock far beneath the Pit: the <b>Elder Ring</b>. They learn that someone caged the dark before them.</td></tr><tr><td>~2100 BH</td><td><b>The Sealing.</b> Caedra, now old, carries her lantern down to the Ring of Glass and lights every ring on the way. She does not come back up. The Breath stops.</td></tr></tbody></table>
+<div class="flow">
 </div>
 <h2>The Age of Lamps (2100 to 1000 BH)</h2>
 <div class="flow">
+</div>
 <table><thead><tr><th>When</th><th>What happened</th></tr></thead><tbody><tr><td>~2090 BH</td><td>The <b>Kingdom of Aurenhold</b> is founded over the Lampway. Its first king, <b>Aldren the Kindler</b>, is crowned by the Keepers on one condition: the crown must keep oil, wicks and lamplighters going down the Lampway forever.</td></tr><tr><td>~2080 BH</td><td>The Keepers begin a sixth ring, <b>the Unlit Ring</b>, tunnelling round and beneath the Pit to close the cage from below and reach the Elder Ring.</td></tr><tr><td>~1900 BH</td><td><b>Hollis the Mason</b> builds the Hollow Gate, a great door over the Lampway's mouth, and the lamplighters' road down through the rings.</td></tr><tr><td>~1700 BH</td><td>The <b>Collegium of Sparks</b> is founded in Aurenhold to study starlight. Its first book, the <i>Book of First Sparks</i>, is still the first book every Arcanist learns from.</td></tr><tr><td>~1500 BH</td><td><b>Queen Tamsin the Wise</b> has the great Mirror of Aurenhold made, a glass that shows the rings below so the Keepers can see which lamps are failing. (The mirror is lost; see Thessaly Glass in <a href="08-bestiary.html">Bestiary</a>.)</td></tr><tr><td>~1300 BH</td><td>The <b>Marrow Guard</b> is raised: soldiers who stand watch in the Ring of Rest for a lifetime at a time. Generations in the deep change them. Their children are the first <b>Marrowkin</b>.</td></tr><tr><td>~1150 BH</td><td><b>Starfall</b> is strung. The Sylvan archer <b>Ithrel Silverstring</b> shoots a shade that had crept up to the Ring of Stone, from three hundred paces, by starlight alone.</td></tr></tbody></table>
+<div class="flow">
 </div>
 <h2>The Long Dusk (1000 BH to the founding)</h2>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-C" style="--ratio:16/9"><img src="art/web/moment-the-wager.jpg" alt="The Fall of Aurenhold (412 BH): King Ysmer the Last at a dice table in a candlelit throne room, losing to an elegant merchant whose shadow on the wall has horns." loading="lazy"></figure></div>
+<div class="flow">
+</div>
 <table><thead><tr><th>When</th><th>What happened</th></tr></thead><tbody><tr><td>~1000 BH</td><td><b>The Oil Tithe is cut.</b> King <b>Merrow the Proud</b> spends the lamp-oil tithe on a war with the hill clans. The lowest rings go short of oil for the first time, and work on the Unlit Ring stops for good. Its shrines are never lit, but before they leave, the last Keepers there light one great crystal, <b>the Last Lamp</b>, to hold the unfinished ring on its own. It is still burning.</td></tr><tr><td>~960 BH</td><td>In the Ring of Glass, unwatched, the lamps go out one by one. Morrowgloom drinks the light stored in the crystal walls and begins to grow.</td></tr><tr><td>~900 BH</td><td><b>The Lantern Thief</b> is first seen: a shadow in a stolen coat that climbs the rings at night and snuffs the lamps, carrying them off in a sack.</td></tr><tr><td>~640 BH</td><td><b>The Night the River Rose.</b> An underground river breaks into the Ring of Rest. King <b>Oswy</b>, who had gone down himself to relight his fathers' lamps, drowns in the flooded crypts. He is still there: the Drowned King.</td></tr><tr><td>~600 BH</td><td><b>Princess Lisette</b>, betrothed to a Marrow Guard captain who went down and never returned, walks into the Lampway in her wedding dress on her wedding day. She is still there too: the Pale Bride.</td></tr><tr><td>~520 BH</td><td><b>Duke Ashvane</b>, a fiend who climbed up out of the Unlit Ring (the unfinished ring below Morrowgloom), arrives at the court of Aurenhold dressed as a merchant prince.</td></tr><tr><td>412 BH</td><td><b>The Fall of Aurenhold.</b> <b>King Ysmer the Last</b> stakes the kingdom on a game of dice with Duke Ashvane, and loses. Ashvane does not take the throne; he takes the crown down into the Deep. Without a crown there is no Oil Tithe at all. The crypts wake. The city empties within a year.</td></tr><tr><td>410 BH</td><td>The last Keepers seal the Hollow Gate and withdraw to a single temple in the hills. The Marrowkin, blamed for not saving the king, are driven out of every town.</td></tr><tr><td>410 BH – 0</td><td>Aurenhold falls into ruin and then into memory. The rings below go dark one by one. Monsters come up from the deep fires and in from the hills to live in the empty halls.</td></tr></tbody></table>
+<div class="flow">
 </div>
 <h2>The Years of the Hollow (0 YH to now)</h2>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-A" style="--ratio:16/9"><img src="art/web/moment-open-doors.jpg" alt="The Night of Open Doors (612 YH): miners fleeing up a mine shaft as the dead climb after them, lanterns going out one by one." loading="lazy"></figure></div>
+<div class="flow">
+</div>
 <table><thead><tr><th>When</th><th>What happened</th></tr></thead><tbody><tr><td>0 YH</td><td><b>Lanternhollow is founded.</b> Prospectors led by <b>Marla Tunnick</b> find <b>glow crystals</b> in old Stonekin workings under the ruins: stones that shine on their own and never go out. They do not know that the crystals are the Lampway's own lamplight, set into stone over two thousand years. They hang lanterns in the ruined hollow to work by, and the camp takes its name from them.</td></tr><tr><td>3 YH</td><td>The Hollow Gate is found and forced open. Miners begin working the <b>Ring of Stone</b>, which they call &quot;the upper workings&quot;.</td></tr><tr><td>40–600 YH</td><td><b>The Glow Rush.</b> Lanternhollow grows from a camp into a walled town. Stonekin return to their old halls; Burrowfolk dig a warren under the town; Tinkerlings set up the Lantern Guild and cut glow crystals into the lamps sold all over the world.</td></tr><tr><td>112 YH</td><td>The <b>Blue Door</b> opens: the first magic shop in Lanternhollow, run ever since by someone called Maelis (no one is sure it is the same Maelis).</td></tr><tr><td>307 YH</td><td><b>Skarth</b>, a scholar of the Collegium, goes down to find the light that does not die, and finds a way not to. He has not closed his eyes since.</td></tr><tr><td>412 YH</td><td>Kobolds under <b>Fenwick's</b> great-great-grandmother take the upper workings' east galleries. The kobold &quot;kingdom&quot; has been there ever since.</td></tr><tr><td>612 YH</td><td><b>The Night of Open Doors.</b> Miners chasing a rich seam break through into the Ring of Rest. The dead walk up the mine shafts. The Lantern Thief comes up behind them and snuffs every lamp in the town in a single night. By dawn a third of the miners are dead.</td></tr><tr><td>614 YH</td><td><b>The Collapse.</b> The miners bring down the lower shafts to wall off the crypts. Mining in the Lampway ends. Lanternhollow nearly dies.</td></tr><tr><td>640 YH</td><td><b>The Delving Charter.</b> The town council, short of everything, licenses &quot;delvers&quot; to go down past the Collapse and bring back what they can. Shops spring up to supply them. Lanternhollow becomes what it is now: a town that lives off the dungeon.</td></tr><tr><td>700 YH</td><td>The Tinkerling banking house of <b>Brassle &amp; Vane</b> builds <b>Ironjaw</b>, an iron golem, to guard its vault.</td></tr><tr><td>803 YH</td><td><b>The Great Subsidence.</b> Half of the old market quarter, the Brassle &amp; Vane vault with it, sinks into the Deep. Ironjaw goes down with the vault and goes on guarding it. The vault has long since been broken open and scattered; Ironjaw has not noticed.</td></tr><tr><td>911 YH</td><td><b>The Fall of Sister Vesper.</b> A Keeper of the town temple who had been listening to something under the floor puts out every lamp in the temple in one night and walks down into the Lampway.</td></tr><tr><td>1052 YH</td><td><b>Grimsby Coldhand</b> is expelled from the Collegium. Over the next century his apprentices keep disappearing.</td></tr><tr><td>1150 YH</td><td><b>Corvane</b> is first heard of: a crow as tall as a man in the Ring of Stone, speaking in the voices of the dead.</td></tr><tr><td>1183 YH</td><td><b>Ysolde of the Ashes</b> burns her own tower down to be free of it, and walks into the Deep without it.</td></tr><tr><td>1199 YH</td><td>At the harvest fair, a scarecrow with a candle in its chest walks off its pole and down the Hollow Gate. <b>Hollow Jack</b> has been seen in the rings ever since.</td></tr><tr><td>1204 YH</td><td><b>The Guttering.</b> Torches all over Lanternhollow start to flicker towards the Hollow Gate, as if a wind were drawing them down. In the temple, Sister Ilvane sees the Eternal Lamp shrink for the first time in its history.</td></tr><tr><td>1206 YH</td><td>The Keepers send word to every road and town: Morrowgloom is waking, and eating faster than ever. Anyone who can carry a light and a blade is wanted in Lanternhollow.</td></tr><tr><td><b>1207 YH</b></td><td><b>Now.</b> A new delver arrives in Lanternhollow with a torch, a little food, and a few hundred gold pieces.</td></tr></tbody></table>
+<div class="flow">
 </div></main>
 <footer><a href="01-cosmology.html">‹ Cosmology</a><span class="draft">A draft · generated from lore/*.md</span><a href="03-world.html">The world ›</a></footer></body></html>

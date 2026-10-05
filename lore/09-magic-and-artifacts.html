@@ -36,20 +36,20 @@ main {
 }
 .flow { columns: 2 300px; column-gap: 40px; }
 h1, h2, h3, h4 { font-family: "Cinzel", serif; color: var(--red); font-weight: 800; break-after: avoid; }
-h1 { column-span: all; font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
-h2 { column-span: all; font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
+h1 { font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
+h2 { font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
 h3 { font-size: 19px; margin: 22px 0 6px; border-bottom: 1px solid var(--gold); }
 p { margin: 0 0 12px; text-align: justify; hyphens: auto; }
-p.intro { column-span: all; text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
+p.intro { text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
 p.first::first-letter {
   float: left; font: 800 64px/0.82 "Cinzel", serif; color: var(--red); padding: 6px 8px 0 0;
 }
 ul, ol { margin: 0 0 12px; padding-left: 22px; } li { margin: 0 0 6px; }
 code { font: 13px ui-monospace, Menlo, monospace; background: #00000010; padding: 1px 4px; border-radius: 2px; }
-hr.rule { column-span: all; border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
+hr.rule { border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
 
 /* tables: full width, tinted rows */
-table { column-span: all; width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
 th { font: 800 13px "Cinzel", serif; color: var(--red); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--gold); }
 td { padding: 7px 10px; vertical-align: top; }
 tbody tr:nth-child(odd) { background: var(--row); }
@@ -64,12 +64,12 @@ blockquote {
 
 /* illustrations: a drawn picture, or a placeholder frame until it exists */
 figure { margin: 6px 0 18px; break-inside: avoid; }
-figure.cover { column-span: all; margin: 0 auto 26px; max-width: 520px; }
+figure.cover { margin: 0 auto 26px; max-width: 520px; }
 figure.cover img { width: 100%; display: block; box-shadow: 0 8px 26px #0007; border: 6px solid var(--paper); }
 .plates { break-inside: avoid; }
-.plates.nmany { column-span: all; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
+.plates.nmany { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
 .plates.nmany figure { margin: 0; } .plates.nmany figure.wide { grid-column: 1 / -1; } .plates.nmany { align-items: start; }
-figure.art.wide { column-span: all; }
+figure.art.wide { }
 .art img, .art .slot { width: 100%; aspect-ratio: var(--ratio); display: block; object-fit: cover; }
 .art img { border: 1px solid #0006; box-shadow: 0 4px 14px #0004; }
 .art.style-A img, .art.style-B img { filter: sepia(.08) contrast(1.02); mix-blend-mode: multiply; }
@@ -114,12 +114,18 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 <body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html" aria-current="page">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
 <main class="09-magic-and-artifacts"><h1>Magic, devices and artifacts</h1>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-C" style="--ratio:16/9"><img src="art/web/opener-magic.jpg" alt="Inside the Blue Door: a cluttered magic shop of wands, rings, staffs and spell books, everything faintly glowing, a blue door at the back." loading="lazy"></figure></div>
+<div class="flow">
+</div>
 <p class="intro"><i>Draft. How the game's magic and items fit the world: the two realms and their eight books, why unknown things look different to every delver, who made the wands, staffs and rods, where the special kinds come from, and the six artifacts. The cosmology behind the two realms is in <a href="01-cosmology.html">Cosmology</a>.</i></p>
+<div class="flow">
 </div>
 <h2>The two realms</h2>
 <div class="flow">
+</div>
 <table><thead><tr><th></th><th>Arcane</th><th>Holy</th></tr></thead><tbody><tr><td>Source</td><td>Starlight: the far sparks of the First Fire</td><td>The carried flame: the ember passed hand to hand</td></tr><tr><td>Taught by</td><td>The Collegium of Sparks</td><td>The Order of the Lamp</td></tr><tr><td>Callings</td><td>Arcanist (all of it); Delver and Wayfinder (some, later)</td><td>Lampwarden (all of it); Oathknight (some, more slowly)</td></tr><tr><td>How it is learned</td><td>Studied: an Arcanist chooses each new spell</td><td>Granted: a prayer is given, not chosen, when the flame thinks you are ready</td></tr><tr><td>Nature</td><td>Cold, exact, indifferent to its use</td><td>Warm, protective, hostile to the dark</td></tr><tr><td>Best against</td><td>Anything, from range</td><td>The undead and the evil, close by</td></tr></tbody></table>
+<div class="flow">
 <p class="first">Both need the book in the pack. Arcanists say the book holds the pattern; Keepers say the book holds the promise. Either way, no book, no spell.</p>
 <p><b>Why the first casting teaches you something.</b> A spell is a borrowed light, and the first time you borrow one you learn its weight. <i>In the game: the first cast of each spell gives experience.</i></p>
 <p><b>Why spells fail.</b> Starlight slips from a tired or clumsy mind; the flame does not come to a distracted prayer. A stunned caster fails far more often, because a ringing head can hold neither.</p>
@@ -127,11 +133,15 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 <h3>The arcane books</h3>
 <div class="flow">
 <div class="plates n1"><figure class="art  style-C" style="--ratio:1/1"><img src="art/web/item-spellbooks.jpg" alt="The eight spell books on a shelf: four blue arcane books (Book of First Sparks, Hidden Ways, Storm and Frost, Deep Sorcery) and four gold holy books (Lamp Psalter, Hymns of the Hearth, Litany of Dawn, Rites of the Unbroken Flame), worn and well loved." loading="lazy"></figure></div>
+</div>
 <table><thead><tr><th>Book</th><th>Written</th><th>Notes</th></tr></thead><tbody><tr><td><i>Book of First Sparks</i></td><td>~1700 BH, by the Collegium's founders</td><td>Spark, sensing and stepping. Every Arcanist's first book, unchanged in two thousand years except for the jokes in the margins.</td></tr><tr><td><i>Book of Hidden Ways</i></td><td>~1400 BH</td><td>Frost, slumber, knowing, and <i>Melt Stone</i>, which the Stonekin consider a war crime.</td></tr><tr><td><i>Book of Storm and Frost</i></td><td>~1100 BH, by the Collegium's battle-mages</td><td>Written for war with the hill clans during the Long Dusk, which is why it is mostly about killing things at a distance.</td></tr><tr><td><i>Book of Deep Sorcery</i></td><td>~420 BH, author unknown</td><td><i>Unravel</i>, <i>Mana Storm</i>, <i>Shake the Earth</i>. The Collegium denies writing it. Some say Duke Ashvane left a copy at court.</td></tr></tbody></table>
+<div class="flow">
 </div>
 <h3>The holy books</h3>
 <div class="flow">
+</div>
 <table><thead><tr><th>Book</th><th>Written</th><th>Notes</th></tr></thead><tbody><tr><td><i>Lamp Psalter</i></td><td>~2550 BH, the first Keepers</td><td>Mend, bless, light the way, feed the hungry, tend the flame. The prayers of people building something in the dark.</td></tr><tr><td><i>Hymns of the Hearth</i></td><td>~1900 BH</td><td>Prayers for the lamplighters of the rings: wards against heat and cold, finding the way, lifting curses.</td></tr><tr><td><i>Litany of Dawn</i></td><td>~640 BH, after the Night the River Rose</td><td>Prayers against the dead: <i>Turn the Dead</i>, <i>Searing Dawn</i>. Written in grief, which may be why they work so well.</td></tr><tr><td><i>Rites of the Unbroken Flame</i></td><td>Caedra's own, the Order says</td><td><i>Holy Word</i>, <i>Banish Evil</i>, <i>Unbroken Flame</i>. Said to be the rites she spoke while lighting the Ring of Glass.</td></tr></tbody></table>
+<div class="flow">
 </div>
 <h2>Why unknown things look different to every delver</h2>
 <div class="flow">
@@ -148,7 +158,9 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 <h2>The special kinds</h2>
 <div class="flow">
 <p>Weapons and armour &quot;of&quot; something carry the mark of the people who made them, or of what was done to them.</p>
+</div>
 <table><thead><tr><th>Kind</th><th>Where it comes from</th></tr></thead><tbody><tr><td><i>of Burning</i>, <i>of Frost</i>, <i>of Storms</i></td><td>Tempered at the Anvil of the Pact in the Ring of Forges (burning), in frost-giant ice (frost), or struck by Collegium lightning (storms).</td></tr><tr><td><i>of Slay Beast</i>, <i>of Slay Undead</i>, <i>of Slay Evil</i></td><td>Blessed by the Order for the Oathknights' hunts: beasts in the Ring of Roots, the dead in the Ring of Rest, fiends below.</td></tr><tr><td><i>(Blessed)</i></td><td>Laid on the Eternal Lamp's altar for a night.</td></tr><tr><td><i>of Warding</i></td><td>A Keeper's ward carved into a blade, for lamplighters who had to go through the rings unescorted.</td></tr><tr><td><i>of Sharpness</i></td><td>Stonekin edge-work: honed on stone that held light.</td></tr><tr><td><i>of Resist Fire</i>, <i>Cold</i>, <i>Acid</i>, <i>Lightning</i>; <i>of Resistance</i></td><td>Ashborn ash-cloth, Tinkerling oilskins and Stonekin plate made for the hazards of each ring.</td></tr><tr><td><i>of Stealth</i></td><td>The Quiet Hand's work, though no one will admit it.</td></tr><tr><td><i>of Speed</i>, <i>of Free Action</i></td><td>Burrowfolk runners' gear from the Age of Lamps, made so messages between the rings could not be held up.</td></tr><tr><td><i>of Seeing</i></td><td>Keeper helms for watching the dark, which can see what hides in it.</td></tr><tr><td><i>of Intellect</i>, <i>of Wisdom</i>, <i>of Might</i>, <i>of Power</i>, <i>of Accuracy</i></td><td>Gifts of old Aurenhold to its champions and scholars.</td></tr></tbody></table>
+<div class="flow">
 </div>
 <h2>The six artifacts</h2>
 <div class="flow">

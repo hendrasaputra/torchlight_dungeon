@@ -36,20 +36,20 @@ main {
 }
 .flow { columns: 2 300px; column-gap: 40px; }
 h1, h2, h3, h4 { font-family: "Cinzel", serif; color: var(--red); font-weight: 800; break-after: avoid; }
-h1 { column-span: all; font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
-h2 { column-span: all; font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
+h1 { font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
+h2 { font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
 h3 { font-size: 19px; margin: 22px 0 6px; border-bottom: 1px solid var(--gold); }
 p { margin: 0 0 12px; text-align: justify; hyphens: auto; }
-p.intro { column-span: all; text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
+p.intro { text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
 p.first::first-letter {
   float: left; font: 800 64px/0.82 "Cinzel", serif; color: var(--red); padding: 6px 8px 0 0;
 }
 ul, ol { margin: 0 0 12px; padding-left: 22px; } li { margin: 0 0 6px; }
 code { font: 13px ui-monospace, Menlo, monospace; background: #00000010; padding: 1px 4px; border-radius: 2px; }
-hr.rule { column-span: all; border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
+hr.rule { border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
 
 /* tables: full width, tinted rows */
-table { column-span: all; width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
 th { font: 800 13px "Cinzel", serif; color: var(--red); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--gold); }
 td { padding: 7px 10px; vertical-align: top; }
 tbody tr:nth-child(odd) { background: var(--row); }
@@ -64,12 +64,12 @@ blockquote {
 
 /* illustrations: a drawn picture, or a placeholder frame until it exists */
 figure { margin: 6px 0 18px; break-inside: avoid; }
-figure.cover { column-span: all; margin: 0 auto 26px; max-width: 520px; }
+figure.cover { margin: 0 auto 26px; max-width: 520px; }
 figure.cover img { width: 100%; display: block; box-shadow: 0 8px 26px #0007; border: 6px solid var(--paper); }
 .plates { break-inside: avoid; }
-.plates.nmany { column-span: all; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
+.plates.nmany { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
 .plates.nmany figure { margin: 0; } .plates.nmany figure.wide { grid-column: 1 / -1; } .plates.nmany { align-items: start; }
-figure.art.wide { column-span: all; }
+figure.art.wide { }
 .art img, .art .slot { width: 100%; aspect-ratio: var(--ratio); display: block; object-fit: cover; }
 .art img { border: 1px solid #0006; box-shadow: 0 4px 14px #0004; }
 .art.style-A img, .art.style-B img { filter: sepia(.08) contrast(1.02); mix-blend-mode: multiply; }
@@ -114,12 +114,16 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 <body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html" aria-current="page">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
 <main class="index"><figure class="cover"><img src="../cartridges/torchlight-dungeons-v2.jpg" alt="An adventurer with a torch in a dungeon, a goblin at the edge of the light"></figure><h1>The lore of Torchlight</h1>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-B" style="--ratio:16/9"><img src="art/web/opener-contents.jpg" alt="A lone delver with a torch at the top of a long stair going down into the dark, the whole Lampway opening below like a well." loading="lazy"></figure></div>
+<div class="flow">
 <p class="first">Welcome to the world behind Torchlight Dungeons: its beginning, its history, the peoples and callings, the dungeon and how it came to be, what lives in it, and the things of power found there. Everything here is meant to be argued with, cut and rewritten. Names that already exist in the game are used as they are, so the lore can flow back into item and monster descriptions, level feelings, book titles and the help pages.</p>
 </div>
 <h2>The files</h2>
 <div class="flow">
+</div>
 <table><thead><tr><th>File</th><th>What it covers</th></tr></thead><tbody><tr><td><a href="01-cosmology.html">Cosmology</a></td><td>The Gloam, the First Fire, Morrowgloom, and why there are two kinds of magic</td></tr><tr><td><a href="02-timeline.html">Timeline</a></td><td>From before the Kindling to the present year, 1207 of the Hollow</td></tr><tr><td><a href="03-world.html">The world</a></td><td>The lands above: Lanternhollow, the Hollowmark and its neighbours</td></tr><tr><td><a href="04-the-lampway.html">The Lampway</a></td><td>How the dungeon was built, its five rings, the mines, and the legends of what is down there</td></tr><tr><td><a href="05-peoples.html">Peoples</a></td><td>The eight peoples and how each is bound to the light and the deep</td></tr><tr><td><a href="06-callings.html">Callings</a></td><td>The six callings and the orders behind them</td></tr><tr><td><a href="07-rulers-and-heroes.html">Rulers & heroes</a></td><td>The Lamp Kings, the Keepers, and the heroes of song</td></tr><tr><td><a href="08-bestiary.html">Bestiary</a></td><td>A repository of every monster family, the named uniques, and the Lantern-Eater</td></tr><tr><td><a href="09-magic-and-artifacts.html">Magic & artifacts</a></td><td>The two realms, the spell books, flavours, special kinds and the six artifacts</td></tr><tr><td><a href="10-illustrations.html">Art list</a></td><td>A list of 151 illustrations (monsters, peoples, items, places, maps, emblems) with prompts in four styles and rules that keep them consistent</td></tr></tbody></table>
+<div class="flow">
 </div>
 <h2>Ground rules for the lore</h2>
 <div class="flow">
@@ -127,7 +131,9 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 </div>
 <h2>Words used throughout</h2>
 <div class="flow">
+</div>
 <table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><b>Torchlight</b></td><td>The world's old name: &quot;the lit world&quot;, the land the first torch was carried across. Scholars write it as one word; common folk just say &quot;the world&quot;.</td></tr><tr><td><b>The Gloam</b></td><td>The lightless sea that was everything before the First Fire. It is not evil, only hungry.</td></tr><tr><td><b>The First Fire</b></td><td>The flame that kindled the world. Every light since, from a star to a tallow candle, is a spark carried from it.</td></tr><tr><td><b>Morrowgloom</b></td><td>The last deep pool of the Gloam, sunk beneath the world. &quot;The Lantern-Eater.&quot; It eats light, and each light it eats is a morning that never comes.</td></tr><tr><td><b>The Lampway</b></td><td>The dungeon: a stair of lamp-rings built downward, ring under ring, to keep Morrowgloom sunk. Miners call its upper part &quot;the Hollow&quot;; adventurers call all of it &quot;the Deep&quot;.</td></tr><tr><td><b>Lamp-ring</b></td><td>One level of the Lampway's design: a circuit of shrines whose lamps, lit together, hold the dark below them.</td></tr><tr><td><b>Glow crystal</b></td><td>Lamplight that has burned so long in one place it has set into stone. The reason anyone mined the Lampway at all.</td></tr><tr><td><b>Keeper</b></td><td>A priest of the Order of the Lamp, sworn to keep the rings lit. Today's Lampwardens descend from them.</td></tr><tr><td><b>YH</b></td><td>Years of the Hollow, counted from the founding of Lanternhollow. Older dates are BH, before the Hollow. The present year is 1207 YH.</td></tr></tbody></table>
+<div class="flow">
 </div>
 <h2>Decisions</h2>
 <div class="flow">

@@ -36,20 +36,20 @@ main {
 }
 .flow { columns: 2 300px; column-gap: 40px; }
 h1, h2, h3, h4 { font-family: "Cinzel", serif; color: var(--red); font-weight: 800; break-after: avoid; }
-h1 { column-span: all; font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
-h2 { column-span: all; font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
+h1 { font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
+h2 { font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
 h3 { font-size: 19px; margin: 22px 0 6px; border-bottom: 1px solid var(--gold); }
 p { margin: 0 0 12px; text-align: justify; hyphens: auto; }
-p.intro { column-span: all; text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
+p.intro { text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
 p.first::first-letter {
   float: left; font: 800 64px/0.82 "Cinzel", serif; color: var(--red); padding: 6px 8px 0 0;
 }
 ul, ol { margin: 0 0 12px; padding-left: 22px; } li { margin: 0 0 6px; }
 code { font: 13px ui-monospace, Menlo, monospace; background: #00000010; padding: 1px 4px; border-radius: 2px; }
-hr.rule { column-span: all; border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
+hr.rule { border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
 
 /* tables: full width, tinted rows */
-table { column-span: all; width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
 th { font: 800 13px "Cinzel", serif; color: var(--red); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--gold); }
 td { padding: 7px 10px; vertical-align: top; }
 tbody tr:nth-child(odd) { background: var(--row); }
@@ -64,12 +64,12 @@ blockquote {
 
 /* illustrations: a drawn picture, or a placeholder frame until it exists */
 figure { margin: 6px 0 18px; break-inside: avoid; }
-figure.cover { column-span: all; margin: 0 auto 26px; max-width: 520px; }
+figure.cover { margin: 0 auto 26px; max-width: 520px; }
 figure.cover img { width: 100%; display: block; box-shadow: 0 8px 26px #0007; border: 6px solid var(--paper); }
 .plates { break-inside: avoid; }
-.plates.nmany { column-span: all; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
+.plates.nmany { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
 .plates.nmany figure { margin: 0; } .plates.nmany figure.wide { grid-column: 1 / -1; } .plates.nmany { align-items: start; }
-figure.art.wide { column-span: all; }
+figure.art.wide { }
 .art img, .art .slot { width: 100%; aspect-ratio: var(--ratio); display: block; object-fit: cover; }
 .art img { border: 1px solid #0006; box-shadow: 0 4px 14px #0004; }
 .art.style-A img, .art.style-B img { filter: sepia(.08) contrast(1.02); mix-blend-mode: multiply; }
@@ -114,8 +114,12 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 <body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html" aria-current="page">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
 <main class="04-the-lampway"><h1>The Lampway: how the dungeon was built</h1>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-A" style="--ratio:16/9"><img src="art/web/place-hollow-gate.jpg" alt="The Hollow Gate: a great arched door under a collapsed dome in the ruins of Aurenhold, lamp-posts with no lamps on either side, a lone delver with a torch at the threshold." loading="lazy"></figure></div>
+<div class="flow">
+</div>
 <p class="intro"><i>Draft. The dungeon in the game is the Lampway. Its five depth looks (worked stone, moss, crypt, magma, crystal) are its five rings. Things the game already does are given a reason here, marked &quot;In the game&quot;.</i></p>
+<div class="flow">
 </div>
 <h2>What it was for</h2>
 <div class="flow">
@@ -140,49 +144,65 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 </div>
 <h3>The Ring of Stone (50 to 450 ft): worked stone</h3>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-B" style="--ratio:16/9"><img src="art/web/place-ring-of-stone.jpg" alt="The Ring of Stone: worked Stonekin halls with pillars, broken through by rough mine tunnels, a still-lit shrine glowing in the distance." loading="lazy"></figure></div>
+<div class="flow">
 <p>The top ring and the best-built: Stonekin halls, shrine chambers with pillars, wide stairs. It is also the most crowded, because everything that wants to be near the surface without being on it lives here. Mine tunnels cross and break the old halls everywhere.</p>
 <ul><li><b>Who lives here:</b> rats and bats, kobolds (Fenwick Gutterking's &quot;kingdom&quot; in the east galleries), goblins, cutthroats and pickpockets who rob delvers on their way down, runaway apprentices from the Collegium, the first skeletons and shamblers, mould and slime in the damp.</li><li><b>Named:</b> Old Whiskers, King of Rats (150 ft); Fenwick Gutterking (250 ft); Snag the Quick (300 ft); Old Tusk (350 ft); Mother Bristle (450 ft).</li><li><b>What the Keepers built here:</b> the <b>Hall of First Light</b>, where Caedra lit the first ring. It has never been found again since the shifting began.</li></ul>
 </div>
 <h3>The Ring of Roots (500 to 950 ft): moss and water</h3>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-B" style="--ratio:16/9"><img src="art/web/place-ring-of-roots.jpg" alt="The Ring of Roots: a dripping cavern with tree roots hanging from the ceiling, an underground river, mushrooms and moss over carved shrine stones." loading="lazy"></figure></div>
+<div class="flow">
 <p>Below the Ring of Stone, the Keepers' masons met natural caverns, drowned and dripping, where the roots of the Greenroof forest reach down through the rock. They lined the caverns with shrines instead of cutting new halls. The underground river that later flooded the Ring of Rest runs here.</p>
 <ul><li><b>Who lives here:</b> sporefolk and moulds (memory moss is native here), crabs and crocodiles in the pools, trolls in the wet dark, harpies and goat-men, the first ogres, wolves, and the shades that came up out of the dark when the lower lamps failed.</li><li><b>Named:</b> Varn the Flayer (500 ft); the Lantern Thief (550 ft); Corvane, Crow of the Deep (600 ft); Sister Vesper (650 ft); Kettlemaw (750 ft); Hollow Jack (850 ft); Grimsby Coldhand (950 ft).</li><li><b>Legend:</b> the <b>Root Shrine</b>, where the Sylvan say a living tree still grows in the dark, fed by one lamp that has never gone out.</li></ul>
 </div>
 <h3>The Ring of Rest (1,000 to 1,450 ft): the crypts</h3>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-A" style="--ratio:16/9"><img src="art/web/place-ring-of-rest.jpg" alt="The Ring of Rest: a vast crypt of stone coffins, each with a cold dead lamp on its lid, one lamp still burning far away." loading="lazy"></figure></div>
+<div class="flow">
 <p>The Keepers' burial ring. Their own dead, and later every Lamp King of Aurenhold, were laid here each with a lamp, as wardens who would guard the rings below even in death. It worked while the lamps burned. When the Oil Tithe was cut and the lamps failed, the dead kept their watch and lost their minds. Now the Ring of Rest is the worst place in the upper Deep: tombs, ossuaries, mortuary chapels, and the river that broke in on the Night the River Rose.</p>
 <ul><li><b>Who lives here:</b> skeletons, ghouls, mummies and the tomb kings who were the Lamp Kings; ghosts and wraiths; necromancers and their thralls; mimics among the grave goods; gargoyles on the chapel roofs.</li><li><b>Named:</b> Brakka Stoneteeth (1,050 ft); Ysolde of the Ashes (1,150 ft); the Maul-Wyrm (1,250 ft); the Grey Widow (1,350 ft); Thessaly Glass (1,450 ft).</li><li><b>Legend:</b> the <b>Tombs of the Lamp Kings</b>, all twenty-six of them, each with its king's lamp. Relighting a king's lamp is said to let him rest, and a rested king's tomb is said to give up its grave goods freely.</li></ul>
 </div>
 <h3>The Ring of Forges (1,500 to 1,950 ft): magma</h3>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-B" style="--ratio:16/9"><img src="art/web/place-ring-of-forges.jpg" alt="The Ring of Forges: abandoned Ashborn forges at the edge of a magma lake, giant anvils, chains, and a single golem still hammering." loading="lazy"></figure></div>
+<div class="flow">
 <p>Where the Lampway reaches the deep fires. Under the Pact of the Forge, the Ashborn kept the fires here burning hot and bright as a wall of light, and forged the weapons and lamps the Keepers needed. When Aurenhold fell, the Ashborn forge-folk left, the fires ran wild, and the Ring of Forges became a land of magma, fire spirits and things that like the heat.</p>
 <ul><li><b>Who lives here:</b> fire giants and fire drakes, magma spirits, ember imps and horned fiends that came up from the Unlit Ring, salamanders, lava crabs, iron and stone golems still working at forges for masters long dead, basilisks.</li><li><b>Named:</b> Ironjaw (1,550 ft); the Pale Bride (1,650 ft); the Drowned King (1,750 ft); Rimeheart (1,850 ft); the Many-Mouthed (1,950 ft).</li><li><b>Legend:</b> <b>the Anvil of the Pact</b>, where Embersong was forged. Any blade tempered in its fire, the Ashborn say, will burn until the Gloam itself is ended.</li></ul>
 </div>
 <h3>The Ring of Glass (2,000 to 2,450 ft): crystal</h3>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-B" style="--ratio:16/9"><img src="art/web/place-ring-of-glass.jpg" alt="The Ring of Glass: walls of tall crystal that once shone and now glow a cold failing blue, cracked and dimming towards a black hole in the floor." loading="lazy"></figure></div>
+<div class="flow">
 <p>The last ring, grown rather than dug: walls of light-holding crystal raised by Tinkerling glassmakers and the first Arcanists, right over Morrowgloom. It was the brightest place in the world, lit by its own walls. When its lamps went out around 960 BH, Morrowgloom started to drink the light stored in the crystal, and it has been drinking ever since. What is left glows a cold, failing blue.</p>
 <ul><li><b>Who lives here:</b> dragons, liches, vampire lords, crystal golems, star wisps (sparks of starlight caught in the crystal), storm giants, the oldest horrors, and the deepest servants of the dark.</li><li><b>Named:</b> Skarth the Unsleeping (2,100 ft); the Ember Queen (2,250 ft); Duke Ashvane (2,400 ft).</li><li><b>Legend:</b> <b>Caedra's Stair</b>, the last stair she walked down. Her lantern was found much higher up, in the Ring of Forges (see the Lantern of the First Keeper in <a href="09-magic-and-artifacts.html">Magic & artifacts</a>), so either she climbed back up or someone carried it.</li></ul>
 </div>
 <h3>The Pit of the Gloam (2,500 ft)</h3>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-A" style="--ratio:16/9"><img src="art/web/boss-morrowgloom.jpg" alt="Morrowgloom, the Lantern-Eater: a vast living darkness filling a cavern, a thousand small eyes in it each holding a tiny reflected flame, a lone delver's torch at the bottom of the frame, its light bending towards the dark." loading="lazy"></figure></div>
+<div class="flow">
 <p>At the bottom of the Ring of Glass is a hollow that was never lit, because it was never meant to be entered. Here <b>Morrowgloom, the Lantern-Eater</b> waits, with everything it has eaten shining in its thousand eyes.</p>
 </div>
 <h3>The Unlit Ring (below 2,500 ft)</h3>
 <div class="flow">
+</div>
 <div class="plates nmany"><figure class="art wide style-B" style="--ratio:16/9"><div class="slot"><b>Illustration to come</b><span>The Unlit Ring, below the Pit: half-dug tunnels in raw rock, chisel marks still fresh, empty lamp niches in every wall, abandoned tools, a darkness that seems to lean in from the unfinished ends, and in the far distance one great crystal burning alone: the Last Lamp.</span><small>art/place-unlit-ring.png · style B</small></div></figure><figure class="art  style-A" style="--ratio:1/1"><div class="slot"><b>Illustration to come</b><span>The Last Lamp: a great crystal taller than a man, set in a rough-cut niche of raw rock, blazing with light, the dark pressing against the edges of its glow like water against glass.</span><small>art/item-last-lamp.png · style A</small></div></figure></div>
+<div class="flow">
 <p>The game's dungeon goes on below Morrowgloom with no limit. This is <b>the Unlit Ring</b>: the sixth ring, which the Keepers began around 2080 BH to close the cage from below, tunnelling round and under the Pit. It was never finished. When the Oil Tithe was cut, the work stopped, and its shrines were cut but never lit. Its passages wind on and down through raw rock, half-dug, with empty lamp-niches in every chamber. Fiends like Duke Ashvane, and the horrors of the deep, came into the world through it, because an unfinished ring is a door with no lock.</p>
 <p>One light burns there: <b>the Last Lamp</b>, a great crystal the last Keepers to work in the Unlit Ring lit before they climbed out for good, around 1000 BH. It has kept Morrowgloom's power at bay ever since, on its own. While it burns, Morrowgloom cannot leave the Pit. If it ever went out, the old teaching says, the Lantern-Eater would rise, and every light in the world would go with it.</p>
 <p>Relighting the cold shrines of the Unlit Ring around the Last Lamp, the Keepers believe, would finish the cage at last. It is the task every champion of the Order dreams of.</p>
 </div>
 <h3>The Elder Ring (deeper still)</h3>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-B" style="--ratio:16/9"><div class="slot"><b>Illustration to come</b><span>The Elder Ring, deep under the world: a ring of small, ancient lamps of a strange shape, set in rock by unknown hands, still faintly burning in an endless dark, with no one in sight to tend them.</span><small>art/place-elder-ring.png · style B</small></div></figure></div>
+<div class="flow">
 <p>Somewhere beneath the Unlit Ring is a ring the Keepers did not build: <b>the Elder Ring</b>, lit before the First Keeper by unknown hands, the same that made the First Lamp (see <a href="01-cosmology.html">Cosmology</a>). The Keepers first saw its glow in the rock under the Pit around 2110 BH, and the Unlit Ring was dug partly to reach it. No one ever has. Whether its lamps still burn, and whether its makers are still there tending them, is the oldest question in the Order. <i>(In the game: whatever lies deep enough below 2,500 ft.)</i></p>
 </div>
 <h2>Legends of the Deep</h2>

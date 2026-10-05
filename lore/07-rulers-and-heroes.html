@@ -36,20 +36,20 @@ main {
 }
 .flow { columns: 2 300px; column-gap: 40px; }
 h1, h2, h3, h4 { font-family: "Cinzel", serif; color: var(--red); font-weight: 800; break-after: avoid; }
-h1 { column-span: all; font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
-h2 { column-span: all; font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
+h1 { font-size: 44px; line-height: 1.1; margin: 0 0 6px; letter-spacing: .02em; text-align: center; }
+h2 { font-size: 26px; margin: 34px 0 12px; padding-bottom: 4px; border-bottom: 3px solid var(--gold); }
 h3 { font-size: 19px; margin: 22px 0 6px; border-bottom: 1px solid var(--gold); }
 p { margin: 0 0 12px; text-align: justify; hyphens: auto; }
-p.intro { column-span: all; text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
+p.intro { text-align: center; font-style: italic; color: var(--dim); max-width: 760px; margin: 6px auto 22px; }
 p.first::first-letter {
   float: left; font: 800 64px/0.82 "Cinzel", serif; color: var(--red); padding: 6px 8px 0 0;
 }
 ul, ol { margin: 0 0 12px; padding-left: 22px; } li { margin: 0 0 6px; }
 code { font: 13px ui-monospace, Menlo, monospace; background: #00000010; padding: 1px 4px; border-radius: 2px; }
-hr.rule { column-span: all; border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
+hr.rule { border: 0; height: 3px; margin: 26px 0; background: linear-gradient(90deg, transparent, var(--red-2), transparent); }
 
 /* tables: full width, tinted rows */
-table { column-span: all; width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 22px; font-size: 14.5px; line-height: 1.45; }
 th { font: 800 13px "Cinzel", serif; color: var(--red); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--gold); }
 td { padding: 7px 10px; vertical-align: top; }
 tbody tr:nth-child(odd) { background: var(--row); }
@@ -64,12 +64,12 @@ blockquote {
 
 /* illustrations: a drawn picture, or a placeholder frame until it exists */
 figure { margin: 6px 0 18px; break-inside: avoid; }
-figure.cover { column-span: all; margin: 0 auto 26px; max-width: 520px; }
+figure.cover { margin: 0 auto 26px; max-width: 520px; }
 figure.cover img { width: 100%; display: block; box-shadow: 0 8px 26px #0007; border: 6px solid var(--paper); }
 .plates { break-inside: avoid; }
-.plates.nmany { column-span: all; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
+.plates.nmany { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 8px 0 20px; }
 .plates.nmany figure { margin: 0; } .plates.nmany figure.wide { grid-column: 1 / -1; } .plates.nmany { align-items: start; }
-figure.art.wide { column-span: all; }
+figure.art.wide { }
 .art img, .art .slot { width: 100%; aspect-ratio: var(--ratio); display: block; object-fit: cover; }
 .art img { border: 1px solid #0006; box-shadow: 0 4px 14px #0004; }
 .art.style-A img, .art.style-B img { filter: sepia(.08) contrast(1.02); mix-blend-mode: multiply; }
@@ -114,20 +114,30 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 <body><header><a class="brand" href="index.html">The Lore of Torchlight</a><nav><a href="index.html">Contents</a><a href="01-cosmology.html">Cosmology</a><a href="02-timeline.html">Timeline</a><a href="03-world.html">The world</a><a href="04-the-lampway.html">The Lampway</a><a href="05-peoples.html">Peoples</a><a href="06-callings.html">Callings</a><a href="07-rulers-and-heroes.html" aria-current="page">Rulers & heroes</a><a href="08-bestiary.html">Bestiary</a><a href="09-magic-and-artifacts.html">Magic & artifacts</a><a href="10-illustrations.html">Art list</a></nav><a class="play" href="../">Play the game ›</a></header>
 <main class="07-rulers-and-heroes"><h1>Rulers and heroes</h1>
 <div class="flow">
+</div>
 <div class="plates n1"><figure class="art wide style-B" style="--ratio:16/9"><img src="art/web/opener-rulers.jpg" alt="The Hall of the Lamp Kings in the Ring of Rest: a long row of stone thrones and tombs, a cold lamp before each, one still lit at the far end." loading="lazy"></figure></div>
+<div class="flow">
+</div>
 <p class="intro"><i>Draft. The Lamp Kings of Aurenhold, the Keepers, the founders of Lanternhollow, and the heroes whose names are on the artifacts. Fallen heroes who became monsters are in <a href="08-bestiary.html">Bestiary</a>; they are cross-referenced here.</i></p>
+<div class="flow">
 </div>
 <h2>The First Keeper</h2>
 <div class="flow">
+</div>
 <div class="plates nmany"><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>Caedra the First Keeper at about forty (fixed look), standing at the lip of a black sinkhole in the hills with her lantern raised, a cold wind tugging her coat.</span><small>art/hero-caedra.png · style C</small></div></figure><figure class="art wide style-B" style="--ratio:16/9"><img src="art/web/moment-sealing.jpg" alt="Caedra, an old woman with a lantern, descending a crystal stair into darkness, every ring above her lit." loading="lazy"></figure></div>
+<div class="flow">
 <p class="first"><b>Caedra</b> (about 2620 to 2100 BH, if the dates are right, which would make her over five hundred years old; the Order says the flame kept her). A lamplighter from the coast who walked into the Breath with a lantern and came out knowing what was below. She founded the Order of the Lamp, planned the Lampway, and spent her long life building it. At the end she carried her lantern down to the Ring of Glass, lit every ring on the way, and did not come back.</p>
 <p>She is the only Lampwarden ever to hold the rank <i>Lamp of the Deep</i>. Her lantern was not the first lamp (far older lamps exist), but it was lit from the First Lamp itself, which made it the Order's greatest relic. It was later found in the Ring of Forges, still burning, though she carried it much deeper; how it came back up, no one knows.</p>
 </div>
 <h2>The Lamp Kings of Aurenhold</h2>
 <div class="flow">
+</div>
 <div class="plates nmany"><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>Aldren the Kindler, the first Lamp King, being crowned by Keepers before the Hollow Gate (fixed look), swearing on a lamp.</span><small>art/king-aldren.png · style C</small></div></figure><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>Queen Tamsin the Wise studying the great Mirror of Aurenhold, an ornate mirror whose glass shows dark rings of lamps far below.</span><small>art/king-tamsin.png · style C</small></div></figure><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>Ysmer the Last, a pale, nervous young king at a dice table, his crown already in the hand of Duke Ashvane (fixed look).</span><small>art/king-ysmer.png · style C</small></div></figure><figure class="art  style-A" style="--ratio:1/1"><img src="art/web/item-crown.jpg" alt="The Crown of Aurenhold, a plain gold circlet with lamp-shaped points, resting on a fiend's dice table." loading="lazy"></figure><figure class="art  style-A" style="--ratio:1/1"><img src="art/web/family-tomb-kings.jpg" alt="A tomb king, a mummified ruler on a stone throne with a cold, dead lamp in his lap, his Marrow Guard skeletons standing in rows." loading="lazy"></figure></div>
+<div class="flow">
 <p>Twenty-six kings and queens over about 1,700 years. Each was crowned by the Keepers and sworn to keep the Oil Tithe flowing down the Lampway, and each was buried in the Ring of Rest with a lamp, as a warden in death. A selection:</p>
+</div>
 <table><thead><tr><th>Ruler</th><th>Reign (approx.)</th><th>Remembered for</th></tr></thead><tbody><tr><td><b>Aldren the Kindler</b></td><td>2090–2041 BH</td><td>First king. Took the Keepers' condition and made it the kingdom's law: the Oil Tithe.</td></tr><tr><td><b>Hollis the Mason</b></td><td>1910–1862 BH</td><td>Built the Hollow Gate and the lamplighters' road through the rings.</td></tr><tr><td><b>Aenne the Generous</b></td><td>1760–1722 BH</td><td>Gave the Collegium of Sparks its charter and its first house.</td></tr><tr><td><b>Queen Tamsin the Wise</b></td><td>1520–1471 BH</td><td>Had the great Mirror made that showed the rings below. Ruled through the best years of the kingdom.</td></tr><tr><td><b>Corran the Stern</b></td><td>1305–1270 BH</td><td>Raised the Marrow Guard to stand watch in the Ring of Rest.</td></tr><tr><td><b>Halde the Twice-Crowned</b></td><td>1180–1141 BH</td><td>Lost the throne to a cousin, won it back, and spent both reigns fighting over it.</td></tr><tr><td><b>Merrow the Proud</b></td><td>1012–981 BH</td><td>Spent the Oil Tithe on a war with the hill clans. The beginning of the Long Dusk.</td></tr><tr><td><b>Oswy the Faithful</b></td><td>668–640 BH</td><td>Went down himself to relight his fathers' lamps and drowned when the river broke into the Ring of Rest. Now <b>the Drowned King</b>.</td></tr><tr><td><b>Ysmer the Last</b></td><td>431–412 BH</td><td>Staked the kingdom on a game of dice with Duke Ashvane and lost. Fled; no one knows where he died, or if.</td></tr></tbody></table>
+<div class="flow">
 <p><b>Princess Lisette</b>, Oswy's granddaughter, never reigned. Her betrothed, a captain of the Marrow Guard, went down to the Ring of Rest and did not return; on her wedding day she went down after him in her wedding dress. She is <b>the Pale Bride</b>.</p>
 <p><i>Note for the game:</i> the Lamp Kings in the crypts are its <b>tomb kings</b>, its <b>mummified priests</b> were their Keepers, and the <b>skeleton knights</b> were the Marrow Guard.</p>
 </div>
@@ -142,7 +152,9 @@ footer a { color: #f0d88c; text-decoration: none; } footer .draft { color: #8d7c
 </div>
 <h2>Heroes of song</h2>
 <div class="flow">
+</div>
 <div class="plates nmany"><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>Ithrel Silverstring, a Sylvan archer with silver-white braids, drawing Starfall (a pale bow with a sparkling silver string) under a sky thick with stars.</span><small>art/hero-ithrel.png · style C</small></div></figure><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>Dame Orsolya Vell, an Oathknight in lamp-sigil plate, holding up Embersong (a sword glowing like a coal) in a crypt full of reaching hands.</span><small>art/hero-orsolya.png · style C</small></div></figure><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>Thane Gorran Deephall, a Stonekin lord wearing the Stonehelm of the Deep Halls (a great helm cut from one block of dark stone), directing masons cutting a vast hall.</span><small>art/hero-gorran.png · style C</small></div></figure><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>&quot;Nobody&quot; Quill, a Delver in the grey Mantle of Quiet Steps, slipping out of a bank vault with a sack of coins, the iron golem guard looking the other way.</span><small>art/hero-quill.png · style C</small></div></figure><figure class="art  style-C" style="--ratio:2/3"><div class="slot"><b>Illustration to come</b><span>Wren Hallow, a Burrowfolk runner with the silver Band of Swift Feet on her finger, sprinting up an endless stair, a trail of motion behind her.</span><small>art/hero-wren.png · style C</small></div></figure></div>
+<div class="flow">
 <p>These are the names behind the game's six artifacts, and the stories delvers tell at the Last Lamp inn.</p>
 <ul><li><b>Ithrel Silverstring</b>, Sylvan archer (around 1150 BH). Strung <b>Starfall</b> with silver drawn from starlight caught in a Greenroof bowl, and shot a shade off the Ring of Stone's walls from three hundred paces. Every generation of Sylvan archers who comes to Lanternhollow comes by her promise.</li><li><b>Dame Orsolya Vell</b>, Oathknight (around 300 BH). Carried <b>Embersong</b>, forged for the Order by the Ashborn at the Anvil of the Pact, into the Ring of Rest after the Fall and cut her way to the tomb of Aldren the Kindler to relight his lamp. The blade came back without her.</li><li><b>Thane Gorran Deephall</b>, Stonekin (around 2400 BH). Cut the Ring of Stone's great halls and wore the <b>Stonehelm of the Deep Halls</b>, carved from one block of the first stone that held light. The Deephall clans want it back.</li><li><b>&quot;Nobody&quot; Quill</b>, Delver (around 700 YH). The only delver ever to rob Brassle &amp; Vane's vault (before it fell), in the <b>Mantle of Quiet Steps</b>. The Quiet Hand counts her as its founder, and denies she ever existed.</li><li><b>Wren Hallow</b>, Burrowfolk runner (around 1200 BH). Carried word of a failing ring from the Ring of Glass to the surface in a single night, wearing the <b>Band of Swift Feet</b>; the ring was relit in time. The band makes the world seem slow; Wren said it also made the world seem lonely.</li><li><b>Caedra</b>, whose lantern is the <b>Lantern of the First Keeper</b>.</li></ul>
 </div>
