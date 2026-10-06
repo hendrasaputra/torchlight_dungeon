@@ -317,9 +317,8 @@ Together with the ten in section 4, every family in the game has a plate.
 
 **151 illustrations in all:** 8 peoples, 6 callings, 26 named monsters (with the boss), 49 family plates, 12 items,
 14 places and moments, 4 maps and plans, 10 emblems, 6 shopkeepers, 10 heroes and kings, and 6 chapter openers.
-Drawn so far: the peoples and the callings.
+All 151 are drawn, with PNG originals in `lore/art/` and web copies in `lore/art/web/`.
 
-**Order of work that makes the pages whole fastest:** the chapter openers and the pictures at the top of each page
-(`place-the-kindling`, `moment-the-guttering`, `place-lanternhollow`, `place-hollow-gate`, `opener-peoples`,
-`opener-callings`, `opener-rulers`, `opener-bestiary`, `opener-magic`, `opener-contents`), then the 26 named monsters,
-then the maps and emblems, then everything else.
+**Completed final batch:** the reptile, horror, golem, fiend, drake, dragon, deadhound, were and sporefolk family
+plates, using the subjects above and style A in square 1:1 format through the built-in image-generation tool.
+For the drake plate, the four colour varieties are distinguished by monochrome textures to preserve style A.
