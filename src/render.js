@@ -81,7 +81,10 @@ function drawWorld(t, dt){
   const vx = Math.round(view.x * Z) / Z, vy = Math.round(view.y * Z) / Z;   // whole device pixels: no shimmer
   ctx.setTransform(Z, 0, 0, Z, -vx * Z, -vy * Z); ctx.imageSmoothingEnabled = false;
   const [vw, vh] = viewCells(), x0 = Math.max(0, Math.floor(vx / TS)), y0 = Math.max(0, Math.floor(vy / TS)), x1 = Math.min(MW - 1, x0 + Math.ceil(vw) + 1), y1 = Math.min(MH - 1, y0 + Math.ceil(vh) + 1);
-  const lit = i => title ? lum(lightNow, 3 * i) > 0.02 : visible(i) || ((inFov[i] === turnNo || depth === 0) && lum(lightNow, 3 * i) > 0.03);
+  // Drawn in its light: what you see now, and any remembered place lit by a light that does not need you there (a lit
+  // room, a burning shrine, the Last Lamp, the town's lamps): it stays lit on screen after you walk away. Only drawing:
+  // monsters there still need you to see them.
+  const lit = i => title ? lum(lightNow, 3 * i) > 0.02 : visible(i) || ((inFov[i] === turnNo || depth === 0) && lum(lightNow, 3 * i) > 0.03) || (mem[i] && lum(roomLight, 3 * i) > 0.03);
   const shown = i => title ? lit(i) : mem[i];
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (shown(idx(x, y))) ctx.drawImage(tileImage(L, x, y, depth), x * TS, y * TS);
   if (title) return lightOverlay(x0, y0, x1, y1, lit, title);
