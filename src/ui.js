@@ -304,7 +304,7 @@ function drawDialog(){
   el.innerHTML = `<div class="box ${d.wide ? "wide" : ""}"><h2>${esc(d.title)}${d.noEsc ? "" : `<b class="x" title="Back (Esc)">×</b>`}</h2>${d.head || ""}<div class="cols">${d.cols.map((rows, ci) => `<div class="list">${d.heads ? `<h3>${esc(d.heads[ci])}</h3>` : ""}${rows.map((r, ri) =>
     `<div class="row ${ci === d.c && ri === d.at[ci] ? "sel" : ""} ${r.off ? "off" : ""} ${r.item ? "q-" + quality(r.item) : ""}" data-c="${ci}" data-i="${ri}">${r.item ? itemPic(r.item) : r.spell ? pic(spellPic(r.spell)) : r.icon || ""}<span>${r.html || esc(r.label)}</span>${r.right !== undefined ? `<small>${esc(r.right)}</small>` : ""}</div>`).join("") || `<div class="row off"><span>${esc(d.empty || "Nothing.")}</span></div>`}</div>`).join("")}
     ${d.side !== false ? `<div class="side">${sel && sel.item ? card(sel.item) : sel && sel.spell ? spellCard(sel.spell) : d.sideHtml || ""}</div>` : ""}</div>
-    <div class="note">${esc(d.note || "")}${d.note ? " · " : ""}↑↓ choose${d.cols.length > 1 ? " · ←→ switch" : ""} · Enter select${d.noEsc ? "" : " · Esc back"}</div></div>`;
+    <div class="note">${esc(d.note || "")}${d.note ? " · " : ""}<span class="keys">↑↓ choose${d.cols.length > 1 ? " · ←→ switch" : ""} · Enter select${d.noEsc ? "" : " · Esc back"}</span><span class="taps">Tap to choose${d.noEsc ? "" : " · × or outside to go back"}</span></div></div>`;
   const back = el.querySelector(".x"); if (back) back.onclick = () => dialogKey({ key: "Escape" });   // the close button: Esc
   el.querySelectorAll(".row[data-i]").forEach(r => r.onclick = () => { d.c = +r.dataset.c; d.at[d.c] = +r.dataset.i; const row = d.cols[d.c][d.at[d.c]]; if (row && row.select && !row.off) row.select(); else drawDialog(); });
   const s = el.querySelector(".row.sel"); if (s) s.scrollIntoView({ block: "nearest" });
@@ -470,7 +470,7 @@ function soulDialog(price, twist){
 function noteDialog(title, text){ openDialog({ title, head: `<p>${esc(text)}</p>`, cols: [[{ label: "OK", select: closeDialog }]], side: false }); }
 function fameDialog(){
   const rows = scores.list.map(s => ({ label: s.score + "  " + (s.name || "") + ", level " + s.lvl + " " + (s.cls || ""), right: s.dump ? "dump" : "", off: !s.dump, select: () => download((s.name || "character") + ".txt", s.dump) }));
-  openDialog({ title: "Hall of fame", cols: [rows.length ? rows : [{ label: "No one yet.", off: true }]], side: false, onBack: menuDialog, note: "Enter saves a character dump" });
+  openDialog({ title: "Hall of fame", cols: [rows.length ? rows : [{ label: "No one yet.", off: true }]], side: false, onBack: menuDialog, note: "Choose one to save its character dump" });
 }
 function helpDialog(){
   const modern = [["Arrow keys", "move; into a monster attacks, into a door opens"], ["Two arrows", "move diagonally (or numpad, Home, End, PgUp, PgDn)"], ["Shift + arrow", "run"],

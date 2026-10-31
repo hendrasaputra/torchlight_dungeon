@@ -68,7 +68,7 @@ function tutBegin(){
   if (store.get("tutorialSeen") === "1" || !guidanceOn()) return;
   player.tut = { flags: {}, done: {}, ratDone: false, finished: false };
   openDialog({ title: "Sister Ilvane", head: `<p class="lore">${esc(TUT_WELCOME)}</p>`, side: false, onBack: tutSkip,
-    cols: [[{ label: "Begin", select: () => { closeDialog(); carry(plainItem("oil")); say("Sister Ilvane gives you a flask of oil. \"For the shrines below. You'll see.\""); } }, { label: "Skip: I know how to play", select: tutSkip }]], note: "Esc skips · the menu's Guidance option turns it back on" });
+    cols: [[{ label: "Begin", select: () => { closeDialog(); carry(plainItem("oil")); say("Sister Ilvane gives you a flask of oil. \"For the shrines below. You'll see.\""); } }, { label: "Skip: I know how to play", select: tutSkip }]], note: "You can skip it · the menu's Guidance option turns it back on" });
 }
 function tutSkip(){ if (player) player.tut = null; store.set("tutorialSeen", "1"); closeDialog(); msgs = []; say("Good luck down there, delver."); }
 // The menu's Guidance option: off hides the charge and the hints; on brings them back (and the charge, if this
