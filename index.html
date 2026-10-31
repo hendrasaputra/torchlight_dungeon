@@ -343,10 +343,10 @@ function fov(ox, oy, radius, blocks, see, w, h){
 // with distance, so walls cast real shadows. src: { x, y, r: radius in cells, i: intensity, rgb }.
 function addLight(field, w, h, blocks, src){
   if (src.r <= 0) return;
-  const R = src.r + 0.5;
+  const R = src.r + 1;   // a soft fade that still reaches the radius: the edge cell gets a dim but visible light
   fov(src.x, src.y, Math.ceil(src.r), blocks, (x, y) => {
     const k = 1 - Math.hypot(x - src.x, y - src.y) / R; if (k <= 0) return;
-    const v = src.i * k * k, j = 3 * (y * w + x);
+    const v = src.i * k * Math.sqrt(k), j = 3 * (y * w + x);
     field[j] += src.rgb[0] * v; field[j + 1] += src.rgb[1] * v; field[j + 2] += src.rgb[2] * v;
   }, w, h);
 }
@@ -1073,9 +1073,9 @@ const ITEMS = [
   ...[["cloak", "Cloak", 1, 1, 1, 5], ["furcloak", "Fur cloak", 3, 3, 8, 50], ["oilskin", "Oilskin cloak", 2, 2, 12, 80]]
     .map(([id, n, ac, wt, dep, c]) => I("cloak", id, n, dep, 1, wt, c, { ac })),
   // light
-  I("light", "torch", "Torch", 1, 1, 3, 1, { radius: 3, fuel: 4000, rgb: [1.0, 0.6, 0.25] }),
-  I("light", "lantern", "Lantern", 5, 3, 5, 100, { radius: 4, fuel: 7500, maxFuel: 15000, rgb: [1.0, 0.85, 0.4] }),
-  I("light", "crystal", "Glow crystal", 25, 4, 1, 1500, { radius: 3, rgb: [0.7, 0.9, 1.2] }),   // never runs out
+  I("light", "torch", "Torch", 1, 1, 3, 1, { radius: 5, fuel: 4000, rgb: [1.0, 0.6, 0.25] }),
+  I("light", "lantern", "Lantern", 5, 3, 5, 100, { radius: 6, fuel: 7500, maxFuel: 15000, rgb: [1.0, 0.85, 0.4] }),
+  I("light", "crystal", "Glow crystal", 25, 4, 1, 1500, { radius: 5, rgb: [0.7, 0.9, 1.2] }),   // never runs out
   I("flask", "oil", "Flask of oil", 1, 1, 1, 3, { use: "fuel", fuel: 7500 }),
   // food; mushrooms are flavoured and do something besides
   I("food", "ration", "Ration of food", 1, 1, 0.8, 3, { food: 3000 }), I("food", "jerky", "Strip of dried meat", 1, 1, 0.3, 2, { food: 1500 }),
@@ -1173,7 +1173,7 @@ const ARTIFACTS = [
   { id: "embersong", name: "Embersong", base: "longsword", depth: 20, hit: 7, dam: 8, brand: "fire", res: ["fire"], light: 1, desc: "Its blade glows like a coal and hums softly." },
   { id: "mantle", name: "the Mantle of Quiet Steps", base: "cloak", depth: 18, ac: 8, stealth: 3, desc: "Grey cloth that seems to swallow sound." },
   { id: "stonehelm", name: "the Stonehelm of the Deep Halls", base: "greathelm", depth: 25, ac: 6, stats: { str: 2, con: 2 }, infra: 2, desc: "Carved from one block of dark stone, and yet light as a cap." },
-  { id: "firstlamp", name: "the Lantern of the First Keeper", base: "lantern", depth: 30, radius: 5, nofuel: true, desc: "Its flame never needs oil." },
+  { id: "firstlamp", name: "the Lantern of the First Keeper", base: "lantern", depth: 30, radius: 7, nofuel: true, desc: "Its flame never needs oil." },
   { id: "starfall", name: "Starfall", base: "longbow", depth: 35, hit: 10, dam: 10, desc: "A bow of pale wood strung with silver." },
   { id: "swiftband", name: "the Band of Swift Feet", base: "rspeed", depth: 45, pval: 4, freeAct: true, desc: "A plain silver ring that makes the world seem slow." }
 ];

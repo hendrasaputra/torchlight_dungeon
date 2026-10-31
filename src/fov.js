@@ -33,10 +33,10 @@ function fov(ox, oy, radius, blocks, see, w, h){
 // with distance, so walls cast real shadows. src: { x, y, r: radius in cells, i: intensity, rgb }.
 function addLight(field, w, h, blocks, src){
   if (src.r <= 0) return;
-  const R = src.r + 0.5;
+  const R = src.r + 1;   // a soft fade that still reaches the radius: the edge cell gets a dim but visible light
   fov(src.x, src.y, Math.ceil(src.r), blocks, (x, y) => {
     const k = 1 - Math.hypot(x - src.x, y - src.y) / R; if (k <= 0) return;
-    const v = src.i * k * k, j = 3 * (y * w + x);
+    const v = src.i * k * Math.sqrt(k), j = 3 * (y * w + x);
     field[j] += src.rgb[0] * v; field[j + 1] += src.rgb[1] * v; field[j + 2] += src.rgb[2] * v;
   }, w, h);
 }
