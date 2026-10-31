@@ -39,6 +39,7 @@ resize watcher and the frame loop).
 | 11 Lore in the game | Done. `src/lore.js` holds short versions of the lore: the seven rings (Stone, Roots, Rest, Forges, Glass, the Pit, the Unlit Ring) with their depth bands and level feelings, 55 Lore pages, a line of origin for every monster family and special kind, and a writer for every spell book. In the game: item cards show where artifacts and special kinds come from and who wrote each spell book; recall (the Journal and the target card) shows each named monster's story and each family's origin once seen; the level feeling names the ring; Help has a "The world" page; a new **Lore** tab (K) opens pages as you reach a ring, meet a named monster, find an artifact or read one of 12 new **lore books** found below (read with the read command; the Temple buys them). Four world pages are open from the start. Lore pages are saved with the character; saves from before load with the starting pages. Checks: every unique, artifact, ring, lore book, family, special kind and spell book has its text. In the browser: pages unlock as they should, and a 3,000-step bot across every depth, with lore books, artifacts and 21 save-and-reloads, ran without errors. Wide dialogs now fit small windows. |
 | 12 The first game: a tutorial | Done. `src/tutorial.js`: Sister Ilvane's "Keeper's charge" runs inside a new player's first real game. A welcome offers Begin or Skip (Esc skips); skipping or finishing it once turns it off for later characters in the browser, and the menu's "Guidance for new delvers" turns it (and the hints) back on or off at any time. One step at a time in a Next box under the status panel, with keys as key caps in the player's own key set: look at yourself (C, I), buy oil or a torch at the General Store, ready your first spell (casters), find the stairs down, kill the first monster, pick something up, then go deeper or home; "you are hurt" (D or R) shows whenever it applies. Advice follows the calling (Spark for an Arcanist, the sling for a Wayfinder, the ambush for a Delver). A pulsing ring marks the step's goal, an arrow at the screen edge points to it when it is off screen, and it blinks on the minimap. On the first trip only, the first room is lit and a lone cave rat sleeps a few steps away, with nothing else near. After the charge, a short hint shows the one key that matters (drink, fresh light, eat, disarm, stairs, pick up, attack). Progress is saved with the character. Checks: every step's text for six callings and three key sets; in the browser, the charge completed for all six callings, skipping leaves no box, markers or rat, later characters get no welcome, and the Guidance option works; bots ran it without errors. |
 | 13 The rings of light | Done. `src/rings.js` holds the rules as plain functions; the game keeps each ring's light (0 to 100) with the character, starting from 85 in the Ring of Stone down to 60 in the Ring of Glass, the Unlit Ring at 0 around the Last Lamp (save version 2, with a migration that gives older saves the starting rings). Levels get shrines in some plain rooms, burning as often as their ring is bright, and a burning shrine lights its room; the top of the Unlit Ring (2,550 ft) holds the Last Lamp. Walk into a cold shrine to relight it (a flask of oil, a light prayer or spell, or a carried flame: +3, half in a dark ring); walk into a burning one to take its flame (-2), which is lost if your light goes out, and which the Eternal Lamp takes as an offering (the temple gets cheaper and Word of Recall faster) or the Lantern Guild buys (300 to 1,500 gold by ring). A glow crystal dug from a rich vein dims its ring by 1. Dark-loving monsters gather by the shrines of dim rings and snuff burning ones (-3). The ring's light sets how many rooms are lit and shrines burn, how many dark lovers come, the level feeling, and Morrowgloom's health (about as before at the start, 0.6x with every ring full, up to 2x in a dark Deep); a ring at 0 lets monsters from the ring below up. The clock takes 1 from each ring every 5,000 turns (2 from dim ones), but never below 10 on its own. The town feels it first: at 5% of the cage's light lost its lamps fail at night (the new campfire burns on, lower) and shades walk the streets; at 10% the Armoury and Magic Shop close and the rest shutter at dusk. Endings: the cage finished (every ring at 100, the Unlit Ring too), the Lantern-Eater slain, retiring (rich with 50,000 gold or five flames sold), and the world going dark (the Last Lamp taken, or the Ring of Glass dark with no Unlit Ring), each on the tombstone and in the hall of fame. The tutorial gains a shrine step (Sister Ilvane gives a flask of oil). Also in this phase, as asked: a great campfire in the middle of the town, roaring at night and smouldering by day, and a leather finish on the panel, dialogs and HUD. Checks: 13 new node checks (ring keys, relight and harvest amounts, the drain and its floor, town thresholds, the world going dark, the cage, Morrowgloom's strength, shrines lit by ring light and never cutting a way off, the Last Lamp, saves and the version 1 migration); in the browser every action, threshold and ending was tried, and bots ran over 50,000 steps. One crash was seen once in a bot run (a ring lookup in town) and could not be reproduced in 32 more games; the lookup now treats the town as the Ring of Stone, so that path cannot crash. Not yet: a person playing a game through the rings to judge the numbers. |
+| 14 Game feel and sharper sprites | Done. A blow lands with a hit-stop as the lunge connects (0.04 s for a graze, 0.12 s for a heavy blow, 0.18 s for a kill) and the view shakes on big hits, balls, rockfall, earthquakes and heavy wounds; the lunge is three beats (pull back, further with a heavier weapon; snap forward past the target; settle). The menu's "Reduce motion" option turns off shaking, hit pauses and the new-level iris. Particles come in kinds (debris, spark, ember, smoke, flake, twinkle, drip, dust), take colours step by step from a ramp per element, fade by ordered dither and glow; each element's bolt leaves its own trail and impact (lightning adds a flickering arc), balls and frost and light spread a ring. Moments: a level-up burst, gold sparkles, critical numbers that pop, a shrine catching, an iris opening on each new level. Ambient life: embers from burning shrines, the Last Lamp and the campfire, drips, dust in lit rooms, now and then a bat. Sprites: `pix()` draws shapes in the 16-unit space with fractions, shaded from the top left with seven-step ramps (cool shadows, warm highlights) and a selective outline, so the same code makes 16- and 32-pixel pictures; the renderer uses 32 (SR 2, Z kept even) when there are two device pixels to a unit. Monsters have four idle frames (wings beat, wisps flicker, ghosts drift, soft ones sway, the rest breathe) and glowing eyes; dolls get a face, buckle, mail rings and plate edges; floors and walls get shading, cracks, grit and moss; item and spell icons are shaded too. `index.html?sheet` shows every creature with its frames, the peoples, tiles and items at 16 and 32. Checks: both test suites unchanged and passing; in the browser, every sprite at both sizes, the hit-stop timing in a fight, every element's spell, the iris, the town and the 16-pixel path, with no errors. Not done: the iris opens on a new level but does not close before it (the level changes inside the turn), and a person should judge the motion over a long game. |
 
 ## Ground rules
 
@@ -640,6 +641,84 @@ the Unlit Ring can be fully lit before Morrowgloom is slain.
 **Done when:** a node check runs ring light through a save and load (and migrates a version 1 save); relighting and
 harvesting move the right ring by the right amount; the clock and the town thresholds turn the town's lamps off and
 on; a bot plays a game in which the rings brighten and the town changes; and each ending can be reached.
+
+### Phase 14: game feel and sharper sprites (L)
+
+The rules are done. What is missing is how a blow, a spell or a creature feels on screen, and detail in the sprites.
+The methods come from studying pixelfx (github.com/patch-gg/pixelfx, MIT, by Patch, building on Hugo Duprez's Sprite
+Fusion effects). We take its ideas, not its files: the library draws into one big pixel buffer of its own, our game
+draws cached sprites on a canvas, and all of our content stays original. Nothing here changes a rule: `game.js` still
+decides everything first, and saves, balance and the tests are untouched.
+
+**Part one: the feel of a blow** (`render.js`, plus one call at each hit in `game.js`).
+
+- **Hit-stop.** When a blow lands, everything on screen holds still for a moment: about 0.04 s for a graze, 0.12 s for
+  a critical hit, 0.18 s for a kill or a big monster's blow. The freeze is what makes a hit feel heavy.
+- **Screen shake.** The view jolts a few pixels and settles on critical hits, explosions, rockfall, and when the
+  delver takes a big share of their health. Small, short, and in whole pixels.
+- **Wind-up, strike, recover.** The lunge becomes three beats in the same 0.16 s: a pull back, a snap forward that
+  overshoots, and a settle. A heavier weapon pulls back further.
+- **Reduce motion.** An option in the menu turns off shake, hit-stop and the new-level iris for players who are
+  sensitive to motion.
+
+**Part two: richer effects** (`render.js`).
+
+- **Two layers.** Particles draw solid pixels, then light added on top of the light overlay, so sparks, embers and
+  spells glow and light the floor around them.
+- **Ordered dither.** Particles fade by dropping pixels in a fixed 4 × 4 pattern, not by turning translucent: fades
+  stay pixel art.
+- **Colour ramps.** A short ramp, dark to bright, for each element (fire, frost, lightning, acid, poison, holy, arcane,
+  shadow) and for smoke and dust. Effects pick a step from the ramp; they never blend between two. One table recolours
+  every bolt, ball and burst.
+- **Particle kinds.** Today there is one kind (debris that tumbles). Add a spark (a short streak stretched by its
+  speed, bright head, dark tail), an ember (rises, wanders, cools down the fire ramp), smoke (soft, rises and sways),
+  a flake (frost, drifting) and a twinkle (a small cross, for holy light and gold).
+- **Spells by element.** Each element's bolt, ball and impact uses its ramp and kinds: fire leaves embers and smoke,
+  frost a ring of flakes, lightning a jagged arc that flickers for two frames, holy light a halo and twinkles.
+- **Moments.** A level-up burst, a sparkle when gold is picked up, critical numbers that pop larger and settle,
+  an iris that opens around you on each new level, and light washing out from a shrine as it is relit.
+- **Ambient life.** Only for show, only in lit or seen places: drips, dust motes in a lit room, embers from braziers
+  and burning shrines, now and then a bat crossing the dark.
+
+**Part three: sprites at twice the detail** (`sprites.js`).
+
+Sprites are drawn by code at 16 × 16, with one colour per part made lighter or darker, and a black outline. A sprite
+made with `doll(who, 32)` today is the same blocks, only bigger. The plan:
+
+- **Draw at any size.** Body plans are rewritten in the 16-unit space they use now, but with fractional shapes
+  (ellipses, capsules for limbs and bodies, tapered lines for tails and wings) that are filled pixel by pixel. The same
+  plan then draws a 16 × 16 sprite or a 32 × 32 one with real detail, not bigger blocks. The world stays 16 units a
+  cell: only the cached pictures grow, and `drawImage` puts a 32-pixel sprite into a 16-unit cell.
+- **Lit from one side.** Each shape knows which way its surface faces, so it is lit from the top left and shaded
+  towards the bottom right, with a highlight where the light hits hardest.
+- **Ramps with shifted hues.** A monster's colour becomes a ramp of five steps whose shadows lean cool and highlights
+  lean warm, in place of the same colour made darker or lighter (which looks muddy).
+- **Selective outline.** The outline takes the darkest step of the part next to it, darkest on the shadow side, and
+  breaks where a highlight touches it; pure black only where the creature meets the floor. Sprites stay readable on
+  dark floors without looking like stickers.
+- **Glowing eyes.** Eyes, embers and gems add to the light layer, so a monster's eyes glint in the dark.
+- **Idle frames.** Two to four frames for each body plan, stepped at about 8 a second, not tweened: breathing, wings
+  flapping, a wisp flickering, a plant or a jelly swaying. Cached once per frame.
+- **The delver and the townsfolk** (`doll`): at 32 pixels a doll gets a face, a belt and buckle, mail rings, plate
+  edges, and the light it carries.
+- **Tiles and icons.** Floors and walls at 32 pixels: more stones, cracks, moss, and shading. Item and spell icons at
+  32 pixels, shaded like the creatures.
+- **Whole pixels.** At twice the detail, a sprite pixel must still land on whole screen pixels: the renderer keeps
+  `Z` even when sprites are drawn at 32, and falls back to 16-pixel sprites at the smallest Detail setting.
+- **Look at it.** A debug page (`index.html?sheet`) draws every monster, tile and icon at 16 and 32 side by side, and
+  every idle frame, to review the whole set at once (pixelfx's contact sheets).
+
+Not taken from pixelfx: its 3D skeleton for the character (too much for a 16-unit cell and a turn-based game), its
+fixed-seed randomness (our sprites already hash their positions), and the library itself.
+
+**Cost.** Parts one and two are a few hundred lines in `render.js`. Part three rewrites much of `sprites.js` and is
+most of the work. Cached pictures take four times the memory at 32 pixels (a few MB for every monster, tile, icon and
+frame).
+
+**Done when:** a blow, a crit, a kill and an explosion each hold, shake and recover as described, and Reduce motion
+turns that off; every element's spell looks distinct; every body plan draws at 16 and 32 pixels with idle frames
+and looks right on the sheet page; the game keeps 60 frames a second on a laptop; and `node tests/torch.js` and
+`node tests/balance.js` pass unchanged.
 
 ## Testing throughout
 

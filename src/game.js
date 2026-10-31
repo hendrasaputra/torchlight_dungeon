@@ -40,7 +40,7 @@ const CRY = { rodent: "growl", canine: "growl", bear: "growl", feline: "growl", 
 const cryOf = K => CRY[K.shape || PLAN[K.glyph]] || "squelch";   // the rest (jellies, moulds, worms, eyes, wisps...) squelch
 let keySet = store.get("keymap", "modern");
 // Options in the menu (phase 10); the looks are classes on the page, so the styles in head.html do the work.
-const OPTIONS = { autopickup: "Pick up what you walk over", cbsafe: "Status colours for colour blindness", bigtext: "Larger text" };
+const OPTIONS = { autopickup: "Pick up what you walk over", cbsafe: "Status colours for colour blindness", bigtext: "Larger text", calm: "Reduce motion (no shaking or hit pauses)" };
 const opt = k => store.get(k) === "1";
 function setOpt(k, on){ store.set(k, on ? "1" : "0"); document.body.classList.toggle(k, on); }
 for (const k of Object.keys(OPTIONS)) document.body.classList.toggle(k, opt(k));
@@ -104,7 +104,7 @@ const infra = () => player.t.blind ? 0 : race().infra + player.bonus.infra;
 
 /* ---------- levels ---------- */
 function newLevel(d){
-  const from = depth;
+  const from = depth; fxIris();
   depth = d; player.maxDepth = Math.max(player.maxDepth, d);
   L = d === 0 ? generateTown(rng) : generateLevel(rng, d, player.rings[ringKey(d)]);
   mem.fill(0); mons = [player]; floor = []; pendingLevel = null; parts = []; floats = []; shots = []; flashes = []; later = []; target = null;
@@ -170,7 +170,7 @@ const ringWord = k => cap(ringName(k)) + " (" + Math.round(player.rings[k]) + ")
 function lightShrine(i, how){
   setShrine(i, true); const k = ringHere(); relightRing(player.rings, k);
   player.relit = (player.relit || 0) + 1; tutNote("relit"); sfx("light"); gainExp(2 + depth);
-  flashes.push({ x: i % MW, y: Math.floor(i / MW), t: 0.6, t0: 0.6, rgb: SHRINE_RGB });
+  flashes.push({ x: i % MW, y: Math.floor(i / MW), t: 0.6, t0: 0.6, rgb: SHRINE_RGB }); fxShrine(i % MW, Math.floor(i / MW));
   ringChanged("The shrine lamp catches " + how + ". " + ringWord(k) + " grows brighter.");
 }
 function snuffShrine(i, msg){ setShrine(i, false); dimRing(player.rings, ringHere(), RELIGHT); ringChanged(msg); }
@@ -306,7 +306,7 @@ function tryMove(dx, dy){
   if (!passable(t)){ say(t <= T.WALL || t >= T.RUBBLE ? "There is a wall in the way." : "Something is in the way."); return false; }
   player.x = x; player.y = y; sfx("step");
   if (L.trap[i]){ springTrap(i); if (state !== "play" || player.x !== x || player.y !== y || pendingLevel !== null) return true; }
-  for (const f of itemsAt(x, y)) if (f.it.k === "gold"){ player.gold += f.it.n; say("You find " + f.it.n + " gold pieces."); sfx("gold"); floor.splice(floor.indexOf(f), 1); }
+  for (const f of itemsAt(x, y)) if (f.it.k === "gold"){ player.gold += f.it.n; say("You find " + f.it.n + " gold pieces."); sfx("gold"); fxGold(x, y, f.it.n); floor.splice(floor.indexOf(f), 1); }
   const here = itemsAt(x, y);
   if (here.length && opt("autopickup")) pickUp();   // with the option on, picking up comes free with the step
   else if (here.length === 1) say("You see " + nameOf(here[0].it) + ".");
@@ -325,15 +325,15 @@ function multiplier(P, K){
 function attack(m){
   if (hiddenMimic(m)){ m.revealed = true; msgs = []; say("It was " + aName(m.K) + "!"); return true; }
   if (player.t.afraid){ say("You are too afraid to attack " + theName(m) + "!"); return false; }
-  target = m; fxLunge(player, m);
   const K = m.K, name = theName(m), weak = player.food < 1000 ? -10 : 0, w = weapon(), P = w ? itemPowers(w) : { hit: 0, dam: 0 };
+  target = m; fxLunge(player, m, 1 + Math.min(3, (w ? ITEM[w.k].wt || 0 : 0) / 60));   // a heavier weapon pulls back further
   if (rng.int(100) < hitChance(skillOf(player, "fight") + 3 * (P.hit + player.bonus.hit), K.ac, weak)){
     const mult = w ? multiplier(P, K) : 1, ambush = cls().ambush && m.sleep > 0;
     let dmg = Math.max(1, rng.dice(weaponDice()) * mult + P.dam + player.bonus.dam + statMod(player.stats.str));
     if (ambush) dmg *= 2;   // a Delver strikes a sleeping monster twice as hard
     if (player.t.confHit){ player.t.confHit = 0; say("Your hands stop glowing."); if (!resists(m)) m.conf = 10 + rng.int(10); }
     const verb = ambush ? "You ambush " : mult > 1 && P.brand ? { fire: "You burn ", cold: "You freeze ", elec: "You shock " }[P.brand] : mult > 1 ? "You smite " : "You hit ";
-    damage(m, dmg, verb + name + ".");
+    damage(m, dmg, verb + name + ".", STRIKE);   // seen as the lunge connects
     return true;
   }
   say("You miss " + name + "."); sfx("miss"); fxFloat(m.x, m.y, "miss", [0.7, 0.7, 0.8]);
@@ -341,7 +341,9 @@ function attack(m){
 }
 function damage(m, dmg, msg, delay = 0){   // returns true if it died
   m.hp -= dmg; m.sleep = 0;
-  const { x, y } = m, show = () => { fxHit(m); fxFloat(x, y, String(dmg), [1, 0.85, 0.4]); };
+  // a blow lands: a graze holds the screen a moment, a heavy blow or a kill longer, and a big one shakes it
+  const { x, y } = m, dead = m.hp <= 0, heavy = dead || dmg >= m.mhp * 0.5, seen = visible(idx(x, y));
+  const show = () => { fxHit(m); fxFloat(x, y, String(dmg), [1, 0.85, 0.4], heavy); if (seen) fxImpact(dead ? 0.18 : heavy ? 0.12 : 0.04, dead && m.K.size ? 3 : heavy ? 1 : 0); };
   if (delay) later.push({ t: delay, fn: show }); else show();
   if (m.hp <= 0){ kill(m, theName(m), delay); return true; }
   say(msg);
@@ -370,7 +372,7 @@ function gainExp(e){
     const before = titleOf(player);
     player.lvl++; const up = levelHp(player, rng); player.mhp += up; player.hp += up;
     player.mmana = maxMana(player);
-    sfx("levelup"); say("Welcome to level " + player.lvl + "." + (titleOf(player) !== before ? " You are now a " + titleOf(player) + "." : ""));
+    sfx("levelup"); fxLevelUp(player); say("Welcome to level " + player.lvl + "." + (titleOf(player) !== before ? " You are now a " + titleOf(player) + "." : ""));
     const n = player.spells && learnable(player, books()).length;
     if (n) say("You can learn " + n + " new " + realmWord() + (n > 1 ? "s" : "") + ". Press S to study.");
   }
@@ -496,7 +498,7 @@ const TRAP_FX = {
   weakdart: () => dart("a dart", drainTrap("str")), clumsydart: () => dart("a dart", drainTrap("dex")),
   flash: () => { say("There is a blinding flash!"); flashes.push({ x: player.x, y: player.y, t: 0.5, t0: 0.5, rgb: ELEM_RGB.light }); if (!player.bonus.res.has("light")) setTimer("blind", 10 + rng.int(20)); },
   telerune: () => { say("The rune flares, and the world lurches!"); teleportPlayer(60); },
-  rockfall: () => { say("Rocks fall from the ceiling!"); burst(player.x, player.y, RUBBLE_RGB, 14); shove(player.x, player.y, 3); hurt(rng.dice("2d6"), "falling rocks");
+  rockfall: () => { say("Rocks fall from the ceiling!"); burst(player.x, player.y, RUBBLE_RGB, 14); shove(player.x, player.y, 3); fxImpact(0, 4); hurt(rng.dice("2d6"), "falling rocks");
     if (state === "play"){ addTimer("stun", 5 + rng.int(10)); knockOut(); } L.trap[idx(player.x, player.y)] = 0; },
   firerune: () => { say("Flames erupt around you!"); flashes.push({ x: player.x, y: player.y, t: 0.5, t0: 0.5, rgb: ELEM_RGB.fire }); elemHurt({ K: { depth } }, rng.dice("4d6"), "fire", "a fire rune"); },
   acidspray: () => { say("You are sprayed with acid!"); elemHurt({ K: { depth } }, rng.dice("4d6"), "acid", "an acid sprayer"); },
@@ -618,8 +620,8 @@ function missile(path, elem, speed = 40){   // the visible flight of a bolt, and
   if (!path.length) return 0;
   const rgb = ELEM_RGB[elem] || ELEM_RGB.arcane, end = path[path.length - 1], delay = path.length / speed;
   sfx(TORCH_SFX[elem] ? elem : elem ? "dark" : "arcane");   // life-draining sounds dark
-  shots.push({ path, t: 0, speed, glyph: elem === "elec" ? "~" : "*", rgb: rgb.map(v => v * 1.8), light: rgb });
-  later.push({ t: delay, fn: () => { flashes.push({ x: end[0], y: end[1], t: 0.35, t0: 0.35, rgb }); burst(end[0], end[1], rgb, 3); } });
+  shots.push({ path, t: 0, speed, glyph: elem === "elec" ? "~" : "*", rgb: rgb.map(v => v * 1.8), light: rgb, elem });
+  later.push({ t: delay, fn: () => { flashes.push({ x: end[0], y: end[1], t: 0.35, t0: 0.35, rgb }); fxSpell(end[0], end[1], elem); if (elem === "elec") fxArc(path); } });
   return delay;
 }
 function lineToWall(tx, ty, range){ const out = []; for (const c of line(player.x, player.y, tx, ty, range)){ if (blocks(c[0], c[1])) return { path: out, wall: c }; out.push(c); } return { path: out, wall: null }; }
@@ -735,8 +737,8 @@ const FX = {
     for (const [x, y] of path){ const m = monAt(x, y); if (m) hurtMon(m, rng.dice(c.K.dice) + ((c.power || 0) >> 1), c.K.elem, "The lightning strikes " + theName(m) + ".", delay); } return true; },
   ball: c => {
     const { path } = flight(c.tx, c.ty, 18), end = path.length ? path[path.length - 1] : [player.x, player.y], delay = missile(path, c.K.elem), rgb = ELEM_RGB[c.K.elem];
-    later.push({ t: delay, fn: () => { flashes.push({ x: end[0], y: end[1], t: 0.6, t0: 0.6, rgb: rgb.map(v => v * 1.6) }); burst(end[0], end[1], rgb, 10);
-      shove(end[0], end[1], 6); } });
+    later.push({ t: delay, fn: () => { flashes.push({ x: end[0], y: end[1], t: 0.6, t0: 0.6, rgb: rgb.map(v => v * 1.6) }); fxSpell(end[0], end[1], c.K.elem, true);
+      shove(end[0], end[1], 6); fxImpact(0.06, 3); } });
     for (const m of [...mons]) if (m.K && dist(m.x, m.y, end[0], end[1]) <= c.K.r) hurtMon(m, Math.floor((c.K.dmg + (c.power || 0)) / (1 + dist(m.x, m.y, end[0], end[1]))), c.K.elem, "The blast engulfs " + theName(m) + ".", delay);
     return true;
   },
@@ -808,8 +810,8 @@ Object.assign(FX, {
   protEvil: () => setTimer("protEvil", 25 + player.lvl * 2),
   banish: () => { let n = 0; for (const m of mons) if (m.K && m.K.evil && seesMon(m) && sendAway(m)) n++; say(n ? "The evil around you is swept away!" : "There is no evil in sight."); return true; },
   avatar: () => { FX.healFull(); setTimer("fast", 20 + rng.int(20)); setTimer("hero", 30); setTimer("bless", 30); setTimer("resFire", 30); setTimer("resCold", 30); say("The unbroken flame burns within you!"); return true; },
-  earthquake: () => { shake(8, false); say("The ground shakes, and the walls come down!"); return true; },
-  destruction: () => { shake(12, true); say("There is a searing blast of light, and the dungeon tears apart!"); setTimer("blind", 5 + rng.int(5)); return true; }
+  earthquake: () => { shake(8, false); fxImpact(0.08, 6); say("The ground shakes, and the walls come down!"); return true; },
+  destruction: () => { shake(12, true); fxImpact(0.12, 8); say("There is a searing blast of light, and the dungeon tears apart!"); setTimer("blind", 5 + rng.int(5)); return true; }
 });
 function enchant(it, field){
   if (!it){ say("You have nothing to enchant."); return true; }
@@ -1018,8 +1020,11 @@ function everyTurn(){
     while (player.mregen >= 1 && player.mana < player.mmana){ player.mana++; player.mregen--; }
   }
 }
-function hurt(n, by){
-  player.hp -= n; disturbed = true; fxHit(player); fxFloat(player.x, player.y, "-" + n, [1, 0.35, 0.3]);
+const STRIKE = 0.07;   // when a lunge (render.js) connects, for the hit to show then
+function hurt(n, by, delay = 0){
+  player.hp -= n; disturbed = true;
+  const share = n / Math.max(1, player.mhp), { x, y } = player, show = () => { fxHit(player); fxFloat(x, y, "-" + n, [1, 0.35, 0.3], share >= 0.2); fxImpact(share >= 0.25 ? 0.12 : 0.05, share >= 0.2 ? 3 : 0); };
+  if (delay) later.push({ t: delay, fn: show }); else show();
   if (player.hp <= 0){ killer = by; die(); }
 }
 // Death. A delver with enough gold may have their soul called back to the Eternal Lamp (restoreSoul), and their save
@@ -1141,7 +1146,7 @@ function monsterAttack(m){
     let dmg = rng.dice(dice);
     say(name + " " + verb + (dmg || effect ? " you." : ".")); if (dmg) sfx("hurt");
     if (ELEMS.has(effect)) return elemHurt(m, dmg, effect, by);
-    if (dmg) hurt(dmg, by);
+    if (dmg) hurt(dmg, by, STRIKE);
     if (state === "play" && dmg) blowCrit(verb, dmg);
     if (state === "play" && effect) blowEffect(m, effect, name);
   });
@@ -1224,7 +1229,7 @@ function monsterCast(m){
       const elem = kind === "arrow" ? null : arg, pa = path(), dmg = kind === "arrow" ? Math.ceil(rng.dice(boltDice(K.depth)) * 0.6) : kind === "ball" ? Math.ceil(rng.dice(boltDice(K.depth)) * 1.4) : rng.dice(boltDice(K.depth));
       const delay = elem ? missile(pa, elem, 35) : (shots.push({ path: pa, t: 0, speed: 45, item: { k: "arrow", n: 1 } }), pa.length / 45);
       say(kind === "arrow" ? name + " fires a missile." : name + " casts " + (kind === "ball" ? "a ball of " : "a bolt of ") + { fire: "fire", cold: "frost", elec: "lightning", acid: "acid", poison: "poison", dark: "darkness", light: "light", arcane: "force" }[elem] + ".");
-      if (kind === "ball") later.push({ t: delay, fn: () => { flashes.push({ x: player.x, y: player.y, t: 0.5, t0: 0.5, rgb: ELEM_RGB[elem].map(v => v * 1.6) }); shove(player.x, player.y, 4); } });
+      if (kind === "ball") later.push({ t: delay, fn: () => { flashes.push({ x: player.x, y: player.y, t: 0.5, t0: 0.5, rgb: ELEM_RGB[elem].map(v => v * 1.6) }); fxSpell(player.x, player.y, elem, true); shove(player.x, player.y, 4); fxImpact(0.06, 3); } });
       elemHurt(m, dmg, elem === "arcane" ? null : elem, by); return true; }
     case "breath": { if (!clear()) return false;
       // a cone of coloured light: five rays fanning out toward you, then the blast where you stand
@@ -1665,7 +1670,8 @@ addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); })
 
 /* ---------- the loop ---------- */
 function tick(dt, t){
-  const wasT = stateT; stateT += dt;
+  const wasT = stateT, real = dt; stateT += dt;
+  dt = freeze(dt);   // a hit-stop holds everything on screen still
   if (state === "dead" && wasT < 1 && stateT >= 1) refreshUI();
   for (const s of shots) s.t += dt;
   shots = shots.filter(s => s.t * s.speed < s.path.length + 1);
@@ -1673,6 +1679,6 @@ function tick(dt, t){
   flashes = flashes.filter(f => f.t > 0);
   for (const l of later) if ((l.t -= dt) <= 0) l.fn();
   later = later.filter(l => l.t > 0);
-  drawWorld(t, dt);
-  drawUI(dt);
+  drawWorld(t, dt, real);
+  drawUI(real);
 }

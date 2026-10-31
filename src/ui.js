@@ -80,7 +80,7 @@ function spellCard(S){
     <hr><div class="ln">${esc(cap(S.desc))}.</div>${knows ? "" : `<div class="ln dim">${player.lvl >= lv ? "You can study it" + (books().has(bookOf(S)) ? "." : " once you carry its book.") : "Learned at level " + lv + "."}</div>`}</div>`;
 }
 const SPELL_PICS = new Map();
-const spellPic = S => memo(SPELL_PICS, S.id, () => spellIcon(S, ELEM_RGB[S.elem] || (S.realm === "holy" ? [1, 0.88, 0.5] : [0.75, 0.6, 1])));
+const spellPic = S => memo(SPELL_PICS, SR + S.id, () => spellIcon(S, ELEM_RGB[S.elem] || (S.realm === "holy" ? [1, 0.88, 0.5] : [0.75, 0.6, 1])));
 function showTip(html, el){
   const t = $("tip"); t.innerHTML = html; t.hidden = false;
   const r = el.getBoundingClientRect(), w = t.offsetWidth, h = t.offsetHeight;
@@ -535,6 +535,7 @@ function drawUI(dt){
   if (miniT <= 0 && L && player && player.hot && state !== "title"){ miniT = 0.2; drawMinimap($("mini"), 3, true); if (tab === "map" && panelOn) drawBigMap(); }
 }
 
-renderLayout(); titleScene();
-onResize(stage, renderLayout);
-startLoop(tick);
+if (/[?&]sheet\b/.test(location.search)) spriteSheet();   // the sprite sheet, for reviewing the art
+else { renderLayout(); titleScene();
+  onResize(stage, renderLayout);
+  startLoop(tick); }
