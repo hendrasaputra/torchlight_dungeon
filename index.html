@@ -87,6 +87,8 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
 .spell { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 8px; padding: 3px 6px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; }
 .spell.off { opacity: .5; } .spell.ready { border-color: var(--gold); background: #2a2010; } .spell small { color: var(--dim); } .spell em { color: var(--gold); font-style: normal; font-size: 11px; }
 .msgs div { font-size: 12px; padding: 2px 0; border-bottom: 1px solid #2a2636; }
+#dlg .plate { display: block; max-width: 560px; margin: 0 auto 10px; } #dlg .plate img { width: 100%; max-height: 46vh; object-fit: contain; display: block; border-radius: 4px; }
+.card img.plate { display: block; width: 100%; max-height: 180px; object-fit: cover; border-radius: 3px; margin-bottom: 6px; } .beast[data-s] { cursor: pointer; }
 .beast { display: flex; gap: 8px; margin: 6px 0; } .beast small { color: var(--dim); display: block; }
 #bigmap { image-rendering: pixelated; width: 100%; border: 2px solid var(--edge); }
 #tip { position: fixed; z-index: 30; width: 280px; pointer-events: none; }
@@ -137,6 +139,9 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
 #tools { right: 10px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 4px; }
 .tool { width: 44px; height: 40px; background: #000b; border: 2px solid var(--edge); border-radius: 6px; display: grid; place-items: center; color: var(--text); font-size: 16px; line-height: 1; padding-top: 2px; }
 .tool small { font-size: 8px; color: var(--dim); text-transform: uppercase; letter-spacing: .02em; }
+/* the way to the illustrated lore (lore/, built by lore/build.js): in the header, on the title screen, in the menu and the Lore tab */
+.lorelink { font: 600 12px Georgia, serif; color: var(--gold); text-decoration: none; margin-left: 10px; letter-spacing: .02em; white-space: nowrap; } .lorelink:hover { text-decoration: underline; }
+.titlecard .lorelink { display: inline-block; margin: 2px 0 10px; font-size: 14px; }
 #tabs b.shut { display: none; flex: 0 0 34px; color: var(--text); }
 #dlg h2 .x { float: right; color: var(--dim); font-weight: normal; padding: 0 4px; margin: -4px -6px 0 12px; } #dlg h2 .x:hover { color: var(--text); }
 @media (max-width: 700px){
@@ -154,7 +159,7 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
 </head>
 <body>
 <header>
-  <h1>Torchlight Dungeons</h1>
+  <h1>Torchlight Dungeons <a class="lorelink" href="lore/" target="_blank" rel="noopener">The illustrated lore ›</a></h1>
   <div id="hud">arrows move &middot; A attack &middot; S spell &middot; D drink &middot; W grab &middot; Tab target &middot; I C B J K M panel &middot; ? keys &middot; Esc menu</div>
 </header>
 <div id="main">
@@ -1637,6 +1642,21 @@ const LORE_PAGES = Object.fromEntries([
   ["t-elder", "book", "A page in no known hand", "Not ink but scorch marks, in a script no scholar has read, around a drawing of a ring of lamps under a pool of dark. Holding the page, you feel warmth in your fingers, as if someone had only just put down a lamp."]
 ].map(([id, sec, title, text]) => [id, { id, sec, title, text }]));
 const LORE_SECTIONS = { world: "The world", ring: "The rings", named: "The named", artifact: "Artifacts", book: "Books found below" };
+// Plates from the illustrated lore site (lore/art/web), shown with Lore pages, known creatures and some items. They
+// load from the site beside the game, so a copy of the page played on its own simply goes without them.
+const PAGE_ART = { "world-fire": "place-the-kindling", "world-gloom": "boss-morrowgloom", "world-lampway": "diagram-lampway", "world-hollow": "place-lanternhollow",
+  "ring-stone": "place-ring-of-stone", "ring-roots": "place-ring-of-roots", "ring-rest": "place-ring-of-rest", "ring-forges": "place-ring-of-forges",
+  "ring-glass": "place-ring-of-glass", "ring-pit": "diagram-lamp-ring", "ring-unlit": "place-unlit-ring",
+  "a-embersong": "item-embersong", "a-mantle": "item-mantle", "a-stonehelm": "item-stonehelm", "a-firstlamp": "item-first-lantern", "a-starfall": "item-starfall", "a-swiftband": "item-swift-band",
+  "t-caedra": "hero-caedra", "t-hymn": "unique-drowned-king", "t-forgesong": "place-ring-of-forges", "t-ledger": "unique-ironjaw", "t-runner": "hero-wren", "t-unlit": "place-unlit-ring",
+  "t-elder": "place-elder-ring", "t-watch": "family-skeleton", "t-letter": "moment-open-doors", "t-notes": "emblem-collegium", "t-charter": "emblem-lanternhollow", "t-daybook": "emblem-order-of-the-lamp" };
+const UNIQUE_ART = { whiskers: "old-whiskers", oldtusk: "old-tusk", bristle: "mother-bristle", lanternthief: "lantern-thief", hollowjack: "hollow-jack", maulwyrm: "maul-wyrm",
+  greywidow: "grey-widow", thessaly: "thessaly-glass", palebride: "pale-bride", drownedking: "drowned-king", manymouthed: "many-mouthed", emberqueen: "ember-queen" };
+const FAMILY_ART = { kobold: "kobolds", giant: "deep-giants", mummy: "tomb-kings", shade: "shades", wisp: "star-wisps", mimic: "mimics", hybrid: "hybrids", gargoyle: "gargoyles" };
+const LORE_SITE = { world: "01-cosmology", ring: "04-the-lampway", named: "08-bestiary", artifact: "09-magic-and-artifacts", book: "02-timeline" };
+const monsterArt = K => K.id === "morrowgloom" ? "boss-morrowgloom" : K.unique ? "unique-" + (UNIQUE_ART[K.id] || K.id) : K.fam && "family-" + (FAMILY_ART[K.fam] || K.fam);
+const pageArt = P => P.sec === "named" ? monsterArt(MON[P.id.slice(2)]) : PAGE_ART[P.id];
+const itemArt = it => { const K = ITEM[it.k]; return it.art ? PAGE_ART["a-" + it.art] : K.cat === "tome" ? PAGE_ART["t-" + K.id.slice(1)] : K.cat === "book" ? "item-spellbooks" : null; };
 const LORE_START = ["world-fire", "world-gloom", "world-lampway", "world-hollow"];
 
 // One line on where each family of monsters comes from, for recall.
@@ -4626,7 +4646,8 @@ function card(it, compare = true){
   if (K.cat === "tome") lines.push("A book of lore, not magic. Reading it adds a page to your Lore." + (player.lore["t-" + K.id.slice(1)] ? " You have read it." : ""));
   if (K.desc) lines.push(K.desc);
   const kind = K.slot ? SLOT_NAMES[slotFor(K)] : { potion: "Potion", scroll: "Scroll", food: "Food", mushroom: "Mushroom", wand: "Wand", staff: "Staff", rod: "Rod", ammo: "Ammunition", dart: "Thrown", flask: "Oil", book: "Spell book", tome: "Lore book" }[K.cat] || "";
-  return `<div class="card q-${q}"><div class="ct">${itemPic(it, "big")}<div><b>${esc(cap(nameOf(it)))}</b><small>${kind}${worn && worn !== it ? " · compared with what you wear" : ""}</small></div></div>
+  const art = itemArt(it);
+  return `<div class="card q-${q}">${art ? `<img class="plate" src="lore/art/web/${art}.jpg" alt="" loading="lazy" onerror="this.remove()">` : ""}<div class="ct">${itemPic(it, "big")}<div><b>${esc(cap(nameOf(it)))}</b><small>${kind}${worn && worn !== it ? " · compared with what you wear" : ""}</small></div></div>
     ${rows.map(([a, b]) => `<p><span>${a}</span><span>${b}</span></p>`).join("")}${lines.length ? "<hr>" + lines.map(s => `<div class="ln">${esc(s)}</div>`).join("") : ""}</div>`;
 }
 function spellCard(S){
@@ -4751,8 +4772,11 @@ function pressSlot(k){
 
 /* ---------- the side panel ---------- */
 const TABS = [["char", "Character", "C"], ["pack", "Pack", "I"], ["book", "Book", "B"], ["journal", "Journal", "J"], ["lore", "Lore", "K"], ["map", "Map", "M"]];
-const loreDialog = P => openDialog({ title: P.title, head: `<p class="lore">${esc(P.text)}</p>`, cols: [[{ label: "Close", select: () => { closeDialog(); } }]], side: false, onBack: closeDialog });
-let panelSel = [];   // what the arrow keys move through on this tab: { el index, open() }
+// a plate from the illustrated lore, linking to its page there; it removes itself if the picture cannot load
+const plate = (art, page) => art ? `<a class="plate" href="lore/${page}.html" target="_blank" rel="noopener" title="Open the illustrated lore"><img src="lore/art/web/${art}.jpg" alt="" loading="lazy" onerror="this.parentNode.remove()"></a>` : "";
+const loreDialog = P => openDialog({ title: P.title, head: plate(pageArt(P), LORE_SITE[P.sec]) + `<p class="lore">${esc(P.text)}</p>`, cols: [[{ label: "Close", select: () => { closeDialog(); } }]], side: false, onBack: closeDialog });
+const beastDialog = K => openDialog({ title: cap(K.name), head: plate(monsterArt(K), "08-bestiary") + `<p class="lore">${esc([K.desc, ...recall(K)].join(" "))}</p>`, cols: [[{ label: "Close", select: () => { closeDialog(); } }]], side: false, onBack: closeDialog });
+let panelSel = [], jpick = false;   // jpick: the journal has a creature picked (its arrows scroll until then)   // what the arrow keys move through on this tab: { el index, open() }
 function drawPanel(){
   const A = $("panel"); A.hidden = !panelOn; if (!panelOn) return;
   $("tabs").innerHTML = TABS.map(([id, name, k]) => `<b class="${id === tab ? "on" : ""}" data-tab="${id}">${name}<small>${k}</small></b>`).join("") + `<b class="shut" title="Close the panel (P)">×<small>P</small></b>`;
@@ -4802,12 +4826,12 @@ function drawPanel(){
   } else if (tab === "journal"){
     h += `<h3>Messages</h3><div class="msgs">${log.slice(-80).reverse().map(s => `<div>${esc(s)}</div>`).join("")}</div>`;
     const met = MONSTERS.filter(K => LORE[K.id] && LORE[K.id].seen).sort((a, b) => a.depth - b.depth);
-    h += `<h3>Creatures you know (${met.length} of ${MONSTERS.length})</h3>${met.map(K => `<div class="beast">${pic(creatureImage(K))}<div><b class="${K.unique ? "gold" : ""}">${esc(cap(K.name))}</b><div class="ln">${esc(K.desc)}</div>${recall(K).map(s => `<div class="ln dim">${esc(s)}</div>`).join("")}</div></div>`).join("")}`;
+    h += `<h3>Creatures you know (${met.length} of ${MONSTERS.length})</h3>${met.length ? `<div class="ln dim">Click one, or pick it with ← → and Enter, to see its plate from the lore.</div>` : ""}${met.map(K => `<div class="beast" ${selectable(() => beastDialog(K), null)}>${pic(creatureImage(K))}<div><b class="${K.unique ? "gold" : ""}">${esc(cap(K.name))}</b><div class="ln">${esc(K.desc)}</div>${recall(K).map(s => `<div class="ln dim">${esc(s)}</div>`).join("")}</div></div>`).join("")}`;
     const known = ITEMS.filter(K => K.flavoured && p.know.known[K.id]);
     h += `<h3>Kinds you have identified (${known.length})</h3><div class="ln">${known.map(K => esc(K.name)).join(", ") || "None yet."}</div>`;
   } else if (tab === "lore"){
     const pages = Object.values(LORE_PAGES), have = pages.filter(P => p.lore[P.id]);
-    h += `<div class="ln dim">${have.length} of ${pages.length} pages. They open as you reach new rings, meet the named, find artifacts and read the books you find below.</div>`;
+    h += `<div class="ln dim">${have.length} of ${pages.length} pages. They open as you reach new rings, meet the named, find artifacts and read the books you find below.</div><div class="ln"><a class="lorelink" href="lore/" target="_blank" rel="noopener">The whole lore, with its illustrations ›</a></div>`;
     for (const [sec, title] of Object.entries(LORE_SECTIONS)){
       const all = pages.filter(P => P.sec === sec), got = all.filter(P => p.lore[P.id]);
       h += `<h3>${title} <small>${got.length} / ${all.length}</small></h3>`;
@@ -4820,7 +4844,7 @@ function drawPanel(){
   body.innerHTML = h; bindTips(body, cards);
   panelSel = sel; psel = Math.min(psel, Math.max(0, sel.length - 1));
   body.querySelectorAll("[data-s]").forEach(el => el.onclick = () => { psel = +el.dataset.s; sel[psel].open(); });
-  if (panelFocus && sel.length){ const el = body.querySelector(`[data-s="${psel}"]`); if (el){ el.classList.add("sel"); el.scrollIntoView({ block: "nearest" }); if (sel[psel].cardFn) showTip(sel[psel].cardFn(), el); else hideTip(); } }
+  if (panelFocus && sel.length && (tab !== "journal" || jpick)){ const el = body.querySelector(`[data-s="${psel}"]`); if (el){ el.classList.add("sel"); el.scrollIntoView({ block: "nearest" }); if (sel[psel].cardFn) showTip(sel[psel].cardFn(), el); else hideTip(); } }
   A.classList.toggle("focus", panelFocus);
   if (tab === "map") drawBigMap();
 }
@@ -4829,7 +4853,7 @@ function openTab(id){
   tutNote(id);
   if (!panelOn){ panelOn = true; store.set("panel", "1"); }
   if (panelFocus && tab === id){ panelFocus = false; hideTip(); }
-  else { if (tab !== id) psel = 0; tab = id; panelFocus = id !== "map"; }
+  else { if (tab !== id) psel = 0, jpick = false; tab = id; panelFocus = id !== "map"; }
   refreshUI();
 }
 function togglePanel(){ panelOn = !panelOn; panelFocus = false; store.set("panel", panelOn ? "1" : "0"); hideTip(); refreshUI(); }
@@ -4838,6 +4862,7 @@ function panelKey(e){
   if (k === "Escape"){ panelFocus = false; hideTip(); refreshUI(); return true; }
   if (tab === "journal" && (k === "ArrowUp" || k === "ArrowDown")){ $("tab").scrollBy(0, k === "ArrowUp" ? -60 : 60); return true; }
   if (!n) return false;
+  if (tab === "journal" && !jpick){ if (k !== "ArrowLeft" && k !== "ArrowRight") return false; jpick = true; refreshUI(); return true; }   // ← → start picking a creature
   const mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols }[k];
   if (mv){ psel = Math.max(0, Math.min(n - 1, psel + mv)); refreshUI(); return true; }
   if (k === "Enter" || k === " "){ panelSel[psel].open(); return true; }
@@ -4986,6 +5011,7 @@ function menuDialog(){
     ...Object.entries(OPTIONS).map(([k, label]) => ({ label, right: (opt(k) ? "On" : "Off") + "  ‹ ›", adjust: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); }, select: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); } })),
     { label: "Guidance for new delvers", right: (guidanceOn() ? "On" : "Off") + "  ‹ ›", adjust: () => { setGuidance(!guidanceOn()); menuDialog(); }, select: () => { setGuidance(!guidanceOn()); menuDialog(); } },
     { label: "Hall of fame", select: fameDialog },
+    { label: "The illustrated lore", right: "opens in a new tab", select: () => window.open("lore/", "_blank", "noopener") },
     ...(state === "play" && depth === 0 ? [{ label: "Retire from delving", right: "ends this game", select: () => openDialog({ title: "Retire from delving?", side: false, onBack: menuDialog,
       head: `<p class="lore">You leave Lanternhollow for good, alive. ${player.gold >= 50000 || (player.flamesSold || 0) >= 5 ? "With your fortune, it will be remembered as a rich retirement." : "The Deep will go on without you."}</p>`,
       cols: [[{ label: "No, keep delving", select: menuDialog }, { label: "Yes, retire", select: () => { closeDialog(); retire(); } }]] }) }] : []),
@@ -5059,7 +5085,7 @@ function drawScreen(){
   el.hidden = false;
   if (state === "title"){
     el.innerHTML = `<div class="titlecard"><h1>Torchlight<span>Dungeons</span></h1><p class="dim">A dungeon crawl after Moria</p>
-      <p class="blink">Press Enter to play</p><p class="dim">Your game saves itself as you play. Esc opens the menu.</p>
+      <p class="blink">Press Enter to play</p><a class="lorelink" href="lore/" target="_blank" rel="noopener">Read the illustrated lore of Torchlight ›</a><p class="dim">Your game saves itself as you play. Esc opens the menu.</p>
       ${scores.list.length ? `<h3>Hall of fame</h3>${scores.list.map((s, k) => `<div class="fame ${k ? "" : "best"}"><b>${s.score}</b> ${esc(s.name || "")} the ${esc(s.race || "")} ${esc(s.cls || "Fighter")}, level ${s.lvl}, ${s.depth} ft, ${esc(s.killer)}</div>`).join("")}` : ""}</div>`;
   } else if (state === "create") drawCreate();
   else if (state === "dead"){
@@ -5121,7 +5147,7 @@ cv.addEventListener("pointerup", () => { if (!press) return; clearTimeout(press.
 cv.addEventListener("pointerleave", () => { hoverCell = null; if (press){ clearTimeout(press.timer); press = null; } });
 cv.addEventListener("contextmenu", e => { e.preventDefault(); const c = cellAt(e); if (c) lookAt(...c); });
 $("prompt").addEventListener("click", () => { if (aiming){ cancelAim(); refreshUI(); } });   // tapping the aiming prompt cancels it
-$("screen").addEventListener("click", e => { if (e.target.closest(".row")) return; if (state === "title") slotDialog(); else if (state === "dead" && stateT > 1) toTitle(); });
+$("screen").addEventListener("click", e => { if (e.target.closest(".row, a")) return; if (state === "title") slotDialog(); else if (state === "dead" && stateT > 1) toTitle(); });
 $("dlg").addEventListener("click", e => { if (e.target === $("dlg") && dlg && !dlg.noEsc) dialogKey({ key: "Escape" }); });   // a click outside the box: back
 function cellAt(e){   // the map cell under a pointer
   const r = cv.getBoundingClientRect(), x = Math.floor(((e.clientX - r.left) * DPR / Z + view.x) / TS), y = Math.floor(((e.clientY - r.top) * DPR / Z + view.y) / TS);

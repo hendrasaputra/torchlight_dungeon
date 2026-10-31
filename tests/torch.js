@@ -2,7 +2,7 @@
 // Loads the game's logic files without a browser: random numbers, sight and light, turns, levels and data.
 const fs = require("fs"), vm = require("vm"), path = require("path");
 const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "lore.js", "rings.js", "save.js", "sprites.js", "tutorial.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
-const G = vm.runInNewContext("var depth = 1;\n" + files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, RINGS, ringOf, LORE_PAGES, LORE_START, FAMILY_LORE, EGO_LORE, BOOK_LORE, TUT_STEPS, TUT_KEYS, soulPrice, clockOf, DAY_TURNS, RING_START, CAGE_RINGS, newRings, ringKey, relightRing, dimRing, drainRings, townShade, worldDark, cageFinished, bossFactor, RELIGHT, TAKE_FLAME, DIG_CRYSTAL, START_LIGHT, isShrine, firstSpell, CLASSES, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
+const G = vm.runInNewContext("var depth = 1;\n" + files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, RINGS, pageArt, monsterArt, itemArt, LORE_SITE, ringOf, LORE_PAGES, LORE_START, FAMILY_LORE, EGO_LORE, BOOK_LORE, TUT_STEPS, TUT_KEYS, soulPrice, clockOf, DAY_TURNS, RING_START, CAGE_RINGS, newRings, ringKey, relightRing, dimRing, drainRings, townShade, worldDark, cageFinished, bossFactor, RELIGHT, TAKE_FLAME, DIG_CRYSTAL, START_LIGHT, isShrine, firstSpell, CLASSES, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
 
 let failed = 0;
 const check = (name, ok, detail) => { console.log((ok ? "ok    " : "FAIL  ") + name + (detail ? "  (" + detail + ")" : "")); if (!ok) failed++; };
@@ -256,6 +256,12 @@ const { MW, MH, T } = G;
   const egos = G.EGOS.filter(E => !G.EGO_LORE[E.id]).map(E => E.id), books = G.ITEMS.filter(K => K.cat === "book" && !G.BOOK_LORE[K.id]).map(K => K.id);
   check("every monster family, special kind and spell book has its line of lore", !fams.length && !egos.length && !books.length, [...fams, ...egos, ...books].join(", "));
   check("the starting pages exist", G.LORE_START.every(page));
+  const art = n => n && fs.existsSync(path.join(__dirname, "../lore/art/web", n + ".jpg")), site = n => fs.existsSync(path.join(__dirname, "../lore", n + ".html"));
+  const noArt = [...Object.values(G.LORE_PAGES).filter(P => !art(G.pageArt(P)) || !site(G.LORE_SITE[P.sec])).map(P => P.id),
+    ...G.MONSTERS.filter(K => !K.town && !art(G.monsterArt(K))).map(K => K.id),
+    ...G.ITEMS.filter(K => K.cat === "book" || K.cat === "tome").filter(K => !art(G.itemArt({ k: K.id }))).map(K => K.id),
+    ...G.ARTIFACTS.filter(A => !art(G.itemArt({ k: A.base, art: A.id }))).map(A => A.id)];
+  check("every Lore page, creature, book and artifact has a plate in the illustrated lore", !noArt.length, noArt.join(", "));
 }
 
 { // phase 12: the tutorial reads properly for every calling and key set

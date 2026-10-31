@@ -70,7 +70,8 @@ function card(it, compare = true){
   if (K.cat === "tome") lines.push("A book of lore, not magic. Reading it adds a page to your Lore." + (player.lore["t-" + K.id.slice(1)] ? " You have read it." : ""));
   if (K.desc) lines.push(K.desc);
   const kind = K.slot ? SLOT_NAMES[slotFor(K)] : { potion: "Potion", scroll: "Scroll", food: "Food", mushroom: "Mushroom", wand: "Wand", staff: "Staff", rod: "Rod", ammo: "Ammunition", dart: "Thrown", flask: "Oil", book: "Spell book", tome: "Lore book" }[K.cat] || "";
-  return `<div class="card q-${q}"><div class="ct">${itemPic(it, "big")}<div><b>${esc(cap(nameOf(it)))}</b><small>${kind}${worn && worn !== it ? " · compared with what you wear" : ""}</small></div></div>
+  const art = itemArt(it);
+  return `<div class="card q-${q}">${art ? `<img class="plate" src="lore/art/web/${art}.jpg" alt="" loading="lazy" onerror="this.remove()">` : ""}<div class="ct">${itemPic(it, "big")}<div><b>${esc(cap(nameOf(it)))}</b><small>${kind}${worn && worn !== it ? " · compared with what you wear" : ""}</small></div></div>
     ${rows.map(([a, b]) => `<p><span>${a}</span><span>${b}</span></p>`).join("")}${lines.length ? "<hr>" + lines.map(s => `<div class="ln">${esc(s)}</div>`).join("") : ""}</div>`;
 }
 function spellCard(S){
@@ -195,8 +196,11 @@ function pressSlot(k){
 
 /* ---------- the side panel ---------- */
 const TABS = [["char", "Character", "C"], ["pack", "Pack", "I"], ["book", "Book", "B"], ["journal", "Journal", "J"], ["lore", "Lore", "K"], ["map", "Map", "M"]];
-const loreDialog = P => openDialog({ title: P.title, head: `<p class="lore">${esc(P.text)}</p>`, cols: [[{ label: "Close", select: () => { closeDialog(); } }]], side: false, onBack: closeDialog });
-let panelSel = [];   // what the arrow keys move through on this tab: { el index, open() }
+// a plate from the illustrated lore, linking to its page there; it removes itself if the picture cannot load
+const plate = (art, page) => art ? `<a class="plate" href="lore/${page}.html" target="_blank" rel="noopener" title="Open the illustrated lore"><img src="lore/art/web/${art}.jpg" alt="" loading="lazy" onerror="this.parentNode.remove()"></a>` : "";
+const loreDialog = P => openDialog({ title: P.title, head: plate(pageArt(P), LORE_SITE[P.sec]) + `<p class="lore">${esc(P.text)}</p>`, cols: [[{ label: "Close", select: () => { closeDialog(); } }]], side: false, onBack: closeDialog });
+const beastDialog = K => openDialog({ title: cap(K.name), head: plate(monsterArt(K), "08-bestiary") + `<p class="lore">${esc([K.desc, ...recall(K)].join(" "))}</p>`, cols: [[{ label: "Close", select: () => { closeDialog(); } }]], side: false, onBack: closeDialog });
+let panelSel = [], jpick = false;   // jpick: the journal has a creature picked (its arrows scroll until then)   // what the arrow keys move through on this tab: { el index, open() }
 function drawPanel(){
   const A = $("panel"); A.hidden = !panelOn; if (!panelOn) return;
   $("tabs").innerHTML = TABS.map(([id, name, k]) => `<b class="${id === tab ? "on" : ""}" data-tab="${id}">${name}<small>${k}</small></b>`).join("") + `<b class="shut" title="Close the panel (P)">×<small>P</small></b>`;
@@ -246,12 +250,12 @@ function drawPanel(){
   } else if (tab === "journal"){
     h += `<h3>Messages</h3><div class="msgs">${log.slice(-80).reverse().map(s => `<div>${esc(s)}</div>`).join("")}</div>`;
     const met = MONSTERS.filter(K => LORE[K.id] && LORE[K.id].seen).sort((a, b) => a.depth - b.depth);
-    h += `<h3>Creatures you know (${met.length} of ${MONSTERS.length})</h3>${met.map(K => `<div class="beast">${pic(creatureImage(K))}<div><b class="${K.unique ? "gold" : ""}">${esc(cap(K.name))}</b><div class="ln">${esc(K.desc)}</div>${recall(K).map(s => `<div class="ln dim">${esc(s)}</div>`).join("")}</div></div>`).join("")}`;
+    h += `<h3>Creatures you know (${met.length} of ${MONSTERS.length})</h3>${met.length ? `<div class="ln dim">Click one, or pick it with ← → and Enter, to see its plate from the lore.</div>` : ""}${met.map(K => `<div class="beast" ${selectable(() => beastDialog(K), null)}>${pic(creatureImage(K))}<div><b class="${K.unique ? "gold" : ""}">${esc(cap(K.name))}</b><div class="ln">${esc(K.desc)}</div>${recall(K).map(s => `<div class="ln dim">${esc(s)}</div>`).join("")}</div></div>`).join("")}`;
     const known = ITEMS.filter(K => K.flavoured && p.know.known[K.id]);
     h += `<h3>Kinds you have identified (${known.length})</h3><div class="ln">${known.map(K => esc(K.name)).join(", ") || "None yet."}</div>`;
   } else if (tab === "lore"){
     const pages = Object.values(LORE_PAGES), have = pages.filter(P => p.lore[P.id]);
-    h += `<div class="ln dim">${have.length} of ${pages.length} pages. They open as you reach new rings, meet the named, find artifacts and read the books you find below.</div>`;
+    h += `<div class="ln dim">${have.length} of ${pages.length} pages. They open as you reach new rings, meet the named, find artifacts and read the books you find below.</div><div class="ln"><a class="lorelink" href="lore/" target="_blank" rel="noopener">The whole lore, with its illustrations ›</a></div>`;
     for (const [sec, title] of Object.entries(LORE_SECTIONS)){
       const all = pages.filter(P => P.sec === sec), got = all.filter(P => p.lore[P.id]);
       h += `<h3>${title} <small>${got.length} / ${all.length}</small></h3>`;
@@ -264,7 +268,7 @@ function drawPanel(){
   body.innerHTML = h; bindTips(body, cards);
   panelSel = sel; psel = Math.min(psel, Math.max(0, sel.length - 1));
   body.querySelectorAll("[data-s]").forEach(el => el.onclick = () => { psel = +el.dataset.s; sel[psel].open(); });
-  if (panelFocus && sel.length){ const el = body.querySelector(`[data-s="${psel}"]`); if (el){ el.classList.add("sel"); el.scrollIntoView({ block: "nearest" }); if (sel[psel].cardFn) showTip(sel[psel].cardFn(), el); else hideTip(); } }
+  if (panelFocus && sel.length && (tab !== "journal" || jpick)){ const el = body.querySelector(`[data-s="${psel}"]`); if (el){ el.classList.add("sel"); el.scrollIntoView({ block: "nearest" }); if (sel[psel].cardFn) showTip(sel[psel].cardFn(), el); else hideTip(); } }
   A.classList.toggle("focus", panelFocus);
   if (tab === "map") drawBigMap();
 }
@@ -273,7 +277,7 @@ function openTab(id){
   tutNote(id);
   if (!panelOn){ panelOn = true; store.set("panel", "1"); }
   if (panelFocus && tab === id){ panelFocus = false; hideTip(); }
-  else { if (tab !== id) psel = 0; tab = id; panelFocus = id !== "map"; }
+  else { if (tab !== id) psel = 0, jpick = false; tab = id; panelFocus = id !== "map"; }
   refreshUI();
 }
 function togglePanel(){ panelOn = !panelOn; panelFocus = false; store.set("panel", panelOn ? "1" : "0"); hideTip(); refreshUI(); }
@@ -282,6 +286,7 @@ function panelKey(e){
   if (k === "Escape"){ panelFocus = false; hideTip(); refreshUI(); return true; }
   if (tab === "journal" && (k === "ArrowUp" || k === "ArrowDown")){ $("tab").scrollBy(0, k === "ArrowUp" ? -60 : 60); return true; }
   if (!n) return false;
+  if (tab === "journal" && !jpick){ if (k !== "ArrowLeft" && k !== "ArrowRight") return false; jpick = true; refreshUI(); return true; }   // ← → start picking a creature
   const mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols }[k];
   if (mv){ psel = Math.max(0, Math.min(n - 1, psel + mv)); refreshUI(); return true; }
   if (k === "Enter" || k === " "){ panelSel[psel].open(); return true; }
@@ -430,6 +435,7 @@ function menuDialog(){
     ...Object.entries(OPTIONS).map(([k, label]) => ({ label, right: (opt(k) ? "On" : "Off") + "  ‹ ›", adjust: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); }, select: () => { setOpt(k, !opt(k)); renderLayout(); menuDialog(); } })),
     { label: "Guidance for new delvers", right: (guidanceOn() ? "On" : "Off") + "  ‹ ›", adjust: () => { setGuidance(!guidanceOn()); menuDialog(); }, select: () => { setGuidance(!guidanceOn()); menuDialog(); } },
     { label: "Hall of fame", select: fameDialog },
+    { label: "The illustrated lore", right: "opens in a new tab", select: () => window.open("lore/", "_blank", "noopener") },
     ...(state === "play" && depth === 0 ? [{ label: "Retire from delving", right: "ends this game", select: () => openDialog({ title: "Retire from delving?", side: false, onBack: menuDialog,
       head: `<p class="lore">You leave Lanternhollow for good, alive. ${player.gold >= 50000 || (player.flamesSold || 0) >= 5 ? "With your fortune, it will be remembered as a rich retirement." : "The Deep will go on without you."}</p>`,
       cols: [[{ label: "No, keep delving", select: menuDialog }, { label: "Yes, retire", select: () => { closeDialog(); retire(); } }]] }) }] : []),
@@ -503,7 +509,7 @@ function drawScreen(){
   el.hidden = false;
   if (state === "title"){
     el.innerHTML = `<div class="titlecard"><h1>Torchlight<span>Dungeons</span></h1><p class="dim">A dungeon crawl after Moria</p>
-      <p class="blink">Press Enter to play</p><p class="dim">Your game saves itself as you play. Esc opens the menu.</p>
+      <p class="blink">Press Enter to play</p><a class="lorelink" href="lore/" target="_blank" rel="noopener">Read the illustrated lore of Torchlight ›</a><p class="dim">Your game saves itself as you play. Esc opens the menu.</p>
       ${scores.list.length ? `<h3>Hall of fame</h3>${scores.list.map((s, k) => `<div class="fame ${k ? "" : "best"}"><b>${s.score}</b> ${esc(s.name || "")} the ${esc(s.race || "")} ${esc(s.cls || "Fighter")}, level ${s.lvl}, ${s.depth} ft, ${esc(s.killer)}</div>`).join("")}` : ""}</div>`;
   } else if (state === "create") drawCreate();
   else if (state === "dead"){
@@ -565,7 +571,7 @@ cv.addEventListener("pointerup", () => { if (!press) return; clearTimeout(press.
 cv.addEventListener("pointerleave", () => { hoverCell = null; if (press){ clearTimeout(press.timer); press = null; } });
 cv.addEventListener("contextmenu", e => { e.preventDefault(); const c = cellAt(e); if (c) lookAt(...c); });
 $("prompt").addEventListener("click", () => { if (aiming){ cancelAim(); refreshUI(); } });   // tapping the aiming prompt cancels it
-$("screen").addEventListener("click", e => { if (e.target.closest(".row")) return; if (state === "title") slotDialog(); else if (state === "dead" && stateT > 1) toTitle(); });
+$("screen").addEventListener("click", e => { if (e.target.closest(".row, a")) return; if (state === "title") slotDialog(); else if (state === "dead" && stateT > 1) toTitle(); });
 $("dlg").addEventListener("click", e => { if (e.target === $("dlg") && dlg && !dlg.noEsc) dialogKey({ key: "Escape" }); });   // a click outside the box: back
 function cellAt(e){   // the map cell under a pointer
   const r = cv.getBoundingClientRect(), x = Math.floor(((e.clientX - r.left) * DPR / Z + view.x) / TS), y = Math.floor(((e.clientY - r.top) * DPR / Z + view.y) / TS);

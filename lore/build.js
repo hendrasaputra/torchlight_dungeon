@@ -175,10 +175,15 @@ const CSS = fs.readFileSync(path.join(HERE, "lore.css"), "utf8");
 function page(name, title, body, prev, next){
   const nav = ["index", ...PAGES].map(p => `<a href="${p}.html"${p === name ? ' aria-current="page"' : ""}>${p === "index" ? "Contents" : SHORT[p] || p}</a>`).join("");
   const back = p => p ? `<a href="${p}.html">‹ ${SHORT[p] || "Contents"}</a>` : "<span></span>", fwd = p => p ? `<a href="${p}.html">${SHORT[p]} ›</a>` : "<span></span>";
+  // link previews: the page's first plate and first paragraph
+  const art = /src="(art\/web\/[^"]+)"/.exec(body), para = /<p>([\s\S]*?)<\/p>/.exec(body);
+  const img = art ? "https://dungeon.hensap.id/lore/" + art[1] : "https://dungeon.hensap.id/cartridges/torchlight-dungeons-v2.jpg";
+  const desc = name === "index" ? "The world of Torchlight Dungeons, illustrated: its cosmology, history, peoples, rulers, monsters and artifacts." : para ? para[1].replace(/<[^>]+>/g, "").replace(/&[a-z#0-9]+;/g, " ").replace(/\s+/g, " ").trim().slice(0, 200) : "The world of Torchlight Dungeons, illustrated.";
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)} · The Lore of Torchlight</title><meta name="color-scheme" content="light">
-<meta property="og:image" content="https://dungeon.hensap.id/cartridges/torchlight-dungeons-v2.jpg">
+<meta property="og:title" content="${name === "index" ? "The Lore of Torchlight" : esc(title) + " · The Lore of Torchlight"}"><meta property="og:description" content="${esc(desc)}"><meta name="description" content="${esc(desc)}">
+<meta property="og:image" content="${img}"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="../favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>${CSS}</style></head>

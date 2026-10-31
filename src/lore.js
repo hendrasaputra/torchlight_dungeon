@@ -74,6 +74,21 @@ const LORE_PAGES = Object.fromEntries([
   ["t-elder", "book", "A page in no known hand", "Not ink but scorch marks, in a script no scholar has read, around a drawing of a ring of lamps under a pool of dark. Holding the page, you feel warmth in your fingers, as if someone had only just put down a lamp."]
 ].map(([id, sec, title, text]) => [id, { id, sec, title, text }]));
 const LORE_SECTIONS = { world: "The world", ring: "The rings", named: "The named", artifact: "Artifacts", book: "Books found below" };
+// Plates from the illustrated lore site (lore/art/web), shown with Lore pages, known creatures and some items. They
+// load from the site beside the game, so a copy of the page played on its own simply goes without them.
+const PAGE_ART = { "world-fire": "place-the-kindling", "world-gloom": "boss-morrowgloom", "world-lampway": "diagram-lampway", "world-hollow": "place-lanternhollow",
+  "ring-stone": "place-ring-of-stone", "ring-roots": "place-ring-of-roots", "ring-rest": "place-ring-of-rest", "ring-forges": "place-ring-of-forges",
+  "ring-glass": "place-ring-of-glass", "ring-pit": "diagram-lamp-ring", "ring-unlit": "place-unlit-ring",
+  "a-embersong": "item-embersong", "a-mantle": "item-mantle", "a-stonehelm": "item-stonehelm", "a-firstlamp": "item-first-lantern", "a-starfall": "item-starfall", "a-swiftband": "item-swift-band",
+  "t-caedra": "hero-caedra", "t-hymn": "unique-drowned-king", "t-forgesong": "place-ring-of-forges", "t-ledger": "unique-ironjaw", "t-runner": "hero-wren", "t-unlit": "place-unlit-ring",
+  "t-elder": "place-elder-ring", "t-watch": "family-skeleton", "t-letter": "moment-open-doors", "t-notes": "emblem-collegium", "t-charter": "emblem-lanternhollow", "t-daybook": "emblem-order-of-the-lamp" };
+const UNIQUE_ART = { whiskers: "old-whiskers", oldtusk: "old-tusk", bristle: "mother-bristle", lanternthief: "lantern-thief", hollowjack: "hollow-jack", maulwyrm: "maul-wyrm",
+  greywidow: "grey-widow", thessaly: "thessaly-glass", palebride: "pale-bride", drownedking: "drowned-king", manymouthed: "many-mouthed", emberqueen: "ember-queen" };
+const FAMILY_ART = { kobold: "kobolds", giant: "deep-giants", mummy: "tomb-kings", shade: "shades", wisp: "star-wisps", mimic: "mimics", hybrid: "hybrids", gargoyle: "gargoyles" };
+const LORE_SITE = { world: "01-cosmology", ring: "04-the-lampway", named: "08-bestiary", artifact: "09-magic-and-artifacts", book: "02-timeline" };
+const monsterArt = K => K.id === "morrowgloom" ? "boss-morrowgloom" : K.unique ? "unique-" + (UNIQUE_ART[K.id] || K.id) : K.fam && "family-" + (FAMILY_ART[K.fam] || K.fam);
+const pageArt = P => P.sec === "named" ? monsterArt(MON[P.id.slice(2)]) : PAGE_ART[P.id];
+const itemArt = it => { const K = ITEM[it.k]; return it.art ? PAGE_ART["a-" + it.art] : K.cat === "tome" ? PAGE_ART["t-" + K.id.slice(1)] : K.cat === "book" ? "item-spellbooks" : null; };
 const LORE_START = ["world-fire", "world-gloom", "world-lampway", "world-hollow"];
 
 // One line on where each family of monsters comes from, for recall.
