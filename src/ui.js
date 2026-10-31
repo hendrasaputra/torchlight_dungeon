@@ -230,7 +230,7 @@ function drawPanel(){
     const wt = totalWeight(), capW = capacity();
     h += `<div class="meter ${wt > capW ? "hp low" : "wt"}"><span>Pack ${p.inv.length} / 22<b>${Math.round(wt)} / ${capW} lb</b></span><i><s style="width:${Math.min(100, 100 * wt / capW)}%"></s></i></div><div class="grid">`;
     for (let k = 0; k < 22; k++){ const it = p.inv[k]; h += slotEl(it, "", it ? () => itemDialog(it) : () => {}); }
-    h += `</div><div class="ln dim">Gold ${p.gold}. Enter on an item to use, wear, drop or put it on the hotbar.</div>`;
+    h += `</div><div class="ln dim">Gold ${p.gold}. <span class="keys">Enter</span><span class="taps">Tap</span> on an item to use, wear, drop or put it on the hotbar.</div>`;
   } else if (tab === "book"){
     const C = cls();
     if (!C.realm) h += `<div class="ln">A ${C.name} knows no magic.</div>`;
@@ -509,14 +509,14 @@ function drawScreen(){
   el.hidden = false;
   if (state === "title"){
     el.innerHTML = `<div class="titlecard"><h1>Torchlight<span>Dungeons</span></h1><p class="dim">A dungeon crawl after Moria</p>
-      <p class="blink">Press Enter to play</p><a class="lorelink" href="lore/" target="_blank" rel="noopener">Read the illustrated lore of Torchlight ›</a><p class="dim">Your game saves itself as you play. Esc opens the menu.</p>
+      <p class="blink"><span class="keys">Press Enter</span><span class="taps">Tap</span> to play</p><a class="lorelink" href="lore/" target="_blank" rel="noopener">Read the illustrated lore of Torchlight ›</a><p class="dim">Your game saves itself as you play. <span class="keys">Esc</span><span class="taps">The ☰ button</span> opens the menu.</p>
       ${scores.list.length ? `<h3>Hall of fame</h3>${scores.list.map((s, k) => `<div class="fame ${k ? "" : "best"}"><b>${s.score}</b> ${esc(s.name || "")} the ${esc(s.race || "")} ${esc(s.cls || "Fighter")}, level ${s.lvl}, ${s.depth} ft, ${esc(s.killer)}</div>`).join("")}` : ""}</div>`;
   } else if (state === "create") drawCreate();
   else if (state === "dead"){
     const T0 = tomb;
     const head = { dark: "The world went dark", rich: "Rich and retired", retired: "Retired" }[T0.ending] || "R.I.P.";
     el.innerHTML = `<div class="titlecard tomb"><h1 class="rip">${head}</h1><b>${esc(T0.name)}</b><div>the ${esc(T0.race)} ${esc(T0.cls)}, level ${T0.lvl}</div><div>${/^nothing/.test(T0.killer) ? esc(T0.killer.replace(/^nothing: /, "")) : "killed by " + esc(T0.killer)}</div><div>${T0.at === "the town" ? "in the town" : "at " + T0.at}${T0.days ? ", on day " + T0.days + " of the delve" : ""}</div>
-      <h3>Score ${T0.score}${T0.best ? " · best!" : ""}</h3><p class="blink">Press Enter for the title</p><p class="dim">D saves a character dump</p></div>`;
+      <h3>Score ${T0.score}${T0.best ? " · best!" : ""}</h3><p class="blink"><span class="keys">Press Enter</span><span class="taps">Tap</span> for the title</p><p class="dim keys">D saves a character dump</p></div>`;
   }
 }
 function drawCreate(){
@@ -530,13 +530,21 @@ function drawCreate(){
   else if (cr.step === 1){ const K = show, fs = firstSpell(K); info = `<h2>${K.name}</h2><p>${esc(K.desc)}</p><p class="dim">Stats: ${mods(K.stats)}<br>Hit die ${K.hd} · experience +${K.xp}%<br>${fs ? (K.realm === "holy" ? "Holy prayers" : "Arcane spells") + (spellLevel(fs, K) > 1 ? " from level " + spellLevel(fs, K) : "") + ", starting with " + fs.name + "." : "No magic."}<br>Titles: ${K.titles.slice(0, 3).join(", ")} …</p>`; }
   else info = `<h2>${esc(cr.name)}</h2><p class="dim">${R.name} ${C.name}</p><div class="stats">${STATS.map(k => `<span>${STAT_NAMES[k]}<b>${p.stats[k]} <i class="dim">(${sign(statMod(p.stats[k]))})</i></b></span>`).join("")}</div>
     <p>Hit points ${firstHp(p)}${C.realm ? " · mana " + maxMana(p) : ""}</p><div class="stats">${SKILLS.map(k => { const v = skillOf(p, k); return `<span>${SKILL_NAMES[k]}<b>${k === "stealth" ? stealthWord(v) : skillWord(v)}</b></span>`; }).join("")}</div>
-    ${cr.step === 2 && cr.mode === "buy" ? `<p class="gold">Points left: ${BUY_POINTS - buySpent(cr.buy)} of ${BUY_POINTS}</p>` : ""}${cr.step === 3 ? `<p class="dim">Type to change the name.</p>` : ""}`;
-  $("screen").innerHTML = `<div class="create"><div class="steps">${steps.map((s, i) => `<b class="${i === cr.step ? "on" : i < cr.step ? "done" : ""}">${i + 1} ${s}</b>`).join("")}</div>
-    <div class="cbody"><div class="list">${rows.map((r, i) => `<div class="row ${i === cr.at ? "sel" : ""}" data-i="${i}"><span>${esc(r.label)}</span>${cr.step === 2 && cr.mode === "buy" && i < 6 ? `<small>‹ ${cr.buy[STATS[i]]} ›</small>` : ""}</div>`).join("")}
-      ${cr.step === 3 ? `<div class="namebox">${esc(cr.name)}<span class="caret">▌</span></div>` : ""}</div>
+    ${cr.step === 2 && cr.mode === "buy" ? `<p class="gold">Points left: ${BUY_POINTS - buySpent(cr.buy)} of ${BUY_POINTS}</p>` : ""}${cr.step === 3 ? `<p class="dim"><span class="keys">Type</span><span class="taps">Tap the name</span> to change it.</p>` : ""}`;
+  $("screen").innerHTML = `<div class="create"><div class="steps">${steps.map((s, i) => `<b class="${i === cr.step ? "on" : i < cr.step ? "done" : ""}" data-step="${i}">${i + 1} ${s}</b>`).join("")}</div>
+    <div class="cbody"><div class="list">${rows.map((r, i) => `<div class="row ${i === cr.at ? "sel" : ""}" data-i="${i}"><span>${esc(r.label)}</span>${cr.step === 2 && cr.mode === "buy" && i < 6 ? `<small><b class="adj" data-adj="-1">‹</b> ${cr.buy[STATS[i]]} <b class="adj" data-adj="1">›</b></small>` : ""}</div>`).join("")}
+      ${cr.step === 3 ? `<div class="namebox" title="Change the name">${esc(cr.name)}<span class="caret">▌</span></div>` : ""}</div>
     <div class="preview">${pic(doll(look, 64), "hero")}</div><div class="cinfo">${info}</div></div>
-    <div class="note">↑↓ choose · Enter select · ${cr.step === 2 && cr.mode === "buy" ? "←→ change · " : ""}Esc back</div></div>`;
-  $("screen").querySelectorAll(".row[data-i]").forEach(r => r.onclick = () => { cr.at = +r.dataset.i; crChoose(); refreshUI(); });
+    <div class="note"><b class="back">‹ Back</b> <span class="keys">↑↓ choose · Enter select · ${cr.step === 2 && cr.mode === "buy" ? "←→ change · " : ""}Esc back</span><span class="taps">Tap to choose${cr.step === 2 && cr.mode === "buy" ? " · ‹ › change" : ""}</span></div></div>`;
+  const sc = $("screen");
+  sc.querySelectorAll(".row[data-i]").forEach(r => r.onclick = e => {   // a tap on ‹ or › changes a bought stat; elsewhere it chooses
+    cr.at = +r.dataset.i; const adj = e.target.dataset.adj, row = crRows()[cr.at];
+    if (adj && row.adjust) row.adjust(+adj); else crChoose(); refreshUI();
+  });
+  sc.querySelector(".back").onclick = () => { crBack(); refreshUI(); };
+  sc.querySelectorAll(".steps b.done").forEach(b => b.onclick = () => { while (state === "create" && cr.step > +b.dataset.step) crBack(); refreshUI(); });
+  const nb = sc.querySelector(".namebox");   // a touch screen has no keys to type with: ask for the name instead
+  if (nb) nb.onclick = () => { const n = (prompt("Name your character", cr.name) || "").replace(/[^A-Za-z'-]/g, "").slice(0, 14); if (n) cr.name = n[0].toUpperCase() + n.slice(1); refreshUI(); };
 }
 
 /* ---------- each frame ---------- */

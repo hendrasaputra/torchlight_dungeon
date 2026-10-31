@@ -27,7 +27,7 @@ h1{font-size:17px;font-weight:650;margin:0;letter-spacing:-0.01em}
 body { background: var(--tbg); color: var(--text); }
 header { color: var(--text); } #hud { color: var(--dim); }
 #main { flex: 1; display: flex; gap: 8px; margin: 0 8px 8px; min-height: 0; }
-#stage { margin: 0; flex: 1; border-color: var(--edge); background: #000; font: 13px/1.35 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+#stage { margin: 0; flex: 1; min-width: 0; border-color: var(--edge); background: #000; font: 13px/1.35 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 #cv { left: 0; top: 0; transform: none; }
 img.px { image-rendering: pixelated; width: 32px; height: 32px; display: block; }
 img.px.big { width: 48px; height: 48px; } img.px.face { width: 40px; height: 40px; } img.px.hero { width: 160px; height: 160px; filter: drop-shadow(0 6px 0 #0007); }
@@ -118,6 +118,8 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
 .cbody { display: grid; grid-template-columns: 220px 180px 1fr; gap: 16px; align-items: start; }
 .cinfo h2 { margin: 0 0 6px; color: var(--gold); font-weight: normal; } .cinfo .stats { margin: 8px 0; }
 .preview { display: grid; place-items: center; background: #13111a; border: 2px solid var(--edge); border-radius: 8px; padding: 10px; }
+.note .back, .steps b.done, .namebox { cursor: pointer; } .note .back { color: var(--gold); font-weight: normal; margin-right: 8px; }
+.row .adj { display: inline-block; padding: 2px 9px; cursor: pointer; color: var(--gold); font-weight: normal; }
 .namebox { margin-top: 8px; padding: 6px 10px; border: 2px solid var(--gold); border-radius: 4px; font-size: 16px; } .caret { animation: blink 1s steps(2) infinite; }
 
 /* A leather finish for the panel, the dialogs and the HUD boxes: grain from an SVG noise pattern drawn by the
@@ -153,8 +155,13 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
   #bar .acts, #bar .hot { gap: 3px; } .slot { width: 32px; height: 32px; } .slot img.px { width: 22px; height: 22px; } .slot .glyph { font-size: 15px; }
   .slot .k { font-size: 9px; left: 2px; } .slot .n { font-size: 8px; right: 2px; }
   #tools { top: 42%; } .tool { width: 40px; height: 36px; }
-  #dlg .box { max-width: 96%; } #dlg .side { display: none; }
+  #dlg .box { max-width: 96%; min-width: 0; padding: 12px; } #dlg .list { min-width: 0; } #dlg .box.wide .list { min-width: 0; } #dlg .side { display: none; }
+  .titlecard { padding: 18px 14px; max-width: 94%; } .titlecard h1 { font-size: 30px; letter-spacing: .08em; } .titlecard h1 span { font-size: 18px; letter-spacing: .3em; }
+  .create { padding: 12px; max-height: 96%; overflow: auto; } .steps { flex-wrap: wrap; gap: 8px; } .cbody { grid-template-columns: 1fr; }
 }
+/* words for keys on a keyboard, and for taps on a touch screen */
+.taps { display: none; }
+@media (pointer: coarse){ .keys { display: none; } .taps { display: inline; } #screen, #dlg { cursor: pointer; } #dlg h2 .x { font-size: 22px; padding: 6px 12px; margin: -12px -12px 0 8px; } }   /* a finger needs a bigger × */
 </style>
 </head>
 <body>
