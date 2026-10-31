@@ -4216,7 +4216,9 @@ const viewCells = () => [VWpx / (Z * TS), VHpx / (Z * TS)];
 function cameraTarget(){
   const [vw, vh] = viewCells(), w = L ? L.w : MW, h = L ? L.h : MH, a = posOf(player);
   const fit = (p, v, n) => n <= v ? (n - v) / 2 : Math.max(0, Math.min(n - v, p + 0.5 - v / 2));
-  return { x: fit(a.x, vw, w) * TS, y: fit(a.y, vh, h) * TS };
+  // the hotbar floats over the bottom of the map: let the camera scroll that far past the last row
+  const bar = $("bar"), cvr = $("cv").getBoundingClientRect(), under = bar ? Math.max(0, cvr.bottom - bar.getBoundingClientRect().top) * DPR / (Z * TS) : 0;
+  return { x: fit(a.x, vw, w) * TS, y: fit(a.y, vh, h + under) * TS };
 }
 function snapView(){ const c = cameraTarget(); view.x = c.x; view.y = c.y; }
 function posOf(o){
