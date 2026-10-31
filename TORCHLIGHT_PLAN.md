@@ -40,6 +40,7 @@ resize watcher and the frame loop).
 | 12 The first game: a tutorial | Done. `src/tutorial.js`: Sister Ilvane's "Keeper's charge" runs inside a new player's first real game. A welcome offers Begin or Skip (Esc skips); skipping or finishing it once turns it off for later characters in the browser, and the menu's "Guidance for new delvers" turns it (and the hints) back on or off at any time. One step at a time in a Next box under the status panel, with keys as key caps in the player's own key set: look at yourself (C, I), buy oil or a torch at the General Store, ready your first spell (casters), find the stairs down, kill the first monster, pick something up, then go deeper or home; "you are hurt" (D or R) shows whenever it applies. Advice follows the calling (Spark for an Arcanist, the sling for a Wayfinder, the ambush for a Delver). A pulsing ring marks the step's goal, an arrow at the screen edge points to it when it is off screen, and it blinks on the minimap. On the first trip only, the first room is lit and a lone cave rat sleeps a few steps away, with nothing else near. After the charge, a short hint shows the one key that matters (drink, fresh light, eat, disarm, stairs, pick up, attack). Progress is saved with the character. Checks: every step's text for six callings and three key sets; in the browser, the charge completed for all six callings, skipping leaves no box, markers or rat, later characters get no welcome, and the Guidance option works; bots ran it without errors. |
 | 13 The rings of light | Done. `src/rings.js` holds the rules as plain functions; the game keeps each ring's light (0 to 100) with the character, starting from 85 in the Ring of Stone down to 60 in the Ring of Glass, the Unlit Ring at 0 around the Last Lamp (save version 2, with a migration that gives older saves the starting rings). Levels get shrines in some plain rooms, burning as often as their ring is bright, and a burning shrine lights its room; the top of the Unlit Ring (2,550 ft) holds the Last Lamp. Walk into a cold shrine to relight it (a flask of oil, a light prayer or spell, or a carried flame: +3, half in a dark ring); walk into a burning one to take its flame (-2), which is lost if your light goes out, and which the Eternal Lamp takes as an offering (the temple gets cheaper and Word of Recall faster) or the Lantern Guild buys (300 to 1,500 gold by ring). A glow crystal dug from a rich vein dims its ring by 1. Dark-loving monsters gather by the shrines of dim rings and snuff burning ones (-3). The ring's light sets how many rooms are lit and shrines burn, how many dark lovers come, the level feeling, and Morrowgloom's health (about as before at the start, 0.6x with every ring full, up to 2x in a dark Deep); a ring at 0 lets monsters from the ring below up. The clock takes 1 from each ring every 5,000 turns (2 from dim ones), but never below 10 on its own. The town feels it first: at 5% of the cage's light lost its lamps fail at night (the new campfire burns on, lower) and shades walk the streets; at 10% the Armoury and Magic Shop close and the rest shutter at dusk. Endings: the cage finished (every ring at 100, the Unlit Ring too), the Lantern-Eater slain, retiring (rich with 50,000 gold or five flames sold), and the world going dark (the Last Lamp taken, or the Ring of Glass dark with no Unlit Ring), each on the tombstone and in the hall of fame. The tutorial gains a shrine step (Sister Ilvane gives a flask of oil). Also in this phase, as asked: a great campfire in the middle of the town, roaring at night and smouldering by day, and a leather finish on the panel, dialogs and HUD. Checks: 13 new node checks (ring keys, relight and harvest amounts, the drain and its floor, town thresholds, the world going dark, the cage, Morrowgloom's strength, shrines lit by ring light and never cutting a way off, the Last Lamp, saves and the version 1 migration); in the browser every action, threshold and ending was tried, and bots ran over 50,000 steps. One crash was seen once in a bot run (a ring lookup in town) and could not be reproduced in 32 more games; the lookup now treats the town as the Ring of Stone, so that path cannot crash. Not yet: a person playing a game through the rings to judge the numbers. |
 | 14 Game feel and sharper sprites | Done. A blow lands with a hit-stop as the lunge connects (0.04 s for a graze, 0.12 s for a heavy blow, 0.18 s for a kill) and the view shakes on big hits, balls, rockfall, earthquakes and heavy wounds; the lunge is three beats (pull back, further with a heavier weapon; snap forward past the target; settle). The menu's "Reduce motion" option turns off shaking, hit pauses and the new-level iris. Particles come in kinds (debris, spark, ember, smoke, flake, twinkle, drip, dust), take colours step by step from a ramp per element, fade by ordered dither and glow; each element's bolt leaves its own trail and impact (lightning adds a flickering arc), balls and frost and light spread a ring. Moments: a level-up burst, gold sparkles, critical numbers that pop, a shrine catching, an iris opening on each new level. Ambient life: embers from burning shrines, the Last Lamp and the campfire, drips, dust in lit rooms, now and then a bat. Sprites: `pix()` draws shapes in the 16-unit space with fractions, shaded from the top left with seven-step ramps (cool shadows, warm highlights) and a selective outline, so the same code makes 16- and 32-pixel pictures; the renderer uses 32 (SR 2, Z kept even) when there are two device pixels to a unit. Monsters have four idle frames (wings beat, wisps flicker, ghosts drift, soft ones sway, the rest breathe) and glowing eyes; dolls get a face, buckle, mail rings and plate edges; floors and walls get shading, cracks, grit and moss; item and spell icons are shaded too. `index.html?sheet` shows every creature with its frames, the peoples, tiles and items at 16 and 32. Checks: both test suites unchanged and passing; in the browser, every sprite at both sizes, the hit-stop timing in a fight, every element's spell, the iris, the town and the 16-pixel path, with no errors. Not done: the iris opens on a new level but does not close before it (the level changes inside the turn), and a person should judge the motion over a long game. |
+| 15 Mouse, touch, and 64-pixel sprites | Done. A click or tap on the map attacks a monster next to you, shoots one further away (if you can) or walks to it, walks to a place along the shortest known path a step at a time (stopping for a new monster, a wound or an item; any key or tap stops it), or on yourself picks up, takes the stairs or waits. A right-click or a long press looks at a cell; a mouse outlines the cell under it; while aiming, a tap picks the place and a tap on the prompt cancels. The action bar's slots are buttons, and a tools strip on the right holds Menu, Panel, Next spell, Wait, Rest (in town) and Look. Dialogs have a close button and close on a click outside; the title and tombstone take a tap. On a phone (under 700 px) the panel opens over the map with a close tab, and the bar takes two rows. AGENTS.md, the README and the handoff no longer say keyboard only. Sprites: SR 4 (64-pixel pictures) when Z is a multiple of 4, as on a high-density screen at Standard detail; fine details stay half a unit, outlines grow to half a unit, particles stay on the 32-pixel grid. Measured in Chrome on a 2x screen: first drawing all 272 monsters takes 0.6 ms each at 32 and 1.8 ms each at 64, tiles about 0.5 ms each at either, icons 1.2 ms each at 64; the first frame of a new level with empty caches took 13 ms; drawing a frame of a level with 33 monsters took about 0.4 ms of script time at both sizes. The page does not grow. Performance for phones: while nothing moves on screen (ambient dust and embers aside), the game draws about 10 frames a second instead of 60, sparing the battery, and goes back to 60 the moment anything moves, a key is pressed or the mouse moves; the map canvas is capped at 2 device pixels per CSS pixel, so a 3x phone's GPU fills about half as many pixels; the sprite pen draws into a pixel buffer copied to the canvas once (warm: 0.27 ms per 64-pixel monster and 0.2 ms per tile, from about 1.8 and 0.5), and a new level's monsters are drawn a few a frame behind the opening iris. Checks: both test suites pass; in the browser, walking, looking, tapping yourself, monster taps, aiming by tap, the bar, the tools, closing dialogs, the phone layout and panel, the 64-pixel art (unchanged by the new pen), and the frame rate (about 9 a second still, 60 while walking or casting). Not done: a whole game played by touch on a real phone, by a person. |
 
 ## Ground rules
 
@@ -227,8 +228,9 @@ much less code than drawing panels by hand.
   tooltip.
 - **Character creation:** the people and calling are pickers with the paper doll changing as you choose.
 
-**Controls: keyboard only.** There is no touch gamepad and no phone layout for this game, and the mouse only
-points at things: hovering shows tooltips, and clicking works in the panels and dialogs. The right hand moves and
+**Controls: keyboard first.** (Phase 15 adds the mouse and touch: see there.) At first there was no touch gamepad
+and no phone layout for this game, and the mouse only pointed at things: hovering shows tooltips, and clicking works
+in the panels and dialogs. The right hand moves and
 the left hand does the four most common things, and each of those keys decides for itself so that a fight rarely
 needs a menu.
 
@@ -260,7 +262,7 @@ the scheme above off.
 **Decisions:**
 - the character (ASCII) view is dropped entirely;
 - on a wide screen the side panel is always open, as in the references, and P hides it;
-- the game is keyboard only.
+- the game is keyboard only (until phase 15, which adds the mouse and touch).
 
 ### Why do this before the bestiary
 
@@ -719,6 +721,49 @@ frame).
 turns that off; every element's spell looks distinct; every body plan draws at 16 and 32 pixels with idle frames
 and looks right on the sheet page; the game keeps 60 frames a second on a laptop; and `node tests/torch.js` and
 `node tests/balance.js` pass unchanged.
+
+### Phase 15: mouse, touch, and sprites at 64 pixels (M)
+
+The game stays turn-based, and the keyboard keeps every key it has; the mouse and a finger get a way to every command
+too, so the game plays on a laptop's trackpad and on a phone. (A real-time mode is a separate idea, to try later as an
+option: see the brainstorm in the conversation of October 2026.) `ui.js`, `game.js` and `head.html`; no rule changes.
+
+**On the map.** A click or a tap on a cell does the obvious thing there:
+
+- **a monster you can see:** it becomes the target; next to you, you attack it; further away, you shoot or throw at it
+  if you can, and otherwise walk towards it;
+- **a place:** you walk there along the shortest path through what you know (around known traps), a step at a time so
+  you see it, opening doors on the way, and stop when a new monster comes into view, when something hurts you, or at
+  an item; clicking or pressing a key stops you too. A cell next to you is one step: walking into a door, rubble, a shrine or a shop works it,
+  as the arrows do;
+- **yourself:** what W does (pick up, take the stairs, enter the shop), or wait a turn and search if there is nothing.
+
+While aiming a spell or a throw, a click or tap picks the cell to aim at. A right-click or a long press looks at a
+cell: what monster, items or feature is there. With a mouse, the cell under the pointer is outlined.
+
+**Everywhere else.** The action bar's A, S, D, W and 1 to 0 are buttons, and a few more join them for what has no
+other way in by touch: the menu, the panel, the spell to ready next (Q), wait (Space), rest (R) and look (L). The title
+screen and the tombstone take a tap; dialogs get a close button; the panel's tabs and rows already take clicks.
+
+**A phone.** Below about 700 pixels wide, the side panel opens over the map instead of beside it (with a close tab), the
+log is shorter, the action bar takes two rows of smaller slots, and the browser's own gestures (scrolling, pinch zoom)
+are turned off over the map.
+
+**Sprites at 64 pixels.** Phase 14's pen draws at any size, so the renderer can use 64-pixel pictures (SR 4) where
+there are four device pixels to a unit (a high-density screen at Standard detail), keeping Z a multiple of SR.
+The fine details (eyes, buckles, mail rings, cracks) stay half a unit across, outlines grow to half a unit, and
+particles stay on the 32-pixel grid so sparks do not shrink to dust.
+
+- Code: a few lines; the page does not grow, because nothing is a picture file.
+- Loading: the same page, but each picture takes about four times as long to draw the first time it is needed (a
+  new depth's tiles, a new monster); measured below, and kept under a frame or two at a time.
+- Memory: four times as much per cached picture (16 KB at 64 pixels), a few tens of MB if every monster and tile of
+  the game is drawn in one session.
+- Each frame: the GPU scales the cached pictures, so drawing the map costs about the same as at 32 pixels.
+
+**Done when:** a whole game can be played with only a mouse, and with only touch on a phone-sized screen; the
+keyboard works as before; every command in the help has a way in by pointer; and the 64-pixel sprites keep 60 frames a
+second with no visible hitch on a new level.
 
 ## Testing throughout
 

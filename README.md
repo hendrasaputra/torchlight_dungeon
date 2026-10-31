@@ -26,7 +26,7 @@ Play it at [dungeon.hensap.id](https://dungeon.hensap.id), and read the lore of 
   artifacts and read lore books found below.
 - Hunger, bleeding, stuns and hallucination; 16 hidden traps; secret, locked and stuck doors; rubble and veins
   of magma and quartz to dig, some with gold; a feeling for each level's danger.
-- A character panel, item cards, a hotbar, a minimap. Keyboard only.
+- A character panel, item cards, a hotbar, a minimap. Play with the keyboard, the mouse or touch.
 - Synthesised sound effects and music, saved games in three slots, and options for auto-pickup, colour-blind-safe
   status colours and larger text.
 

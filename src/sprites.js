@@ -21,9 +21,27 @@ const shade = (rgb, k = 3) => ({ ramp: ramp7(rgb), k });
 const solid = col => typeof col === "string" ? col : col.ramp[col.k];
 const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + 0.5) / 16);
 const LIGHT_DIR = [-0.5, -0.65, 0.58].map((v, i, a) => v / Math.hypot(...a));
+// Drawing goes into a pixel buffer, not the canvas, one pixel at a time being far faster that way; the buffer is copied
+// to the canvas once, when the picture is used (p.c), or before the canvas itself is drawn on (p.g).
+const RGBA = new Map();
+function rgba(col){   // "#rgb", "#rrggbb", "rgb(r,g,b)" or "rgba(r,g,b,a)" as [r, g, b, a 0..1]
+  let v = RGBA.get(col); if (v) return v;
+  if (col[0] === "#"){ const h = col.length === 4 ? col.slice(1).replace(/./g, "$&$&") : col.slice(1, 7); v = [0, 2, 4].map(k => parseInt(h.substr(k, 2), 16)).concat(1); }
+  else { const n = col.slice(col.indexOf("(") + 1, -1).split(",").map(Number); v = [n[0], n[1], n[2], n.length > 3 ? n[3] : 1]; }
+  RGBA.set(col, v); return v;
+}
 function pix(w = TS, h = TS, S = SR){
   const c = newCanvas(w * S, h * S), g = c.getContext("2d"), W = w * S, H = h * S, glows = c.glows = [];
-  const put = (X, Y, col) => { g.fillStyle = col; g.fillRect(X, Y, 1, 1); };
+  let img = null, dirty = false, stale = false;   // the buffer; changes not yet on the canvas; the canvas changed since it was read
+  const buf = () => { if (!img || stale){ img = stale ? g.getImageData(0, 0, W, H) : g.createImageData(W, H); stale = false; } dirty = true; return img.data; };
+  const sync = () => { if (dirty){ g.putImageData(img, 0, 0); dirty = false; } };
+  const put = (X, Y, col) => {
+    if (X < 0 || Y < 0 || X >= W || Y >= H) return;
+    const d = buf(), [r, gg, b, a] = rgba(col), o = 4 * (Y * W + X);
+    if (a >= 1){ d[o] = r; d[o + 1] = gg; d[o + 2] = b; d[o + 3] = 255; }
+    else { d[o] = d[o] * (1 - a) + r * a; d[o + 1] = d[o + 1] * (1 - a) + gg * a; d[o + 2] = d[o + 2] * (1 - a) + b * a; d[o + 3] = Math.max(d[o + 3], a * 255); }
+  };
+  const fill = (X, Y, RW, RH, col) => { for (let j = 0; j < RH; j++) for (let i = 0; i < RW; i++) put(X + i, Y + j, col); };
   // a shade's step for a surface lit by v (-1 facing away from the light .. 1 facing it)
   const tone = (col, v, X, Y, dither) => { if (typeof col === "string") return col; const f = col.k + v * 1.7;
     return col.ramp[Math.max(0, Math.min(6, dither && S > 1 ? Math.floor(f + BAYER4[((Y & 3) << 2) | (X & 3)]) : Math.round(f)))]; };
@@ -32,14 +50,16 @@ function pix(w = TS, h = TS, S = SR){
     for (let Y = Math.max(0, Math.floor(y0 * S)); Y < Math.min(H, Math.ceil(y1 * S)); Y++)
       for (let X = Math.max(0, Math.floor(x0 * S)); X < Math.min(W, Math.ceil(x1 * S)); X++){ const v = fn((X + 0.5) / S, (Y + 0.5) / S); if (v !== null) put(X, Y, tone(col, v, X, Y, dither)); }
   };
-  const p = { c, g, S, glows,
+  const p = { S, glows,
+    get c(){ sync(); return c; },                  // the finished picture
+    get g(){ sync(); stale = true; return g; },    // the canvas itself, for drawImage and transforms
     // a box, lit along its top edge and from the left, shading towards the bottom
     rect: (x, y, ww, hh, col) => { const X = Math.round(x * S), Y = Math.round(y * S), RW = Math.max(1, Math.round(ww * S)), RH = Math.max(1, Math.round(hh * S));
-      if (typeof col === "string"){ g.fillStyle = col; g.fillRect(X, Y, RW, RH); return; }
+      if (typeof col === "string") return fill(X, Y, RW, RH, col);
       for (let j = 0; j < RH; j++) for (let i = 0; i < RW; i++) put(X + i, Y + j, tone(col, j === 0 && RH > 1 ? 1 : (0.5 - (j + 0.5) / RH) * 0.8 + (0.5 - (i + 0.5) / RW) * 0.3, X + i, Y + j)); },
     px: (x, y, col) => p.rect(x, y, 1, 1, solid(col)),
-    dot: (x, y, col) => put(Math.floor(x * S), Math.floor(y * S), solid(col)),   // one pixel: fine detail at S > 1
-    clear: (x, y, ww, hh) => g.clearRect(x * S, y * S, ww * S, hh * S),
+    dot: (x, y, col) => fill(Math.floor(x * S), Math.floor(y * S), Math.max(1, S >> 1), Math.max(1, S >> 1), solid(col)),   // fine detail: half a unit at S > 1
+    clear: (x, y, ww, hh) => { const d = buf(); for (let Y = Math.max(0, y * S); Y < Math.min(H, (y + hh) * S); Y++) for (let X = Math.max(0, x * S); X < Math.min(W, (x + ww) * S); X++) d[4 * (Y * W + X) + 3] = 0; },
     // a ball around the cell (cx, cy), the same footprint as before at S = 1
     disc: (cx, cy, r, col) => { const ox = cx + 0.5, oy = cy + 0.5, R = r + 0.38;
       area(ox - R, oy - R, ox + R, oy + R, col, (u, v) => { const dx = (u - ox) / R, dy = (v - oy) / R, d2 = dx * dx + dy * dy;
@@ -52,17 +72,18 @@ function pix(w = TS, h = TS, S = SR){
         const t = Math.max(0, Math.min(1, ((u - ax) * dx + (v - ay) * dy) / L2)), ex = ax + dx * t - u, ey = ay + dy * t - v; return ex * ex + ey * ey <= r * r ? 0 : null; }); },
     // an eye: drawn, glinting at S > 1, and remembered so it can glow in the dark
     eye: (x, y, col) => { p.px(x, y, col); if (S > 1) p.dot(x, y, "#fff"); glows.push([x + 0.5, y + 0.5, col]); },
-    // a 1-pixel outline just outside what is drawn. Given a colour, all of it; otherwise picked per side from the colour
-    // beside it: darker on the shadow side (bottom and right), lighter towards the light, broken where a highlight
-    // touches it, and near black only where the bottom meets the floor
-    outline: (col = null) => {
-      const d = g.getImageData(0, 0, W, H), a = d.data, out = new Uint8ClampedArray(a), lit = /^#/.test(col || "") ? col.slice(1) : null;
-      const C = col && lit ? [0, 2, 4].map(i => parseInt((lit.length === 3 ? lit.replace(/./g, "$&$&") : lit).substr(i, 2), 16)) : null;
+    // a 1-pixel outline just outside what is drawn (half a unit thick above S = 2). Given a colour, all of it; otherwise
+    // picked per side from the colour beside it: darker on the shadow side (bottom and right), lighter towards the light,
+    // broken where a highlight touches it, and near black only where the bottom meets the floor
+    outline: (col = null, pass = Math.max(1, S >> 1)) => {
+      if (pass > 1) p.outline(col, pass - 1);
+      const a = buf(), out = new Uint8ClampedArray(a), C = col ? rgba(col) : null;
+      let r, gg, b, n, ox, oy;
+      const near = (q, dx, dy) => { if (a[q + 3] <= 128) return; r += a[q]; gg += a[q + 1]; b += a[q + 2]; n++; ox -= dx; oy -= dy; };   // a drawn neighbour
       for (let Y = 0; Y < H; Y++) for (let X = 0; X < W; X++){
         const o = 4 * (Y * W + X); if (a[o + 3]) continue;
-        let r = 0, gg = 0, b = 0, n = 0, ox = 0, oy = 0;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]){ const XX = X + dx, YY = Y + dy; if (XX < 0 || YY < 0 || XX >= W || YY >= H) continue;
-          const q = 4 * (YY * W + XX); if (a[q + 3] <= 128) continue; r += a[q]; gg += a[q + 1]; b += a[q + 2]; n++; ox -= dx; oy -= dy; }
+        r = gg = b = n = ox = oy = 0;
+        if (X + 1 < W) near(o + 4, 1, 0); if (X > 0) near(o - 4, -1, 0); if (Y + 1 < H) near(o + 4 * W, 0, 1); if (Y > 0) near(o - 4 * W, 0, -1);
         if (!n) continue;
         let rgb;
         if (C) rgb = C;
@@ -71,11 +92,11 @@ function pix(w = TS, h = TS, S = SR){
           rgb = oy > 0 && Y >= H * 0.8 ? [11, 10, 16] : [r, gg, b].map((v, i) => v * (shadow ? 0.24 : 0.42) + [14, 10, 30][i] * 0.5); }
         out[o] = rgb[0]; out[o + 1] = rgb[1]; out[o + 2] = rgb[2]; out[o + 3] = 255;
       }
-      d.data.set(out); g.putImageData(d, 0, 0); return p; },
+      a.set(out); return p; },
     // grain on a tile at S > 1: each pixel a little lighter or darker, so stone and earth have a texture
-    grain: (amt = 0.14, seed = 0) => { if (S === 1) return p; const d = g.getImageData(0, 0, W, H), a = d.data;
+    grain: (amt = 0.14, seed = 0) => { if (S === 1) return p; const a = buf();
       for (let i = 0; i < W * H; i++){ const k = 1 + (hash(i % W, (i / W) | 0, seed + 5) - 0.5) * amt; a[4 * i] *= k; a[4 * i + 1] *= k; a[4 * i + 2] *= k; }
-      g.putImageData(d, 0, 0); return p; }
+      return p; }
   };
   return p;
 }
@@ -443,7 +464,7 @@ const heatImage = img => memo(HEAT, img, () => { const c = newCanvas(img.width, 
 function icon(K, rgb){
   const p = pix(), col = shade(rgb, 3), dark = shade(rgb, 1), light = shade(rgb, 5), c = K.cat;
   if (c === "weapon"){ p.g.translate(16 * p.S, 0); p.g.rotate(Math.PI / 4); p.g.translate(-3 * p.S, 2 * p.S);
-    weaponArt((x, y, w, h, cl) => p.rect(x * 1.3, y * 1.3, w * 1.3 + 0.5, h * 1.3 + 0.5, cl), K.id, 0, 0); p.g.setTransform(1, 0, 0, 1, 0, 0); }
+    weaponArt((x, y, w, h, cl) => { const g = p.g, S = p.S; g.fillStyle = cl; g.fillRect(Math.round(x * 1.3 * S), Math.round(y * 1.3 * S), Math.max(1, Math.round((w * 1.3 + 0.5) * S)), Math.max(1, Math.round((h * 1.3 + 0.5) * S))); }, K.id, 0, 0); p.g.setTransform(1, 0, 0, 1, 0, 0); }
   else if (c === "bow"){ if (/sling/.test(K.id)){ p.line(3, 3, 8, 11, hex(LEATHER)); p.line(13, 3, 8, 11, hex(LEATHER)); p.disc(8, 12, 2, hex(LEATHER, 0.8)); }
     else { for (let y = 2; y < 15; y++) p.px(5 + Math.round(4 * Math.sin((y - 2) / 12 * Math.PI)), y, hex(WOOD)); p.line(5, 2, 5, 14, "#ddd"); } }
   else if (c === "ammo" || c === "dart"){ if (/shot|pebble/.test(K.id)) for (const [x, y] of [[5, 9], [10, 9], [8, 5], [7, 12]]) p.disc(x, y, 1, "#9a9aa4");

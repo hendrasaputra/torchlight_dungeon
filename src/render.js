@@ -11,12 +11,12 @@ let parts = [], floats = [], hoverCell = null, lit = () => false;
 
 function renderLayout(){
   const r = stage.getBoundingClientRect(); if (!r.width) return;
-  DPR = Math.min(window.devicePixelRatio || 1, 3);
-  // the Detail setting: larger or smaller sprites; whole device pixels keep the edges crisp. Sprites are drawn at twice
-  // the detail (SR 2) when there are at least two device pixels to a unit, and then Z stays even, so every sprite pixel
-  // still lands on whole device pixels
-  const css = { 1: r.width > 1300 ? 2.5 : 2, 2: 1.5, 3: 1 }[DETAIL] || 2, want = css * DPR;
-  SR = want >= 2 ? 2 : 1; Z = SR === 2 ? Math.max(2, 2 * Math.round(want / 2)) : Math.max(1, Math.round(want));
+  DPR = Math.min(window.devicePixelRatio || 1, 2);   // above 2, the map is not visibly sharper, only far more work for a phone's GPU
+  // the Detail setting: larger or smaller sprites; whole device pixels keep the edges crisp. Sprites are drawn with
+  // SR pixels to a unit: 4 (64-pixel pictures) when Z is a multiple of 4, as on a high-density screen; otherwise 2
+  // with Z kept even, or 1. So every sprite pixel still lands on whole device pixels
+  const css = { 1: r.width > 1300 ? 2.5 : 2, 2: 1.5, 3: 1 }[DETAIL] || 2, want = css * DPR, Z0 = Math.max(1, Math.round(want));
+  SR = Z0 % 4 === 0 ? 4 : Z0 >= 2 ? 2 : 1; Z = SR === 2 ? Math.max(2, 2 * Math.round(want / 2)) : Z0;
   VWpx = Math.round(r.width * DPR); VHpx = Math.round(r.height * DPR);
   cv.width = VWpx; cv.height = VHpx; cv.style.width = r.width + "px"; cv.style.height = r.height + "px";
   if (player) snapView();
@@ -126,6 +126,19 @@ function fxLevelUp(m){ const a = posOf(m); fxRing(a.x, a.y, RAMPS.gold, 2.5, 0.6
 function fxGold(x, y, n){ twinkles(x + 0.5, y + 0.5, 6, RAMPS.gold, 0.4); fxFloat(x, y, "+" + n, [1, 0.85, 0.35]); }
 function fxShrine(x, y){ fxRing(x, y, RAMPS.fire, 4, 0.8); embers(x + 0.5, y + 0.3, 10); twinkles(x + 0.5, y + 0.5, 8, RAMPS.light, 1.2); }
 function fxIris(){ if (!calm()) iris = 0; }
+// Is anything moving on screen? While nothing is, the game draws only a few frames a second (tick), which spares
+// a phone's battery: a turn-based game is mostly still. Ambient particles (dust, embers) do not count.
+let poke = false;   // something outside the game wants a frame now: the mouse moved, a key was pressed
+function busy(){
+  if (poke || uiDirty || walk || press || hold > 0 || quake > 0 || iris < 1 || floats.length || rings.length || arcs.length || bats.length || shots.length || flashes.length || later.length || waits.length || parts.some(p => !p.amb)) return true;
+  for (const m of mons){ const a = anim.get(m); if (a && (a.lunge || a.flash > 0 || a.x !== m.x || a.y !== m.y)) return true; }
+  const c = cameraTarget(); return Math.abs(c.x - view.x) > 0.05 || Math.abs(c.y - view.y) > 0.05;
+}
+// While a new level opens (behind the iris), draw its monsters' pictures a few at a time, so none is drawn mid-play.
+function warmSprites(){
+  let n = 6;
+  for (const m of mons) if (m.K && m !== player) for (let f = 0; f < 4; f++){ const K = looksLike(m); if (!SPRITES.has(SR + "|" + K.id + "|" + f)){ creatureImage(K, f); if (--n <= 0) return; } }
+}
 function shove(x, y, r){   // a blast pushes the debris lying around it
   for (const p of parts){ const dx = p.x - x - 0.5, dy = p.y - y - 0.5, d = Math.hypot(dx, dy) || 0.1; if (d > r) continue;
     const k = (1 - d / r) * 14; p.vx += dx / d * k; p.vy += dy / d * k; p.vz += k * 0.6; }
@@ -157,10 +170,11 @@ function stepParts(dt){
 }
 // Particles in map pixels: solid pixels, faded by dither, then glow added on top for the bright kinds.
 function drawParts(){
-  ctx.save(); ctx.scale(1 / SR, 1 / SR);   // on the sprite pixel grid: finer when sprites are drawn at twice the detail
-  const glow = [], P = TS * SR;
+  const G = Math.min(SR, 2);   // on the sprite pixel grid, but no finer than 32 pixels a cell, so sparks do not shrink to dust
+  ctx.save(); ctx.scale(1 / G, 1 / G);
+  const glow = [], P = TS * G;
   for (const p of parts){
-    const age = 1 - p.life / p.life0, X = Math.round(p.x * P), Y = Math.round(p.y * P - p.z * 3 * SR), k = p.kind;
+    const age = 1 - p.life / p.life0, X = Math.round(p.x * P), Y = Math.round(p.y * P - p.z * 3 * G), k = p.kind;
     if (k === "bit"){ const a = p.life < 0.4 ? p.life * 2.5 : 1;
       if (shows(X, Y, a)){ ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.fillRect(Math.round(p.x * P), Math.round(p.y * P), p.s, 1); ctx.fillStyle = hex(p.rgb); ctx.fillRect(X, Y, p.s, p.s); } continue; }
     if (k === "spark"){ const col = hex(rampStep(p.ramp, 1 - age * 0.6)), tail = hex(rampStep(p.ramp, 0.45 - age * 0.3)), n = Math.min(4, Math.round(Math.hypot(p.vx, p.vy) * 0.35)) || 1;
@@ -179,11 +193,11 @@ function drawParts(){
     ctx.fillStyle = col;
     for (let j = 0; j < n; j++){ const a = j / n * 6.283, X = Math.round(cx + Math.cos(a) * rad), Y = Math.round(cy + Math.sin(a) * rad * 0.7); if (shows(X, Y, 1 - u)) ctx.fillRect(X, Y, 1, 1); }
     glow.push(cx, cy, rampStep(r.R, 0.6)); }
-  for (const a of arcs){ const pts = a.path.map(([x, y], j) => [(x + 0.5) * P + (j && j < a.path.length - 1 ? rnd(-3, 3) * SR : 0), (y + 0.5) * P + (j && j < a.path.length - 1 ? rnd(-3, 3) * SR : 0)]);
+  for (const a of arcs){ const pts = a.path.map(([x, y], j) => [(x + 0.5) * P + (j && j < a.path.length - 1 ? rnd(-3, 3) * G : 0), (y + 0.5) * P + (j && j < a.path.length - 1 ? rnd(-3, 3) * G : 0)]);
     ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = hex(RAMPS.elec[3]); ctx.lineWidth = 1; ctx.beginPath(); pts.forEach(([x, y], j) => j ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); ctx.globalCompositeOperation = "source-over"; }
   for (const b of bats){ const X = Math.round(b.x * P), Y = Math.round(b.y * P), up = Math.floor(b.t * 10) & 1;
     if (!lit(idx(Math.floor(b.x), Math.floor(b.y)))) continue;
-    const u = SR; ctx.fillStyle = "#1a1420"; ctx.fillRect(X - u, Y, 3 * u, 2 * u); ctx.fillRect(X - 3 * u, Y - (up ? u : -u), 2 * u, u); ctx.fillRect(X + 2 * u, Y - (up ? u : -u), 2 * u, u); ctx.fillStyle = "#e33"; ctx.fillRect(X, Y, 1, 1); }
+    const u = G; ctx.fillStyle = "#1a1420"; ctx.fillRect(X - u, Y, 3 * u, 2 * u); ctx.fillRect(X - 3 * u, Y - (up ? u : -u), 2 * u, u); ctx.fillRect(X + 2 * u, Y - (up ? u : -u), 2 * u, u); ctx.fillStyle = "#e33"; ctx.fillRect(X, Y, 1, 1); }
   ctx.globalCompositeOperation = "lighter";   // the glow: a soft halo added over what is drawn
   for (let j = 0; j < glow.length; j += 3){ ctx.fillStyle = hex(glow[j + 2], 0.28); ctx.fillRect(glow[j] - 1, glow[j + 1] - 1, 3, 3); }
   ctx.globalCompositeOperation = "source-over"; ctx.restore();
@@ -191,6 +205,12 @@ function drawParts(){
 // Life in the dungeon, only for show: embers from burning shrines and the Last Lamp, drips from the walls, dust in lit
 // rooms, and now and then a bat across the dark. warm: burning cells in view.
 function ambient(dt, x0, y0, x1, y1, warm){
+  const n = parts.length;
+  ambientSpawn(dt, x0, y0, x1, y1, warm);
+  for (let i = n; i < parts.length; i++) parts[i].amb = true;
+}
+function ambientSpawn(dt, x0, y0, x1, y1, warm){
+  if (depth === 0 && L.fire >= 0 && !isDay() && Math.random() < dt * 8) embers(L.fire % MW + 0.5, Math.floor(L.fire / MW) + 0.4, 1);   // embers rise from the campfire at night
   for (const i of warm) if (visible(i) && Math.random() < dt * 3) embers(i % MW + 0.5, Math.floor(i / MW) + 0.2, 1, L.tiles[i] === T.LASTLAMP ? RAMPS.cold : RAMPS.fire);
   if (depth === 0) return;
   const cell = () => idx(x0 + Math.floor(Math.random() * (x1 - x0 + 1)), y0 + Math.floor(Math.random() * (y1 - y0 + 1)));
@@ -209,7 +229,7 @@ function drawWorld(t, dt, real = dt){
   const title = state === "title" || state === "create";
   computeLight(lightNow, t);
   for (const m of mons) stepAnim(m, dt);
-  stepParts(dt);
+  stepParts(dt); poke = false;
   const c = cameraTarget(), k = 1 - Math.exp(-dt * 10);
   view.x += (c.x - view.x) * k; view.y += (c.y - view.y) * k;
   if (Math.hypot(c.x - view.x, c.y - view.y) > TS * 12) snapView();
@@ -227,7 +247,6 @@ function drawWorld(t, dt, real = dt){
     ctx.drawImage(tileImage(L, x, y, depth), x * TS, y * TS, TS, TS); if (L.tiles[i] === T.SHRINE_LIT || L.tiles[i] === T.LASTLAMP) warm.push(i); }
   if (title) return lightOverlay(x0, y0, x1, y1, lit, title);
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){ const i = idx(x, y); if (L.trapSeen[i] && L.trap[i] && mem[i]) ctx.drawImage(trapImage(TRAPS[L.trap[i] - 1]), x * TS, y * TS, TS, TS); }
-  if (depth === 0 && L.fire >= 0 && !isDay() && Math.random() < dt * 8) embers(L.fire % MW + 0.5, Math.floor(L.fire / MW) + 0.4, 1);   // embers rise from the campfire at night
   ambient(dt, x0, y0, x1, y1, warm);
   const bob = n => Math.round(Math.sin(t / 260 + n) * 0.6);
   for (const f of floor){ const i = idx(f.x, f.y); if (!visible(i) && !f.seen) continue;
@@ -274,8 +293,10 @@ function drawWorld(t, dt, real = dt){
     }
   }
   if (aiming){ const [sx, sy] = scr(posOf(player).x, posOf(player).y); ctx.strokeStyle = "#f0c04088"; ctx.lineWidth = Z; ctx.setLineDash([2 * Z, 2 * Z]); ctx.strokeRect(sx - 2 * Z, sy - 2 * Z, 20 * Z, 20 * Z); ctx.setLineDash([]); }
+  if (hoverCell && state === "play" && !dlg){ const [hx, hy] = scr(...hoverCell), w = TS * Z;   // the cell under the mouse
+    ctx.strokeStyle = aiming ? "#f0c040dd" : "#ffffff50"; ctx.lineWidth = Math.max(1, Z / 2); ctx.strokeRect(hx + 0.5, hy + 0.5, w - 1, w - 1); }
   if (iris < 1){   // a new level opens around you
-    iris = Math.min(1, iris + real / 0.5); const [px, py] = scr(posOf(player).x + 0.5, posOf(player).y + 0.5);
+    warmSprites(); iris = Math.min(1, iris + real / 0.5); const [px, py] = scr(posOf(player).x + 0.5, posOf(player).y + 0.5);
     ctx.fillStyle = "#000"; ctx.beginPath(); ctx.rect(0, 0, VWpx, VHpx); ctx.arc(px, py, 10 * Z + Math.hypot(VWpx, VHpx) * iris * iris, 0, 7); ctx.fill("evenodd"); }
 }
 function label(x, y, s, col, size = 0.8, centre = false){

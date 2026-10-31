@@ -164,7 +164,7 @@ function drawBar(){
   const cards = [], r = f => (cards.push(f), cards.length - 1), p = player;
   const S = readySpell(), pot = bestPotion(), here = itemsAt(p.x, p.y), t = L.tiles[idx(p.x, p.y)];
   const grab = here.length ? itemPic(here[0].it) : t === T.DOWN || t === T.UP ? `<span class="glyph">${t === T.DOWN ? "▼" : "▲"}</span>` : t === T.SHOP ? `<span class="glyph">⌂</span>` : `<span class="glyph dim">✋</span>`;
-  const slot = (key, inner, label, ref, cls = "") => `<div class="slot ${cls}" ${ref !== undefined ? `data-r="${ref}"` : ""}><span class="k">${key}</span>${inner}${label ? `<span class="n">${label}</span>` : ""}</div>`;
+  const slot = (key, inner, label, ref, cls = "") => `<div class="slot ${cls}" data-key="${key}" ${ref !== undefined ? `data-r="${ref}"` : ""}><span class="k">${key}</span>${inner}${label ? `<span class="n">${label}</span>` : ""}</div>`;
   let h = `<div class="acts">`;
   h += slot("A", p.eq.weapon ? itemPic(p.eq.weapon) : `<span class="glyph">✊</span>`, "Attack", p.eq.weapon ? r(() => card(p.eq.weapon, false)) : undefined);
   h += S ? slot("S", pic(spellPic(S)), S.mana + " mp", r(() => spellCard(S)), p.mana < S.mana ? "off" : "") : slot("S", `<span class="glyph dim">✦</span>`, cls().realm ? "Spell" : "", undefined, "off");
@@ -179,6 +179,18 @@ function drawBar(){
   }
   $("bar").innerHTML = h + "</div>";
   bindTips($("bar"), cards);
+  $("bar").querySelectorAll("[data-key]").forEach(el => el.onclick = () => pressSlot(el.dataset.key));
+  // the tools: what has no other way in by mouse or touch (each names its key)
+  const tool = (key, glyph, label) => `<div class="tool" data-key="${key}" title="${label} (${key === " " ? "Space" : key})">${glyph}<small>${label}</small></div>`;
+  $("tools").innerHTML = tool("Esc", "☰", "Menu") + tool("P", "▤", "Panel") + (knownSpells().length > 1 ? tool("Q", "✦", "Next spell") : "") + tool(" ", "⌛", "Wait") + (depth === 0 ? tool("R", "☾", "Rest") : "") + tool("L", "◉", "Look");
+  $("tools").querySelectorAll("[data-key]").forEach(el => el.onclick = () => pressSlot(el.dataset.key));
+}
+// A click or tap on the action bar or the tools: the same as its key.
+function pressSlot(k){
+  walk = null; if (state !== "play" || dlg) return;
+  if (/^[0-9]$/.test(k)) useHot((+k + 9) % 10);
+  else ({ A: attackKey, S: spellKey, D: drinkKey, W: grabKey, Q: () => nextSpell(1), " ": () => act(waitAndSearch), R: rest, L: look, P: togglePanel, Esc: menuDialog })[k]();
+  refreshUI();
 }
 
 /* ---------- the side panel ---------- */
@@ -187,8 +199,9 @@ const loreDialog = P => openDialog({ title: P.title, head: `<p class="lore">${es
 let panelSel = [];   // what the arrow keys move through on this tab: { el index, open() }
 function drawPanel(){
   const A = $("panel"); A.hidden = !panelOn; if (!panelOn) return;
-  $("tabs").innerHTML = TABS.map(([id, name, k]) => `<b class="${id === tab ? "on" : ""}" data-tab="${id}">${name}<small>${k}</small></b>`).join("");
+  $("tabs").innerHTML = TABS.map(([id, name, k]) => `<b class="${id === tab ? "on" : ""}" data-tab="${id}">${name}<small>${k}</small></b>`).join("") + `<b class="shut" title="Close the panel (P)">×<small>P</small></b>`;
   $("tabs").querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { tab = b.dataset.tab; psel = 0; refreshUI(); });
+  $("tabs").querySelector(".shut").onclick = togglePanel;   // shown on a phone, where the panel covers the map
   const cards = [], r = f => (cards.push(f), cards.length - 1), sel = [], p = player, body = $("tab");
   const selectable = (open, cardFn) => { sel.push({ open, cardFn }); return `data-s="${sel.length - 1}"`; };
   const slotEl = (it, label, open, extra = "") => it ? `<div class="slot q-${quality(it)}" data-r="${r(() => card(it, extra !== "worn"))}" ${selectable(open, () => card(it, extra !== "worn"))}>${itemPic(it)}${it.n > 1 ? `<span class="n">${it.n}</span>` : ""}</div>`
@@ -283,10 +296,11 @@ function drawDialog(){
   const d = dlg, el = $("dlg"); if (!d){ el.hidden = true; return; }
   el.hidden = false;
   const sel = d.cols[d.c][d.at[d.c]];
-  el.innerHTML = `<div class="box ${d.wide ? "wide" : ""}"><h2>${esc(d.title)}</h2>${d.head || ""}<div class="cols">${d.cols.map((rows, ci) => `<div class="list">${d.heads ? `<h3>${esc(d.heads[ci])}</h3>` : ""}${rows.map((r, ri) =>
+  el.innerHTML = `<div class="box ${d.wide ? "wide" : ""}"><h2>${esc(d.title)}${d.noEsc ? "" : `<b class="x" title="Back (Esc)">×</b>`}</h2>${d.head || ""}<div class="cols">${d.cols.map((rows, ci) => `<div class="list">${d.heads ? `<h3>${esc(d.heads[ci])}</h3>` : ""}${rows.map((r, ri) =>
     `<div class="row ${ci === d.c && ri === d.at[ci] ? "sel" : ""} ${r.off ? "off" : ""} ${r.item ? "q-" + quality(r.item) : ""}" data-c="${ci}" data-i="${ri}">${r.item ? itemPic(r.item) : r.spell ? pic(spellPic(r.spell)) : r.icon || ""}<span>${r.html || esc(r.label)}</span>${r.right !== undefined ? `<small>${esc(r.right)}</small>` : ""}</div>`).join("") || `<div class="row off"><span>${esc(d.empty || "Nothing.")}</span></div>`}</div>`).join("")}
     ${d.side !== false ? `<div class="side">${sel && sel.item ? card(sel.item) : sel && sel.spell ? spellCard(sel.spell) : d.sideHtml || ""}</div>` : ""}</div>
     <div class="note">${esc(d.note || "")}${d.note ? " · " : ""}↑↓ choose${d.cols.length > 1 ? " · ←→ switch" : ""} · Enter select${d.noEsc ? "" : " · Esc back"}</div></div>`;
+  const back = el.querySelector(".x"); if (back) back.onclick = () => dialogKey({ key: "Escape" });   // the close button: Esc
   el.querySelectorAll(".row[data-i]").forEach(r => r.onclick = () => { d.c = +r.dataset.c; d.at[d.c] = +r.dataset.i; const row = d.cols[d.c][d.at[d.c]]; if (row && row.select && !row.off) row.select(); else drawDialog(); });
   const s = el.querySelector(".row.sel"); if (s) s.scrollIntoView({ block: "nearest" });
 }
@@ -461,7 +475,7 @@ function helpDialog(){
   const classic = [[ro ? "hjklyubn" : "Arrows / numpad", "move (Shift runs)"], ["g or ,", "pick up"], ["i  e", "pack, equipment"], ["w  " + (ro ? "T" : "t") + "  d", "wear, take off, drop"],
     ["E  q  r", "eat, drink, read"], ["a  " + (ro ? "Z" : "u") + "  z", "aim a wand, use a staff, zap a rod"], ["F", "fill lantern"], ["f  v  I", "fire, throw, inspect"], ["m or p  S", "cast or pray, study"],
     [">  <", "stairs"], ["R  " + (ro ? ". s" : ". 5 s"), "rest (in town only), wait and search"], [ro ? "#" : "T", "dig in a direction"], [(ro ? "x" : "l") + "  C", "look, character"], ["Tab", "next target"], ["Esc", "menu"]];
-  const guide = [["The aim", "Go down. Morrowgloom the Lantern-Eater waits at 2,500 ft; the dungeon goes on below it."], ["Light", "Your torch burns down. F lights a fresh one or fills a lantern with oil. In the dark you see very little."],
+  const guide = [["Mouse and touch", "Click or tap a place to walk there, a monster to fight it (or shoot it, from afar), yourself to pick up or take the stairs. Right-click or a long press looks. The bar's slots and the tools on the right are buttons; while aiming, tap where to aim."], ["The aim", "Go down. Morrowgloom the Lantern-Eater waits at 2,500 ft; the dungeon goes on below it."], ["Light", "Your torch burns down. F lights a fresh one or fills a lantern with oil. In the dark you see very little."],
     ["Food", "Eat (E) when you are hungry. Go too long and you grow weak, then faint, then starve."], ["Unknown things", "Potions and scrolls look different every game. Try them, read Identify, or sell one: the keeper tells you what it was."],
     ["The town", "Walk into a numbered door to shop. A scroll of Word of Recall takes you between the town and your deepest level."],
     ["Magic", "Casters need their book in the pack. When you can learn more, open the Book (B) to study."],
@@ -533,6 +547,29 @@ function drawUI(dt){
     if (tipFor && !document.body.contains(tipFor)) hideTip();
   }
   if (miniT <= 0 && L && player && player.hot && state !== "title"){ miniT = 0.2; drawMinimap($("mini"), 3, true); if (tab === "map" && panelOn) drawBigMap(); }
+}
+
+// The mouse and touch on the map (phase 15): a tap or click does what makes sense there (tapCell), a long press or a
+// right-click looks (lookAt), and a mouse outlines the cell under it. The title and the tombstone take a tap.
+let press = null;
+cv.addEventListener("pointerdown", e => {
+  audio.unlock(); if (e.button) return;
+  const c = cellAt(e); if (!c) return;
+  press = { c, x: e.clientX, y: e.clientY, timer: setTimeout(() => { if (press){ lookAt(...press.c); press = null; } }, 450) };
+});
+cv.addEventListener("pointermove", e => {
+  const was = hoverCell; hoverCell = e.pointerType === "mouse" ? cellAt(e) : null; if (String(was) !== String(hoverCell)) poke = true;
+  if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 12){ clearTimeout(press.timer); press = null; }   // a drag, not a tap
+});
+cv.addEventListener("pointerup", () => { if (!press) return; clearTimeout(press.timer); const c = press.c; press = null; tapCell(...c); refreshUI(); });
+cv.addEventListener("pointerleave", () => { hoverCell = null; if (press){ clearTimeout(press.timer); press = null; } });
+cv.addEventListener("contextmenu", e => { e.preventDefault(); const c = cellAt(e); if (c) lookAt(...c); });
+$("prompt").addEventListener("click", () => { if (aiming){ cancelAim(); refreshUI(); } });   // tapping the aiming prompt cancels it
+$("screen").addEventListener("click", e => { if (e.target.closest(".row")) return; if (state === "title") slotDialog(); else if (state === "dead" && stateT > 1) toTitle(); });
+$("dlg").addEventListener("click", e => { if (e.target === $("dlg") && dlg && !dlg.noEsc) dialogKey({ key: "Escape" }); });   // a click outside the box: back
+function cellAt(e){   // the map cell under a pointer
+  const r = cv.getBoundingClientRect(), x = Math.floor(((e.clientX - r.left) * DPR / Z + view.x) / TS), y = Math.floor(((e.clientY - r.top) * DPR / Z + view.y) / TS);
+  return L && x >= 0 && y >= 0 && x < MW && y < MH ? [x, y] : null;
 }
 
 if (/[?&]sheet\b/.test(location.search)) spriteSheet();   // the sprite sheet, for reviewing the art

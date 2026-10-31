@@ -31,8 +31,9 @@ Still to decide or do (not done here):
 
 Phases 0 to 10 of [TORCHLIGHT_PLAN.md](TORCHLIGHT_PLAN.md) are done; its Progress table says what each phase built
 and what it left out. Phases 11 (the lore in the game), 12 (a skippable tutorial in a new player's first game), 13 (the rings of light,
-the lore's goal) and 14 (game feel: hit-stop, shake, particles, and sprites at twice the detail; `index.html?sheet`
-shows them all) are done too. Every phase in the plan is built. What is left needs a person: playing a long game
+the lore's goal) 14 (game feel: hit-stop, shake, particles, and sprites at twice the detail; `index.html?sheet`
+shows them all) and 15 (the mouse and touch, a phone layout, and 64-pixel sprites on high-density screens) are done
+too. Every phase in the plan is built. What is left needs a person: playing a long game
 through the rings to tune the numbers in `src/rings.js` (starting light, relight and harvest amounts, the drain, the
 town's thresholds) and the balance from town to boss. Saves are at version 2; see `MIGRATIONS` in `src/save.js`. When the lore in `lore/*.md` changes, update the short versions in `src/lore.js` to match. What is left needs a person: listening to the sounds (`audio/torch/*.mp3`; change them in
 `audio/torch-sfx.py`, run it, then `./build.sh`), making the pixel-art cover from `cartridges/PROMPT.md`, and
@@ -64,5 +65,5 @@ Known gaps and bugs:
 - A browser tab that is in the background may not repaint, so a screenshot can show an old frame. Take another
   after a second.
 - Test runs in a browser write monster recall to localStorage; remove `torchlightDungeons.v1.lore` afterwards.
-- Ground rules: keyboard only; one self-contained page; all content original (see "Licence" in the plan); commit
+- Ground rules: keyboard, mouse and touch (phase 15); one self-contained page; all content original (see "Licence" in the plan); commit
   or push only when asked, with no attribution lines.

@@ -856,7 +856,7 @@ const liveTarget = () => target && mons.includes(target) && seesMon(target) ? ta
 function aim(prompt, fn, quick){
   const tg = liveTarget() || (quick ? nearestTarget() : null);
   if (quick && tg){ target = tg; act(() => fn(tg.x, tg.y)); return; }
-  aiming = fn; aimText = prompt + " Arrows: a direction" + (liveTarget() || nearestTarget() ? " · Enter: the target · Tab: another" : "") + " · Esc: cancel"; refreshUI();
+  aiming = fn; aimText = prompt + " Arrows: a direction" + (liveTarget() || nearestTarget() ? " · Enter: the target · Tab: another" : "") + " · Click or tap: a place · Esc or tap here: cancel"; refreshUI();
 }
 function aimAt(dx, dy){ const f = aiming; aiming = null; act(() => f(player.x + dx * 20, player.y + dy * 20)); }
 function aimTarget(){
@@ -1549,7 +1549,7 @@ const EFFECT_TEXT = { heal: "heals wounds", healFull: "heals you completely", ma
   curseArmour: "curses your armour", summonUndead: "calls the undead", summon: "calls monsters", bolt: "fires a bolt", beam: "fires a beam that goes through monsters",
   ball: "fires an exploding ball", sleepMon: "puts a monster to sleep", slowMon: "slows a monster", confMon: "confuses a monster", scareMon: "frightens a monster",
   sleepAll: "puts the monsters you see to sleep", slowAll: "slows the monsters you see", beamLight: "lights a line through the dark", stoneMud: "turns a wall to mud" };
-/* ---------- input: keyboard only ---------- */
+/* ---------- input: the keyboard (the mouse and touch follow it) ---------- */
 // Modern keys: the arrows move (two together go diagonally) and the left hand's A S D W do the common things.
 // Classic keys: Moria's letters, with the original or the roguelike movement keys.
 const ORIGINAL = { Home: 7, PageUp: 9, End: 1, PageDown: 3, 1: 1, 2: 2, 3: 3, 4: 4, 6: 6, 7: 7, 8: 8, 9: 9 };
@@ -1585,7 +1585,7 @@ function goDir(dx, dy, shift){
 const cancelAim = () => { aiming = null; msgs = []; say("Never mind."); };
 addEventListener("pointerdown", () => audio.unlock());
 function onKey(e){
-  audio.unlock();   // browsers allow sound only after the player does something
+  audio.unlock(); walk = null; poke = true;   // browsers allow sound only after the player does something
   if (e.metaKey || (e.ctrlKey && e.key !== "p") || e.altKey) return;
   const k = e.key;
   if (dlg){ e.preventDefault(); return dialogKey(e); }
@@ -1668,8 +1668,73 @@ function toTitle(){ audio.music(null); state = "title"; cr = null; aiming = null
 addEventListener("pagehide", saveGame);   // leaving or closing the page
 addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); });   // switching tabs (a phone may never come back)
 
+/* ---------- input: the mouse and touch (phase 15) ---------- */
+// A click or tap on the map does the obvious thing there (tapCell); a right-click or a long press looks (lookAt).
+// Walking to a far cell follows the shortest path through what you know, a step at a time (walk, stepped in tick),
+// and stops when a new monster comes into view, something hurts you, or you reach an item on the way.
+let walk = null;   // { path: [[x, y], ...], t: time to the next step, seen: the monsters in view when it began }
+function pathTo(tx, ty){   // to (tx, ty) through remembered open cells (and doors); the goal itself may be a wall to bump
+  const start = idx(player.x, player.y), goal = idx(tx, ty), prev = new Int32Array(MW * MH).fill(-1), q = [start];
+  const open = i => mem[i] && (passable(L.tiles[i]) || L.tiles[i] === T.DOOR) && !(L.trap[i] && L.trapSeen[i]);
+  prev[start] = start;
+  for (let h = 0; h < q.length && prev[goal] < 0; h++){ const i = q[h];
+    for (const k of [2, 4, 6, 8, 1, 3, 7, 9]){ const x = i % MW + DIRS[k][0], y = Math.floor(i / MW) + DIRS[k][1], j = idx(x, y);
+      if (x < 0 || y < 0 || x >= MW || y >= MH || prev[j] >= 0 || (j !== goal && !open(j))) continue; prev[j] = i; q.push(j); } }
+  if (prev[goal] < 0) return null;
+  const out = []; for (let i = goal; i !== start; i = prev[i]) out.unshift([i % MW, Math.floor(i / MW)]);
+  return out;
+}
+const canShoot = () => { const bow = player.eq.bow; return !!(bow && player.inv.some(it => ITEM[it.k].cat === "ammo" && ITEM[it.k].ammo === ITEM[bow.k].ammo)) || player.inv.some(it => ITEM[it.k].cat === "dart"); };
+function walkTo(x, y){
+  const path = pathTo(x, y); msgs = [];
+  if (!path){ say("You know no way there."); return refreshUI(); }
+  walk = { path, t: 0, seen: new Set(mons.filter(m => m.K && seesMon(m))) };
+}
+function walkStep(dt){
+  if ((walk.t -= dt) > 0) return;
+  walk.t = 0.075;
+  if (state !== "play" || dlg || aiming) return void (walk = null);
+  let [x, y] = walk.path[0];
+  if (x === player.x && y === player.y){ walk.path.shift(); if (!walk.path.length) return void (walk = null); [x, y] = walk.path[0]; }
+  const dx = x - player.x, dy = y - player.y, hp = player.hp, w = walk;
+  if (Math.abs(dx) > 1 || Math.abs(dy) > 1) return void (walk = null);   // pushed off the path
+  disturbed = false; goDir(dx, dy, false);
+  if (walk !== w) return;
+  if (disturbed || player.hp < hp || mons.some(m => m.K && seesMon(m) && !m.K.still && !w.seen.has(m)) || (w.path.length > 1 && player.x === x && player.y === y && itemsAt(x, y).length)) walk = null;
+}
+function tapCell(x, y){
+  walk = null;
+  if (state !== "play" || dlg) return;
+  const m = monAt(x, y), foe = m && m !== player && m.K && seesMon(m) ? m : null;
+  if (aiming){ if (foe) target = foe; const f = aiming; aiming = null; return act(() => f(x, y)); }   // aim at the place tapped
+  if (x === player.x && y === player.y){ const t = L.tiles[idx(x, y)]; return itemsAt(x, y).length || t === T.DOWN || t === T.UP ? grabKey() : act(waitAndSearch); }
+  if (foe && !hiddenMimic(foe)){ target = foe; if (dist(x, y, player.x, player.y) > 1 && canShoot()) return attackKey(); }
+  if (dist(x, y, player.x, player.y) <= 1) return goDir(x - player.x, y - player.y, false);   // one step: walking into it works it
+  walkTo(x, y);
+}
+const FEATURES = { [T.DOWN]: "a staircase down", [T.UP]: "a staircase up", [T.DOOR]: "a closed door", [T.OPEN]: "an open door", [T.RUBBLE]: "rubble",
+  [T.SHRINE]: "a cold shrine lamp", [T.SHRINE_LIT]: "a burning shrine lamp", [T.LASTLAMP]: "the Last Lamp", [T.FIRE]: "the town's great campfire", [T.LAMP]: "a street lamp" };
+function lookAt(x, y){
+  walk = null;
+  if (state !== "play" || dlg) return;
+  const i = idx(x, y), m = monAt(x, y), t = L.tiles[i]; msgs = [];
+  if (m === player) say("That is you, " + player.name + ".");
+  else if (m && m.K && seesMon(m)) say(hiddenMimic(m) ? "You see " + { gold: "a pile of gold", potion: "a potion", scroll: "a scroll" }[m.K.mimic] + "."
+    : "You see " + aName(looksLike(m)) + (m.sleep > 0 ? " (asleep)" : "") + ", " + healthWord(m) + ". " + looksLike(m).desc);
+  if (!mem[i]){ if (!msgs.length) say("You know nothing of that place."); return refreshUI(); }
+  for (const f of itemsAt(x, y).slice(0, 3)) if (f.seen || visible(i)) say("You see " + nameOf(f.it) + ".");
+  if (t === T.SHOP) say("The " + SHOPS[L.shopAt[i]].name + ".");
+  else if (FEATURES[t]) say(cap(FEATURES[t]) + ".");
+  else if (L.trap[i] && L.trapSeen[i]) say("A " + TRAPS[L.trap[i] - 1].name.toLowerCase() + ".");
+  else if (!msgs.length) say(opaque(t) ? "Rock." : "Bare floor.");
+  refreshUI();
+}
+
 /* ---------- the loop ---------- */
+let idleT = 0;
 function tick(dt, t){
+  if (!busy() && state !== "title"){ idleT += dt; if (idleT < 1 / 10) return; dt = idleT; }   // nothing moving: 10 frames a second
+  idleT = 0;
   const wasT = stateT, real = dt; stateT += dt;
   dt = freeze(dt);   // a hit-stop holds everything on screen still
   if (state === "dead" && wasT < 1 && stateT >= 1) refreshUI();
@@ -1677,6 +1742,7 @@ function tick(dt, t){
   shots = shots.filter(s => s.t * s.speed < s.path.length + 1);
   for (const f of flashes) f.t -= dt;
   flashes = flashes.filter(f => f.t > 0);
+  if (walk) walkStep(real);
   for (const l of later) if ((l.t -= dt) <= 0) l.fn();
   later = later.filter(l => l.t > 0);
   drawWorld(t, dt, real);

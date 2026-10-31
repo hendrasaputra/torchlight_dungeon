@@ -21,7 +21,7 @@ h1{font-size:17px;font-weight:650;margin:0;letter-spacing:-0.01em}
 #cv{position:absolute;display:block}
 </style>
 <style>
-/* Torchlight's own look: a dark panel and HUD over the code-drawn map (phase 6). Keyboard only. */
+/* Torchlight's own look: a dark panel and HUD over the code-drawn map (phase 6). Keyboard, mouse and touch (phase 15). */
 :root { --tbg: #0d0c12; --panel: #1b1824; --edge: #3a3350; --slot: #13111a; --text: #e8e2d4; --dim: #8d86a0; --gold: #e8b830; --hpc: #c8423a; --mpc: #4a7ad8; --xpc: #c89a3a;
   --q-cursed: #d84a3a; --q-magic: #5a9cff; --q-ego: #b46cf0; --q-art: #f0a830; --q-unknown: #77708a; }
 body { background: var(--tbg); color: var(--text); }
@@ -130,6 +130,26 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
 #target { border-color: #a07a3c; }
 #tabs b { background: #1a120c; border-bottom-color: #5a3f26; } #tabs b.on { background: transparent; }
 .card { background: var(--leather-dark); background-color: #1e150e; }
+/* Phase 15: the mouse and touch. The map takes taps (no scrolling or zooming the page over it); the bar's slots and
+   the tools are buttons; dialogs have a close button. Below 700 px wide (a phone), the panel opens over the map. */
+#cv { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.slot, .tool, #dlg h2 .x { cursor: pointer; } .slot:active, .tool:active { filter: brightness(1.4); }
+#tools { right: 10px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 4px; }
+.tool { width: 44px; height: 40px; background: #000b; border: 2px solid var(--edge); border-radius: 6px; display: grid; place-items: center; color: var(--text); font-size: 16px; line-height: 1; padding-top: 2px; }
+.tool small { font-size: 8px; color: var(--dim); text-transform: uppercase; letter-spacing: .02em; }
+#tabs b.shut { display: none; flex: 0 0 34px; color: var(--text); }
+#dlg h2 .x { float: right; color: var(--dim); font-weight: normal; padding: 0 4px; margin: -4px -6px 0 12px; } #dlg h2 .x:hover { color: var(--text); }
+@media (max-width: 700px){
+  header #hud { display: none; } #tabs b.shut { display: block; } #tabs b { font-size: 11px; } #main { margin: 0 4px 4px; position: relative; }
+  #panel { position: absolute; inset: 0 0 0 auto; width: min(372px, 100%); z-index: 20; }
+  #status { width: 170px; padding: 5px 7px; font-size: 11px; } #minibox { width: 140px; } #mini { width: 140px; height: 77px; }
+  #log { width: auto; right: 60px; bottom: 96px; font-size: 11px; }
+  #bar { width: calc(100% - 8px); flex-wrap: wrap; justify-content: center; gap: 3px; padding: 3px; }
+  #bar .acts, #bar .hot { gap: 3px; } .slot { width: 32px; height: 32px; } .slot img.px { width: 22px; height: 22px; } .slot .glyph { font-size: 15px; }
+  .slot .k { font-size: 9px; left: 2px; } .slot .n { font-size: 8px; right: 2px; }
+  #tools { top: 42%; } .tool { width: 40px; height: 36px; }
+  #dlg .box { max-width: 96%; } #dlg .side { display: none; }
+}
 </style>
 </head>
 <body>
@@ -145,6 +165,7 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
       <div id="minibox"><canvas id="mini" width="240" height="132"></canvas><div id="target" hidden></div></div>
       <div id="log" aria-live="polite"></div>
       <div id="bar"></div>
+      <div id="tools"></div>
       <div id="prompt" hidden></div>
     </div>
     <div id="screen" hidden></div>
@@ -1779,9 +1800,27 @@ const shade = (rgb, k = 3) => ({ ramp: ramp7(rgb), k });
 const solid = col => typeof col === "string" ? col : col.ramp[col.k];
 const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + 0.5) / 16);
 const LIGHT_DIR = [-0.5, -0.65, 0.58].map((v, i, a) => v / Math.hypot(...a));
+// Drawing goes into a pixel buffer, not the canvas, one pixel at a time being far faster that way; the buffer is copied
+// to the canvas once, when the picture is used (p.c), or before the canvas itself is drawn on (p.g).
+const RGBA = new Map();
+function rgba(col){   // "#rgb", "#rrggbb", "rgb(r,g,b)" or "rgba(r,g,b,a)" as [r, g, b, a 0..1]
+  let v = RGBA.get(col); if (v) return v;
+  if (col[0] === "#"){ const h = col.length === 4 ? col.slice(1).replace(/./g, "$&$&") : col.slice(1, 7); v = [0, 2, 4].map(k => parseInt(h.substr(k, 2), 16)).concat(1); }
+  else { const n = col.slice(col.indexOf("(") + 1, -1).split(",").map(Number); v = [n[0], n[1], n[2], n.length > 3 ? n[3] : 1]; }
+  RGBA.set(col, v); return v;
+}
 function pix(w = TS, h = TS, S = SR){
   const c = newCanvas(w * S, h * S), g = c.getContext("2d"), W = w * S, H = h * S, glows = c.glows = [];
-  const put = (X, Y, col) => { g.fillStyle = col; g.fillRect(X, Y, 1, 1); };
+  let img = null, dirty = false, stale = false;   // the buffer; changes not yet on the canvas; the canvas changed since it was read
+  const buf = () => { if (!img || stale){ img = stale ? g.getImageData(0, 0, W, H) : g.createImageData(W, H); stale = false; } dirty = true; return img.data; };
+  const sync = () => { if (dirty){ g.putImageData(img, 0, 0); dirty = false; } };
+  const put = (X, Y, col) => {
+    if (X < 0 || Y < 0 || X >= W || Y >= H) return;
+    const d = buf(), [r, gg, b, a] = rgba(col), o = 4 * (Y * W + X);
+    if (a >= 1){ d[o] = r; d[o + 1] = gg; d[o + 2] = b; d[o + 3] = 255; }
+    else { d[o] = d[o] * (1 - a) + r * a; d[o + 1] = d[o + 1] * (1 - a) + gg * a; d[o + 2] = d[o + 2] * (1 - a) + b * a; d[o + 3] = Math.max(d[o + 3], a * 255); }
+  };
+  const fill = (X, Y, RW, RH, col) => { for (let j = 0; j < RH; j++) for (let i = 0; i < RW; i++) put(X + i, Y + j, col); };
   // a shade's step for a surface lit by v (-1 facing away from the light .. 1 facing it)
   const tone = (col, v, X, Y, dither) => { if (typeof col === "string") return col; const f = col.k + v * 1.7;
     return col.ramp[Math.max(0, Math.min(6, dither && S > 1 ? Math.floor(f + BAYER4[((Y & 3) << 2) | (X & 3)]) : Math.round(f)))]; };
@@ -1790,14 +1829,16 @@ function pix(w = TS, h = TS, S = SR){
     for (let Y = Math.max(0, Math.floor(y0 * S)); Y < Math.min(H, Math.ceil(y1 * S)); Y++)
       for (let X = Math.max(0, Math.floor(x0 * S)); X < Math.min(W, Math.ceil(x1 * S)); X++){ const v = fn((X + 0.5) / S, (Y + 0.5) / S); if (v !== null) put(X, Y, tone(col, v, X, Y, dither)); }
   };
-  const p = { c, g, S, glows,
+  const p = { S, glows,
+    get c(){ sync(); return c; },                  // the finished picture
+    get g(){ sync(); stale = true; return g; },    // the canvas itself, for drawImage and transforms
     // a box, lit along its top edge and from the left, shading towards the bottom
     rect: (x, y, ww, hh, col) => { const X = Math.round(x * S), Y = Math.round(y * S), RW = Math.max(1, Math.round(ww * S)), RH = Math.max(1, Math.round(hh * S));
-      if (typeof col === "string"){ g.fillStyle = col; g.fillRect(X, Y, RW, RH); return; }
+      if (typeof col === "string") return fill(X, Y, RW, RH, col);
       for (let j = 0; j < RH; j++) for (let i = 0; i < RW; i++) put(X + i, Y + j, tone(col, j === 0 && RH > 1 ? 1 : (0.5 - (j + 0.5) / RH) * 0.8 + (0.5 - (i + 0.5) / RW) * 0.3, X + i, Y + j)); },
     px: (x, y, col) => p.rect(x, y, 1, 1, solid(col)),
-    dot: (x, y, col) => put(Math.floor(x * S), Math.floor(y * S), solid(col)),   // one pixel: fine detail at S > 1
-    clear: (x, y, ww, hh) => g.clearRect(x * S, y * S, ww * S, hh * S),
+    dot: (x, y, col) => fill(Math.floor(x * S), Math.floor(y * S), Math.max(1, S >> 1), Math.max(1, S >> 1), solid(col)),   // fine detail: half a unit at S > 1
+    clear: (x, y, ww, hh) => { const d = buf(); for (let Y = Math.max(0, y * S); Y < Math.min(H, (y + hh) * S); Y++) for (let X = Math.max(0, x * S); X < Math.min(W, (x + ww) * S); X++) d[4 * (Y * W + X) + 3] = 0; },
     // a ball around the cell (cx, cy), the same footprint as before at S = 1
     disc: (cx, cy, r, col) => { const ox = cx + 0.5, oy = cy + 0.5, R = r + 0.38;
       area(ox - R, oy - R, ox + R, oy + R, col, (u, v) => { const dx = (u - ox) / R, dy = (v - oy) / R, d2 = dx * dx + dy * dy;
@@ -1810,17 +1851,18 @@ function pix(w = TS, h = TS, S = SR){
         const t = Math.max(0, Math.min(1, ((u - ax) * dx + (v - ay) * dy) / L2)), ex = ax + dx * t - u, ey = ay + dy * t - v; return ex * ex + ey * ey <= r * r ? 0 : null; }); },
     // an eye: drawn, glinting at S > 1, and remembered so it can glow in the dark
     eye: (x, y, col) => { p.px(x, y, col); if (S > 1) p.dot(x, y, "#fff"); glows.push([x + 0.5, y + 0.5, col]); },
-    // a 1-pixel outline just outside what is drawn. Given a colour, all of it; otherwise picked per side from the colour
-    // beside it: darker on the shadow side (bottom and right), lighter towards the light, broken where a highlight
-    // touches it, and near black only where the bottom meets the floor
-    outline: (col = null) => {
-      const d = g.getImageData(0, 0, W, H), a = d.data, out = new Uint8ClampedArray(a), lit = /^#/.test(col || "") ? col.slice(1) : null;
-      const C = col && lit ? [0, 2, 4].map(i => parseInt((lit.length === 3 ? lit.replace(/./g, "$&$&") : lit).substr(i, 2), 16)) : null;
+    // a 1-pixel outline just outside what is drawn (half a unit thick above S = 2). Given a colour, all of it; otherwise
+    // picked per side from the colour beside it: darker on the shadow side (bottom and right), lighter towards the light,
+    // broken where a highlight touches it, and near black only where the bottom meets the floor
+    outline: (col = null, pass = Math.max(1, S >> 1)) => {
+      if (pass > 1) p.outline(col, pass - 1);
+      const a = buf(), out = new Uint8ClampedArray(a), C = col ? rgba(col) : null;
+      let r, gg, b, n, ox, oy;
+      const near = (q, dx, dy) => { if (a[q + 3] <= 128) return; r += a[q]; gg += a[q + 1]; b += a[q + 2]; n++; ox -= dx; oy -= dy; };   // a drawn neighbour
       for (let Y = 0; Y < H; Y++) for (let X = 0; X < W; X++){
         const o = 4 * (Y * W + X); if (a[o + 3]) continue;
-        let r = 0, gg = 0, b = 0, n = 0, ox = 0, oy = 0;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]){ const XX = X + dx, YY = Y + dy; if (XX < 0 || YY < 0 || XX >= W || YY >= H) continue;
-          const q = 4 * (YY * W + XX); if (a[q + 3] <= 128) continue; r += a[q]; gg += a[q + 1]; b += a[q + 2]; n++; ox -= dx; oy -= dy; }
+        r = gg = b = n = ox = oy = 0;
+        if (X + 1 < W) near(o + 4, 1, 0); if (X > 0) near(o - 4, -1, 0); if (Y + 1 < H) near(o + 4 * W, 0, 1); if (Y > 0) near(o - 4 * W, 0, -1);
         if (!n) continue;
         let rgb;
         if (C) rgb = C;
@@ -1829,11 +1871,11 @@ function pix(w = TS, h = TS, S = SR){
           rgb = oy > 0 && Y >= H * 0.8 ? [11, 10, 16] : [r, gg, b].map((v, i) => v * (shadow ? 0.24 : 0.42) + [14, 10, 30][i] * 0.5); }
         out[o] = rgb[0]; out[o + 1] = rgb[1]; out[o + 2] = rgb[2]; out[o + 3] = 255;
       }
-      d.data.set(out); g.putImageData(d, 0, 0); return p; },
+      a.set(out); return p; },
     // grain on a tile at S > 1: each pixel a little lighter or darker, so stone and earth have a texture
-    grain: (amt = 0.14, seed = 0) => { if (S === 1) return p; const d = g.getImageData(0, 0, W, H), a = d.data;
+    grain: (amt = 0.14, seed = 0) => { if (S === 1) return p; const a = buf();
       for (let i = 0; i < W * H; i++){ const k = 1 + (hash(i % W, (i / W) | 0, seed + 5) - 0.5) * amt; a[4 * i] *= k; a[4 * i + 1] *= k; a[4 * i + 2] *= k; }
-      g.putImageData(d, 0, 0); return p; }
+      return p; }
   };
   return p;
 }
@@ -2201,7 +2243,7 @@ const heatImage = img => memo(HEAT, img, () => { const c = newCanvas(img.width, 
 function icon(K, rgb){
   const p = pix(), col = shade(rgb, 3), dark = shade(rgb, 1), light = shade(rgb, 5), c = K.cat;
   if (c === "weapon"){ p.g.translate(16 * p.S, 0); p.g.rotate(Math.PI / 4); p.g.translate(-3 * p.S, 2 * p.S);
-    weaponArt((x, y, w, h, cl) => p.rect(x * 1.3, y * 1.3, w * 1.3 + 0.5, h * 1.3 + 0.5, cl), K.id, 0, 0); p.g.setTransform(1, 0, 0, 1, 0, 0); }
+    weaponArt((x, y, w, h, cl) => { const g = p.g, S = p.S; g.fillStyle = cl; g.fillRect(Math.round(x * 1.3 * S), Math.round(y * 1.3 * S), Math.max(1, Math.round((w * 1.3 + 0.5) * S)), Math.max(1, Math.round((h * 1.3 + 0.5) * S))); }, K.id, 0, 0); p.g.setTransform(1, 0, 0, 1, 0, 0); }
   else if (c === "bow"){ if (/sling/.test(K.id)){ p.line(3, 3, 8, 11, hex(LEATHER)); p.line(13, 3, 8, 11, hex(LEATHER)); p.disc(8, 12, 2, hex(LEATHER, 0.8)); }
     else { for (let y = 2; y < 15; y++) p.px(5 + Math.round(4 * Math.sin((y - 2) / 12 * Math.PI)), y, hex(WOOD)); p.line(5, 2, 5, 14, "#ddd"); } }
   else if (c === "ammo" || c === "dart"){ if (/shot|pebble/.test(K.id)) for (const [x, y] of [[5, 9], [10, 9], [8, 5], [7, 12]]) p.disc(x, y, 1, "#9a9aa4");
@@ -3124,7 +3166,7 @@ const liveTarget = () => target && mons.includes(target) && seesMon(target) ? ta
 function aim(prompt, fn, quick){
   const tg = liveTarget() || (quick ? nearestTarget() : null);
   if (quick && tg){ target = tg; act(() => fn(tg.x, tg.y)); return; }
-  aiming = fn; aimText = prompt + " Arrows: a direction" + (liveTarget() || nearestTarget() ? " · Enter: the target · Tab: another" : "") + " · Esc: cancel"; refreshUI();
+  aiming = fn; aimText = prompt + " Arrows: a direction" + (liveTarget() || nearestTarget() ? " · Enter: the target · Tab: another" : "") + " · Click or tap: a place · Esc or tap here: cancel"; refreshUI();
 }
 function aimAt(dx, dy){ const f = aiming; aiming = null; act(() => f(player.x + dx * 20, player.y + dy * 20)); }
 function aimTarget(){
@@ -3817,7 +3859,7 @@ const EFFECT_TEXT = { heal: "heals wounds", healFull: "heals you completely", ma
   curseArmour: "curses your armour", summonUndead: "calls the undead", summon: "calls monsters", bolt: "fires a bolt", beam: "fires a beam that goes through monsters",
   ball: "fires an exploding ball", sleepMon: "puts a monster to sleep", slowMon: "slows a monster", confMon: "confuses a monster", scareMon: "frightens a monster",
   sleepAll: "puts the monsters you see to sleep", slowAll: "slows the monsters you see", beamLight: "lights a line through the dark", stoneMud: "turns a wall to mud" };
-/* ---------- input: keyboard only ---------- */
+/* ---------- input: the keyboard (the mouse and touch follow it) ---------- */
 // Modern keys: the arrows move (two together go diagonally) and the left hand's A S D W do the common things.
 // Classic keys: Moria's letters, with the original or the roguelike movement keys.
 const ORIGINAL = { Home: 7, PageUp: 9, End: 1, PageDown: 3, 1: 1, 2: 2, 3: 3, 4: 4, 6: 6, 7: 7, 8: 8, 9: 9 };
@@ -3853,7 +3895,7 @@ function goDir(dx, dy, shift){
 const cancelAim = () => { aiming = null; msgs = []; say("Never mind."); };
 addEventListener("pointerdown", () => audio.unlock());
 function onKey(e){
-  audio.unlock();   // browsers allow sound only after the player does something
+  audio.unlock(); walk = null; poke = true;   // browsers allow sound only after the player does something
   if (e.metaKey || (e.ctrlKey && e.key !== "p") || e.altKey) return;
   const k = e.key;
   if (dlg){ e.preventDefault(); return dialogKey(e); }
@@ -3936,8 +3978,73 @@ function toTitle(){ audio.music(null); state = "title"; cr = null; aiming = null
 addEventListener("pagehide", saveGame);   // leaving or closing the page
 addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); });   // switching tabs (a phone may never come back)
 
+/* ---------- input: the mouse and touch (phase 15) ---------- */
+// A click or tap on the map does the obvious thing there (tapCell); a right-click or a long press looks (lookAt).
+// Walking to a far cell follows the shortest path through what you know, a step at a time (walk, stepped in tick),
+// and stops when a new monster comes into view, something hurts you, or you reach an item on the way.
+let walk = null;   // { path: [[x, y], ...], t: time to the next step, seen: the monsters in view when it began }
+function pathTo(tx, ty){   // to (tx, ty) through remembered open cells (and doors); the goal itself may be a wall to bump
+  const start = idx(player.x, player.y), goal = idx(tx, ty), prev = new Int32Array(MW * MH).fill(-1), q = [start];
+  const open = i => mem[i] && (passable(L.tiles[i]) || L.tiles[i] === T.DOOR) && !(L.trap[i] && L.trapSeen[i]);
+  prev[start] = start;
+  for (let h = 0; h < q.length && prev[goal] < 0; h++){ const i = q[h];
+    for (const k of [2, 4, 6, 8, 1, 3, 7, 9]){ const x = i % MW + DIRS[k][0], y = Math.floor(i / MW) + DIRS[k][1], j = idx(x, y);
+      if (x < 0 || y < 0 || x >= MW || y >= MH || prev[j] >= 0 || (j !== goal && !open(j))) continue; prev[j] = i; q.push(j); } }
+  if (prev[goal] < 0) return null;
+  const out = []; for (let i = goal; i !== start; i = prev[i]) out.unshift([i % MW, Math.floor(i / MW)]);
+  return out;
+}
+const canShoot = () => { const bow = player.eq.bow; return !!(bow && player.inv.some(it => ITEM[it.k].cat === "ammo" && ITEM[it.k].ammo === ITEM[bow.k].ammo)) || player.inv.some(it => ITEM[it.k].cat === "dart"); };
+function walkTo(x, y){
+  const path = pathTo(x, y); msgs = [];
+  if (!path){ say("You know no way there."); return refreshUI(); }
+  walk = { path, t: 0, seen: new Set(mons.filter(m => m.K && seesMon(m))) };
+}
+function walkStep(dt){
+  if ((walk.t -= dt) > 0) return;
+  walk.t = 0.075;
+  if (state !== "play" || dlg || aiming) return void (walk = null);
+  let [x, y] = walk.path[0];
+  if (x === player.x && y === player.y){ walk.path.shift(); if (!walk.path.length) return void (walk = null); [x, y] = walk.path[0]; }
+  const dx = x - player.x, dy = y - player.y, hp = player.hp, w = walk;
+  if (Math.abs(dx) > 1 || Math.abs(dy) > 1) return void (walk = null);   // pushed off the path
+  disturbed = false; goDir(dx, dy, false);
+  if (walk !== w) return;
+  if (disturbed || player.hp < hp || mons.some(m => m.K && seesMon(m) && !m.K.still && !w.seen.has(m)) || (w.path.length > 1 && player.x === x && player.y === y && itemsAt(x, y).length)) walk = null;
+}
+function tapCell(x, y){
+  walk = null;
+  if (state !== "play" || dlg) return;
+  const m = monAt(x, y), foe = m && m !== player && m.K && seesMon(m) ? m : null;
+  if (aiming){ if (foe) target = foe; const f = aiming; aiming = null; return act(() => f(x, y)); }   // aim at the place tapped
+  if (x === player.x && y === player.y){ const t = L.tiles[idx(x, y)]; return itemsAt(x, y).length || t === T.DOWN || t === T.UP ? grabKey() : act(waitAndSearch); }
+  if (foe && !hiddenMimic(foe)){ target = foe; if (dist(x, y, player.x, player.y) > 1 && canShoot()) return attackKey(); }
+  if (dist(x, y, player.x, player.y) <= 1) return goDir(x - player.x, y - player.y, false);   // one step: walking into it works it
+  walkTo(x, y);
+}
+const FEATURES = { [T.DOWN]: "a staircase down", [T.UP]: "a staircase up", [T.DOOR]: "a closed door", [T.OPEN]: "an open door", [T.RUBBLE]: "rubble",
+  [T.SHRINE]: "a cold shrine lamp", [T.SHRINE_LIT]: "a burning shrine lamp", [T.LASTLAMP]: "the Last Lamp", [T.FIRE]: "the town's great campfire", [T.LAMP]: "a street lamp" };
+function lookAt(x, y){
+  walk = null;
+  if (state !== "play" || dlg) return;
+  const i = idx(x, y), m = monAt(x, y), t = L.tiles[i]; msgs = [];
+  if (m === player) say("That is you, " + player.name + ".");
+  else if (m && m.K && seesMon(m)) say(hiddenMimic(m) ? "You see " + { gold: "a pile of gold", potion: "a potion", scroll: "a scroll" }[m.K.mimic] + "."
+    : "You see " + aName(looksLike(m)) + (m.sleep > 0 ? " (asleep)" : "") + ", " + healthWord(m) + ". " + looksLike(m).desc);
+  if (!mem[i]){ if (!msgs.length) say("You know nothing of that place."); return refreshUI(); }
+  for (const f of itemsAt(x, y).slice(0, 3)) if (f.seen || visible(i)) say("You see " + nameOf(f.it) + ".");
+  if (t === T.SHOP) say("The " + SHOPS[L.shopAt[i]].name + ".");
+  else if (FEATURES[t]) say(cap(FEATURES[t]) + ".");
+  else if (L.trap[i] && L.trapSeen[i]) say("A " + TRAPS[L.trap[i] - 1].name.toLowerCase() + ".");
+  else if (!msgs.length) say(opaque(t) ? "Rock." : "Bare floor.");
+  refreshUI();
+}
+
 /* ---------- the loop ---------- */
+let idleT = 0;
 function tick(dt, t){
+  if (!busy() && state !== "title"){ idleT += dt; if (idleT < 1 / 10) return; dt = idleT; }   // nothing moving: 10 frames a second
+  idleT = 0;
   const wasT = stateT, real = dt; stateT += dt;
   dt = freeze(dt);   // a hit-stop holds everything on screen still
   if (state === "dead" && wasT < 1 && stateT >= 1) refreshUI();
@@ -3945,6 +4052,7 @@ function tick(dt, t){
   shots = shots.filter(s => s.t * s.speed < s.path.length + 1);
   for (const f of flashes) f.t -= dt;
   flashes = flashes.filter(f => f.t > 0);
+  if (walk) walkStep(real);
   for (const l of later) if ((l.t -= dt) <= 0) l.fn();
   later = later.filter(l => l.t > 0);
   drawWorld(t, dt, real);
@@ -4074,12 +4182,12 @@ let parts = [], floats = [], hoverCell = null, lit = () => false;
 
 function renderLayout(){
   const r = stage.getBoundingClientRect(); if (!r.width) return;
-  DPR = Math.min(window.devicePixelRatio || 1, 3);
-  // the Detail setting: larger or smaller sprites; whole device pixels keep the edges crisp. Sprites are drawn at twice
-  // the detail (SR 2) when there are at least two device pixels to a unit, and then Z stays even, so every sprite pixel
-  // still lands on whole device pixels
-  const css = { 1: r.width > 1300 ? 2.5 : 2, 2: 1.5, 3: 1 }[DETAIL] || 2, want = css * DPR;
-  SR = want >= 2 ? 2 : 1; Z = SR === 2 ? Math.max(2, 2 * Math.round(want / 2)) : Math.max(1, Math.round(want));
+  DPR = Math.min(window.devicePixelRatio || 1, 2);   // above 2, the map is not visibly sharper, only far more work for a phone's GPU
+  // the Detail setting: larger or smaller sprites; whole device pixels keep the edges crisp. Sprites are drawn with
+  // SR pixels to a unit: 4 (64-pixel pictures) when Z is a multiple of 4, as on a high-density screen; otherwise 2
+  // with Z kept even, or 1. So every sprite pixel still lands on whole device pixels
+  const css = { 1: r.width > 1300 ? 2.5 : 2, 2: 1.5, 3: 1 }[DETAIL] || 2, want = css * DPR, Z0 = Math.max(1, Math.round(want));
+  SR = Z0 % 4 === 0 ? 4 : Z0 >= 2 ? 2 : 1; Z = SR === 2 ? Math.max(2, 2 * Math.round(want / 2)) : Z0;
   VWpx = Math.round(r.width * DPR); VHpx = Math.round(r.height * DPR);
   cv.width = VWpx; cv.height = VHpx; cv.style.width = r.width + "px"; cv.style.height = r.height + "px";
   if (player) snapView();
@@ -4189,6 +4297,19 @@ function fxLevelUp(m){ const a = posOf(m); fxRing(a.x, a.y, RAMPS.gold, 2.5, 0.6
 function fxGold(x, y, n){ twinkles(x + 0.5, y + 0.5, 6, RAMPS.gold, 0.4); fxFloat(x, y, "+" + n, [1, 0.85, 0.35]); }
 function fxShrine(x, y){ fxRing(x, y, RAMPS.fire, 4, 0.8); embers(x + 0.5, y + 0.3, 10); twinkles(x + 0.5, y + 0.5, 8, RAMPS.light, 1.2); }
 function fxIris(){ if (!calm()) iris = 0; }
+// Is anything moving on screen? While nothing is, the game draws only a few frames a second (tick), which spares
+// a phone's battery: a turn-based game is mostly still. Ambient particles (dust, embers) do not count.
+let poke = false;   // something outside the game wants a frame now: the mouse moved, a key was pressed
+function busy(){
+  if (poke || uiDirty || walk || press || hold > 0 || quake > 0 || iris < 1 || floats.length || rings.length || arcs.length || bats.length || shots.length || flashes.length || later.length || waits.length || parts.some(p => !p.amb)) return true;
+  for (const m of mons){ const a = anim.get(m); if (a && (a.lunge || a.flash > 0 || a.x !== m.x || a.y !== m.y)) return true; }
+  const c = cameraTarget(); return Math.abs(c.x - view.x) > 0.05 || Math.abs(c.y - view.y) > 0.05;
+}
+// While a new level opens (behind the iris), draw its monsters' pictures a few at a time, so none is drawn mid-play.
+function warmSprites(){
+  let n = 6;
+  for (const m of mons) if (m.K && m !== player) for (let f = 0; f < 4; f++){ const K = looksLike(m); if (!SPRITES.has(SR + "|" + K.id + "|" + f)){ creatureImage(K, f); if (--n <= 0) return; } }
+}
 function shove(x, y, r){   // a blast pushes the debris lying around it
   for (const p of parts){ const dx = p.x - x - 0.5, dy = p.y - y - 0.5, d = Math.hypot(dx, dy) || 0.1; if (d > r) continue;
     const k = (1 - d / r) * 14; p.vx += dx / d * k; p.vy += dy / d * k; p.vz += k * 0.6; }
@@ -4220,10 +4341,11 @@ function stepParts(dt){
 }
 // Particles in map pixels: solid pixels, faded by dither, then glow added on top for the bright kinds.
 function drawParts(){
-  ctx.save(); ctx.scale(1 / SR, 1 / SR);   // on the sprite pixel grid: finer when sprites are drawn at twice the detail
-  const glow = [], P = TS * SR;
+  const G = Math.min(SR, 2);   // on the sprite pixel grid, but no finer than 32 pixels a cell, so sparks do not shrink to dust
+  ctx.save(); ctx.scale(1 / G, 1 / G);
+  const glow = [], P = TS * G;
   for (const p of parts){
-    const age = 1 - p.life / p.life0, X = Math.round(p.x * P), Y = Math.round(p.y * P - p.z * 3 * SR), k = p.kind;
+    const age = 1 - p.life / p.life0, X = Math.round(p.x * P), Y = Math.round(p.y * P - p.z * 3 * G), k = p.kind;
     if (k === "bit"){ const a = p.life < 0.4 ? p.life * 2.5 : 1;
       if (shows(X, Y, a)){ ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.fillRect(Math.round(p.x * P), Math.round(p.y * P), p.s, 1); ctx.fillStyle = hex(p.rgb); ctx.fillRect(X, Y, p.s, p.s); } continue; }
     if (k === "spark"){ const col = hex(rampStep(p.ramp, 1 - age * 0.6)), tail = hex(rampStep(p.ramp, 0.45 - age * 0.3)), n = Math.min(4, Math.round(Math.hypot(p.vx, p.vy) * 0.35)) || 1;
@@ -4242,11 +4364,11 @@ function drawParts(){
     ctx.fillStyle = col;
     for (let j = 0; j < n; j++){ const a = j / n * 6.283, X = Math.round(cx + Math.cos(a) * rad), Y = Math.round(cy + Math.sin(a) * rad * 0.7); if (shows(X, Y, 1 - u)) ctx.fillRect(X, Y, 1, 1); }
     glow.push(cx, cy, rampStep(r.R, 0.6)); }
-  for (const a of arcs){ const pts = a.path.map(([x, y], j) => [(x + 0.5) * P + (j && j < a.path.length - 1 ? rnd(-3, 3) * SR : 0), (y + 0.5) * P + (j && j < a.path.length - 1 ? rnd(-3, 3) * SR : 0)]);
+  for (const a of arcs){ const pts = a.path.map(([x, y], j) => [(x + 0.5) * P + (j && j < a.path.length - 1 ? rnd(-3, 3) * G : 0), (y + 0.5) * P + (j && j < a.path.length - 1 ? rnd(-3, 3) * G : 0)]);
     ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = hex(RAMPS.elec[3]); ctx.lineWidth = 1; ctx.beginPath(); pts.forEach(([x, y], j) => j ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); ctx.globalCompositeOperation = "source-over"; }
   for (const b of bats){ const X = Math.round(b.x * P), Y = Math.round(b.y * P), up = Math.floor(b.t * 10) & 1;
     if (!lit(idx(Math.floor(b.x), Math.floor(b.y)))) continue;
-    const u = SR; ctx.fillStyle = "#1a1420"; ctx.fillRect(X - u, Y, 3 * u, 2 * u); ctx.fillRect(X - 3 * u, Y - (up ? u : -u), 2 * u, u); ctx.fillRect(X + 2 * u, Y - (up ? u : -u), 2 * u, u); ctx.fillStyle = "#e33"; ctx.fillRect(X, Y, 1, 1); }
+    const u = G; ctx.fillStyle = "#1a1420"; ctx.fillRect(X - u, Y, 3 * u, 2 * u); ctx.fillRect(X - 3 * u, Y - (up ? u : -u), 2 * u, u); ctx.fillRect(X + 2 * u, Y - (up ? u : -u), 2 * u, u); ctx.fillStyle = "#e33"; ctx.fillRect(X, Y, 1, 1); }
   ctx.globalCompositeOperation = "lighter";   // the glow: a soft halo added over what is drawn
   for (let j = 0; j < glow.length; j += 3){ ctx.fillStyle = hex(glow[j + 2], 0.28); ctx.fillRect(glow[j] - 1, glow[j + 1] - 1, 3, 3); }
   ctx.globalCompositeOperation = "source-over"; ctx.restore();
@@ -4254,6 +4376,12 @@ function drawParts(){
 // Life in the dungeon, only for show: embers from burning shrines and the Last Lamp, drips from the walls, dust in lit
 // rooms, and now and then a bat across the dark. warm: burning cells in view.
 function ambient(dt, x0, y0, x1, y1, warm){
+  const n = parts.length;
+  ambientSpawn(dt, x0, y0, x1, y1, warm);
+  for (let i = n; i < parts.length; i++) parts[i].amb = true;
+}
+function ambientSpawn(dt, x0, y0, x1, y1, warm){
+  if (depth === 0 && L.fire >= 0 && !isDay() && Math.random() < dt * 8) embers(L.fire % MW + 0.5, Math.floor(L.fire / MW) + 0.4, 1);   // embers rise from the campfire at night
   for (const i of warm) if (visible(i) && Math.random() < dt * 3) embers(i % MW + 0.5, Math.floor(i / MW) + 0.2, 1, L.tiles[i] === T.LASTLAMP ? RAMPS.cold : RAMPS.fire);
   if (depth === 0) return;
   const cell = () => idx(x0 + Math.floor(Math.random() * (x1 - x0 + 1)), y0 + Math.floor(Math.random() * (y1 - y0 + 1)));
@@ -4272,7 +4400,7 @@ function drawWorld(t, dt, real = dt){
   const title = state === "title" || state === "create";
   computeLight(lightNow, t);
   for (const m of mons) stepAnim(m, dt);
-  stepParts(dt);
+  stepParts(dt); poke = false;
   const c = cameraTarget(), k = 1 - Math.exp(-dt * 10);
   view.x += (c.x - view.x) * k; view.y += (c.y - view.y) * k;
   if (Math.hypot(c.x - view.x, c.y - view.y) > TS * 12) snapView();
@@ -4290,7 +4418,6 @@ function drawWorld(t, dt, real = dt){
     ctx.drawImage(tileImage(L, x, y, depth), x * TS, y * TS, TS, TS); if (L.tiles[i] === T.SHRINE_LIT || L.tiles[i] === T.LASTLAMP) warm.push(i); }
   if (title) return lightOverlay(x0, y0, x1, y1, lit, title);
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){ const i = idx(x, y); if (L.trapSeen[i] && L.trap[i] && mem[i]) ctx.drawImage(trapImage(TRAPS[L.trap[i] - 1]), x * TS, y * TS, TS, TS); }
-  if (depth === 0 && L.fire >= 0 && !isDay() && Math.random() < dt * 8) embers(L.fire % MW + 0.5, Math.floor(L.fire / MW) + 0.4, 1);   // embers rise from the campfire at night
   ambient(dt, x0, y0, x1, y1, warm);
   const bob = n => Math.round(Math.sin(t / 260 + n) * 0.6);
   for (const f of floor){ const i = idx(f.x, f.y); if (!visible(i) && !f.seen) continue;
@@ -4337,8 +4464,10 @@ function drawWorld(t, dt, real = dt){
     }
   }
   if (aiming){ const [sx, sy] = scr(posOf(player).x, posOf(player).y); ctx.strokeStyle = "#f0c04088"; ctx.lineWidth = Z; ctx.setLineDash([2 * Z, 2 * Z]); ctx.strokeRect(sx - 2 * Z, sy - 2 * Z, 20 * Z, 20 * Z); ctx.setLineDash([]); }
+  if (hoverCell && state === "play" && !dlg){ const [hx, hy] = scr(...hoverCell), w = TS * Z;   // the cell under the mouse
+    ctx.strokeStyle = aiming ? "#f0c040dd" : "#ffffff50"; ctx.lineWidth = Math.max(1, Z / 2); ctx.strokeRect(hx + 0.5, hy + 0.5, w - 1, w - 1); }
   if (iris < 1){   // a new level opens around you
-    iris = Math.min(1, iris + real / 0.5); const [px, py] = scr(posOf(player).x + 0.5, posOf(player).y + 0.5);
+    warmSprites(); iris = Math.min(1, iris + real / 0.5); const [px, py] = scr(posOf(player).x + 0.5, posOf(player).y + 0.5);
     ctx.fillStyle = "#000"; ctx.beginPath(); ctx.rect(0, 0, VWpx, VHpx); ctx.arc(px, py, 10 * Z + Math.hypot(VWpx, VHpx) * iris * iris, 0, 7); ctx.fill("evenodd"); }
 }
 function label(x, y, s, col, size = 0.8, centre = false){
@@ -4591,7 +4720,7 @@ function drawBar(){
   const cards = [], r = f => (cards.push(f), cards.length - 1), p = player;
   const S = readySpell(), pot = bestPotion(), here = itemsAt(p.x, p.y), t = L.tiles[idx(p.x, p.y)];
   const grab = here.length ? itemPic(here[0].it) : t === T.DOWN || t === T.UP ? `<span class="glyph">${t === T.DOWN ? "▼" : "▲"}</span>` : t === T.SHOP ? `<span class="glyph">⌂</span>` : `<span class="glyph dim">✋</span>`;
-  const slot = (key, inner, label, ref, cls = "") => `<div class="slot ${cls}" ${ref !== undefined ? `data-r="${ref}"` : ""}><span class="k">${key}</span>${inner}${label ? `<span class="n">${label}</span>` : ""}</div>`;
+  const slot = (key, inner, label, ref, cls = "") => `<div class="slot ${cls}" data-key="${key}" ${ref !== undefined ? `data-r="${ref}"` : ""}><span class="k">${key}</span>${inner}${label ? `<span class="n">${label}</span>` : ""}</div>`;
   let h = `<div class="acts">`;
   h += slot("A", p.eq.weapon ? itemPic(p.eq.weapon) : `<span class="glyph">✊</span>`, "Attack", p.eq.weapon ? r(() => card(p.eq.weapon, false)) : undefined);
   h += S ? slot("S", pic(spellPic(S)), S.mana + " mp", r(() => spellCard(S)), p.mana < S.mana ? "off" : "") : slot("S", `<span class="glyph dim">✦</span>`, cls().realm ? "Spell" : "", undefined, "off");
@@ -4606,6 +4735,18 @@ function drawBar(){
   }
   $("bar").innerHTML = h + "</div>";
   bindTips($("bar"), cards);
+  $("bar").querySelectorAll("[data-key]").forEach(el => el.onclick = () => pressSlot(el.dataset.key));
+  // the tools: what has no other way in by mouse or touch (each names its key)
+  const tool = (key, glyph, label) => `<div class="tool" data-key="${key}" title="${label} (${key === " " ? "Space" : key})">${glyph}<small>${label}</small></div>`;
+  $("tools").innerHTML = tool("Esc", "☰", "Menu") + tool("P", "▤", "Panel") + (knownSpells().length > 1 ? tool("Q", "✦", "Next spell") : "") + tool(" ", "⌛", "Wait") + (depth === 0 ? tool("R", "☾", "Rest") : "") + tool("L", "◉", "Look");
+  $("tools").querySelectorAll("[data-key]").forEach(el => el.onclick = () => pressSlot(el.dataset.key));
+}
+// A click or tap on the action bar or the tools: the same as its key.
+function pressSlot(k){
+  walk = null; if (state !== "play" || dlg) return;
+  if (/^[0-9]$/.test(k)) useHot((+k + 9) % 10);
+  else ({ A: attackKey, S: spellKey, D: drinkKey, W: grabKey, Q: () => nextSpell(1), " ": () => act(waitAndSearch), R: rest, L: look, P: togglePanel, Esc: menuDialog })[k]();
+  refreshUI();
 }
 
 /* ---------- the side panel ---------- */
@@ -4614,8 +4755,9 @@ const loreDialog = P => openDialog({ title: P.title, head: `<p class="lore">${es
 let panelSel = [];   // what the arrow keys move through on this tab: { el index, open() }
 function drawPanel(){
   const A = $("panel"); A.hidden = !panelOn; if (!panelOn) return;
-  $("tabs").innerHTML = TABS.map(([id, name, k]) => `<b class="${id === tab ? "on" : ""}" data-tab="${id}">${name}<small>${k}</small></b>`).join("");
+  $("tabs").innerHTML = TABS.map(([id, name, k]) => `<b class="${id === tab ? "on" : ""}" data-tab="${id}">${name}<small>${k}</small></b>`).join("") + `<b class="shut" title="Close the panel (P)">×<small>P</small></b>`;
   $("tabs").querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { tab = b.dataset.tab; psel = 0; refreshUI(); });
+  $("tabs").querySelector(".shut").onclick = togglePanel;   // shown on a phone, where the panel covers the map
   const cards = [], r = f => (cards.push(f), cards.length - 1), sel = [], p = player, body = $("tab");
   const selectable = (open, cardFn) => { sel.push({ open, cardFn }); return `data-s="${sel.length - 1}"`; };
   const slotEl = (it, label, open, extra = "") => it ? `<div class="slot q-${quality(it)}" data-r="${r(() => card(it, extra !== "worn"))}" ${selectable(open, () => card(it, extra !== "worn"))}>${itemPic(it)}${it.n > 1 ? `<span class="n">${it.n}</span>` : ""}</div>`
@@ -4710,10 +4852,11 @@ function drawDialog(){
   const d = dlg, el = $("dlg"); if (!d){ el.hidden = true; return; }
   el.hidden = false;
   const sel = d.cols[d.c][d.at[d.c]];
-  el.innerHTML = `<div class="box ${d.wide ? "wide" : ""}"><h2>${esc(d.title)}</h2>${d.head || ""}<div class="cols">${d.cols.map((rows, ci) => `<div class="list">${d.heads ? `<h3>${esc(d.heads[ci])}</h3>` : ""}${rows.map((r, ri) =>
+  el.innerHTML = `<div class="box ${d.wide ? "wide" : ""}"><h2>${esc(d.title)}${d.noEsc ? "" : `<b class="x" title="Back (Esc)">×</b>`}</h2>${d.head || ""}<div class="cols">${d.cols.map((rows, ci) => `<div class="list">${d.heads ? `<h3>${esc(d.heads[ci])}</h3>` : ""}${rows.map((r, ri) =>
     `<div class="row ${ci === d.c && ri === d.at[ci] ? "sel" : ""} ${r.off ? "off" : ""} ${r.item ? "q-" + quality(r.item) : ""}" data-c="${ci}" data-i="${ri}">${r.item ? itemPic(r.item) : r.spell ? pic(spellPic(r.spell)) : r.icon || ""}<span>${r.html || esc(r.label)}</span>${r.right !== undefined ? `<small>${esc(r.right)}</small>` : ""}</div>`).join("") || `<div class="row off"><span>${esc(d.empty || "Nothing.")}</span></div>`}</div>`).join("")}
     ${d.side !== false ? `<div class="side">${sel && sel.item ? card(sel.item) : sel && sel.spell ? spellCard(sel.spell) : d.sideHtml || ""}</div>` : ""}</div>
     <div class="note">${esc(d.note || "")}${d.note ? " · " : ""}↑↓ choose${d.cols.length > 1 ? " · ←→ switch" : ""} · Enter select${d.noEsc ? "" : " · Esc back"}</div></div>`;
+  const back = el.querySelector(".x"); if (back) back.onclick = () => dialogKey({ key: "Escape" });   // the close button: Esc
   el.querySelectorAll(".row[data-i]").forEach(r => r.onclick = () => { d.c = +r.dataset.c; d.at[d.c] = +r.dataset.i; const row = d.cols[d.c][d.at[d.c]]; if (row && row.select && !row.off) row.select(); else drawDialog(); });
   const s = el.querySelector(".row.sel"); if (s) s.scrollIntoView({ block: "nearest" });
 }
@@ -4888,7 +5031,7 @@ function helpDialog(){
   const classic = [[ro ? "hjklyubn" : "Arrows / numpad", "move (Shift runs)"], ["g or ,", "pick up"], ["i  e", "pack, equipment"], ["w  " + (ro ? "T" : "t") + "  d", "wear, take off, drop"],
     ["E  q  r", "eat, drink, read"], ["a  " + (ro ? "Z" : "u") + "  z", "aim a wand, use a staff, zap a rod"], ["F", "fill lantern"], ["f  v  I", "fire, throw, inspect"], ["m or p  S", "cast or pray, study"],
     [">  <", "stairs"], ["R  " + (ro ? ". s" : ". 5 s"), "rest (in town only), wait and search"], [ro ? "#" : "T", "dig in a direction"], [(ro ? "x" : "l") + "  C", "look, character"], ["Tab", "next target"], ["Esc", "menu"]];
-  const guide = [["The aim", "Go down. Morrowgloom the Lantern-Eater waits at 2,500 ft; the dungeon goes on below it."], ["Light", "Your torch burns down. F lights a fresh one or fills a lantern with oil. In the dark you see very little."],
+  const guide = [["Mouse and touch", "Click or tap a place to walk there, a monster to fight it (or shoot it, from afar), yourself to pick up or take the stairs. Right-click or a long press looks. The bar's slots and the tools on the right are buttons; while aiming, tap where to aim."], ["The aim", "Go down. Morrowgloom the Lantern-Eater waits at 2,500 ft; the dungeon goes on below it."], ["Light", "Your torch burns down. F lights a fresh one or fills a lantern with oil. In the dark you see very little."],
     ["Food", "Eat (E) when you are hungry. Go too long and you grow weak, then faint, then starve."], ["Unknown things", "Potions and scrolls look different every game. Try them, read Identify, or sell one: the keeper tells you what it was."],
     ["The town", "Walk into a numbered door to shop. A scroll of Word of Recall takes you between the town and your deepest level."],
     ["Magic", "Casters need their book in the pack. When you can learn more, open the Book (B) to study."],
@@ -4960,6 +5103,29 @@ function drawUI(dt){
     if (tipFor && !document.body.contains(tipFor)) hideTip();
   }
   if (miniT <= 0 && L && player && player.hot && state !== "title"){ miniT = 0.2; drawMinimap($("mini"), 3, true); if (tab === "map" && panelOn) drawBigMap(); }
+}
+
+// The mouse and touch on the map (phase 15): a tap or click does what makes sense there (tapCell), a long press or a
+// right-click looks (lookAt), and a mouse outlines the cell under it. The title and the tombstone take a tap.
+let press = null;
+cv.addEventListener("pointerdown", e => {
+  audio.unlock(); if (e.button) return;
+  const c = cellAt(e); if (!c) return;
+  press = { c, x: e.clientX, y: e.clientY, timer: setTimeout(() => { if (press){ lookAt(...press.c); press = null; } }, 450) };
+});
+cv.addEventListener("pointermove", e => {
+  const was = hoverCell; hoverCell = e.pointerType === "mouse" ? cellAt(e) : null; if (String(was) !== String(hoverCell)) poke = true;
+  if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 12){ clearTimeout(press.timer); press = null; }   // a drag, not a tap
+});
+cv.addEventListener("pointerup", () => { if (!press) return; clearTimeout(press.timer); const c = press.c; press = null; tapCell(...c); refreshUI(); });
+cv.addEventListener("pointerleave", () => { hoverCell = null; if (press){ clearTimeout(press.timer); press = null; } });
+cv.addEventListener("contextmenu", e => { e.preventDefault(); const c = cellAt(e); if (c) lookAt(...c); });
+$("prompt").addEventListener("click", () => { if (aiming){ cancelAim(); refreshUI(); } });   // tapping the aiming prompt cancels it
+$("screen").addEventListener("click", e => { if (e.target.closest(".row")) return; if (state === "title") slotDialog(); else if (state === "dead" && stateT > 1) toTitle(); });
+$("dlg").addEventListener("click", e => { if (e.target === $("dlg") && dlg && !dlg.noEsc) dialogKey({ key: "Escape" }); });   // a click outside the box: back
+function cellAt(e){   // the map cell under a pointer
+  const r = cv.getBoundingClientRect(), x = Math.floor(((e.clientX - r.left) * DPR / Z + view.x) / TS), y = Math.floor(((e.clientY - r.top) * DPR / Z + view.y) / TS);
+  return L && x >= 0 && y >= 0 && x < MW && y < MH ? [x, y] : null;
 }
 
 if (/[?&]sheet\b/.test(location.search)) spriteSheet();   // the sprite sheet, for reviewing the art

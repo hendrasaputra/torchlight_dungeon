@@ -21,7 +21,7 @@ h1{font-size:17px;font-weight:650;margin:0;letter-spacing:-0.01em}
 #cv{position:absolute;display:block}
 </style>
 <style>
-/* Torchlight's own look: a dark panel and HUD over the code-drawn map (phase 6). Keyboard only. */
+/* Torchlight's own look: a dark panel and HUD over the code-drawn map (phase 6). Keyboard, mouse and touch (phase 15). */
 :root { --tbg: #0d0c12; --panel: #1b1824; --edge: #3a3350; --slot: #13111a; --text: #e8e2d4; --dim: #8d86a0; --gold: #e8b830; --hpc: #c8423a; --mpc: #4a7ad8; --xpc: #c89a3a;
   --q-cursed: #d84a3a; --q-magic: #5a9cff; --q-ego: #b46cf0; --q-art: #f0a830; --q-unknown: #77708a; }
 body { background: var(--tbg); color: var(--text); }
@@ -130,6 +130,26 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
 #target { border-color: #a07a3c; }
 #tabs b { background: #1a120c; border-bottom-color: #5a3f26; } #tabs b.on { background: transparent; }
 .card { background: var(--leather-dark); background-color: #1e150e; }
+/* Phase 15: the mouse and touch. The map takes taps (no scrolling or zooming the page over it); the bar's slots and
+   the tools are buttons; dialogs have a close button. Below 700 px wide (a phone), the panel opens over the map. */
+#cv { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.slot, .tool, #dlg h2 .x { cursor: pointer; } .slot:active, .tool:active { filter: brightness(1.4); }
+#tools { right: 10px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 4px; }
+.tool { width: 44px; height: 40px; background: #000b; border: 2px solid var(--edge); border-radius: 6px; display: grid; place-items: center; color: var(--text); font-size: 16px; line-height: 1; padding-top: 2px; }
+.tool small { font-size: 8px; color: var(--dim); text-transform: uppercase; letter-spacing: .02em; }
+#tabs b.shut { display: none; flex: 0 0 34px; color: var(--text); }
+#dlg h2 .x { float: right; color: var(--dim); font-weight: normal; padding: 0 4px; margin: -4px -6px 0 12px; } #dlg h2 .x:hover { color: var(--text); }
+@media (max-width: 700px){
+  header #hud { display: none; } #tabs b.shut { display: block; } #tabs b { font-size: 11px; } #main { margin: 0 4px 4px; position: relative; }
+  #panel { position: absolute; inset: 0 0 0 auto; width: min(372px, 100%); z-index: 20; }
+  #status { width: 170px; padding: 5px 7px; font-size: 11px; } #minibox { width: 140px; } #mini { width: 140px; height: 77px; }
+  #log { width: auto; right: 60px; bottom: 96px; font-size: 11px; }
+  #bar { width: calc(100% - 8px); flex-wrap: wrap; justify-content: center; gap: 3px; padding: 3px; }
+  #bar .acts, #bar .hot { gap: 3px; } .slot { width: 32px; height: 32px; } .slot img.px { width: 22px; height: 22px; } .slot .glyph { font-size: 15px; }
+  .slot .k { font-size: 9px; left: 2px; } .slot .n { font-size: 8px; right: 2px; }
+  #tools { top: 42%; } .tool { width: 40px; height: 36px; }
+  #dlg .box { max-width: 96%; } #dlg .side { display: none; }
+}
 </style>
 </head>
 <body>
@@ -145,6 +165,7 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
       <div id="minibox"><canvas id="mini" width="240" height="132"></canvas><div id="target" hidden></div></div>
       <div id="log" aria-live="polite"></div>
       <div id="bar"></div>
+      <div id="tools"></div>
       <div id="prompt" hidden></div>
     </div>
     <div id="screen" hidden></div>

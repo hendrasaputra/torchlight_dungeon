@@ -70,7 +70,8 @@ The test: if this step broke in production, would anyone find out before a user 
 - Commit or push only when asked, and never add attribution lines to commits.
 - All game content is original. Moria and Umoria are GPL and this project is MIT, so nothing is copied from them:
   no code, tables, names, numbers or descriptions, and nothing from Tolkien. See "Licence" in TORCHLIGHT_PLAN.md.
-- The game is keyboard only and builds into one self-contained page: run `./build.sh`, never edit `index.html`.
+- The game builds into one self-contained page: run `./build.sh`, never edit `index.html`. It plays with the
+  keyboard, the mouse or touch; a new command needs a way in from each.
 - Before saying something works: `node tests/torch.js`, `node tests/balance.js`, and a check in a browser.
 
 Read @README.md for the brief repository understanding. Read @HANDOFF.md for getting started, and
