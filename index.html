@@ -4358,7 +4358,7 @@ function stepParts(dt){
   for (const p of parts){
     const k = p.kind;
     if (k === "ember"){ p.vx += Math.sin(p.life * 9 + p.y * 3) * dt * 2; p.vx *= 1 - dt * 2; }
-    if (k === "smoke"){ p.vx *= 1 - dt; p.vz *= 1 - dt * 0.5; p.s = 2 + (1 - p.life / p.life0) * 2; }
+    if (k === "smoke"){ p.vx *= 1 - dt; p.vz *= 1 - dt * 0.5; p.s = 2 + (1 - p.life / p.life0) * 2; if (depth === 0) p.vx += (0.4 + gust(p.x * TS, p.y * TS) * 0.6) * dt; }
     if (k === "flake" || k === "spark"){ p.vx *= 1 - dt * (k === "flake" ? 3 : 1.5); p.vy *= 1 - dt * (k === "flake" ? 3 : 1.5); }
     const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt;
     if (blocks(Math.floor(nx), Math.floor(p.y))) p.vx *= -0.5; else p.x = nx;   // walls stop them
@@ -4422,6 +4422,7 @@ function ambient(dt, x0, y0, x1, y1, warm){
 }
 function ambientSpawn(dt, x0, y0, x1, y1, warm){
   if (depth === 0 && L.fire >= 0 && !isDay() && Math.random() < dt * 8) embers(L.fire % MW + 0.5, Math.floor(L.fire / MW) + 0.4, 1);   // embers rise from the campfire at night
+  if (depth === 0 && L.fire >= 0 && Math.random() < dt * 3) smoke(L.fire % MW + 0.5, Math.floor(L.fire / MW) + 0.2, 1);   // and smoke, day and night, which the wind carries
   for (const i of warm) if (visible(i) && Math.random() < dt * 3) embers(i % MW + 0.5, Math.floor(i / MW) + 0.2, 1, L.tiles[i] === T.LASTLAMP ? RAMPS.cold : RAMPS.fire);
   if (depth === 0) return;
   const cell = () => idx(x0 + Math.floor(Math.random() * (x1 - x0 + 1)), y0 + Math.floor(Math.random() * (y1 - y0 + 1)));
@@ -4433,12 +4434,38 @@ function ambientSpawn(dt, x0, y0, x1, y1, warm){
     bats.push({ x: left ? x0 : x1 + 1, y: rnd(y0 + 1, y1 - 1), vx: (left ? 1 : -1) * rnd(5, 8), t: (x1 - x0 + 2) / 5 }); }
 }
 
+// Wind in the town (the ways of it are learned from pixel-plays, github.com/amirmushichge/pixel-plays, MIT; the code is
+// ours): it moves in steps, 8 a second, so the sway looks drawn rather than simulated; a gust is two waves whose phase runs
+// across the map, so gusts roll over the grass instead of every blade moving at once; and every offset is a whole pixel.
+// Reduce motion stills it.
+let windT = 0;
+const gust = (x, y) => { const ph = x * 0.11 + y * 0.19; return Math.sin(windT * 0.8 + ph) + 0.5 * Math.sin(windT * 2.1 + ph * 2.3); };
+const BLADES = [1.3, 1.8].map(k => hex(TOWN.grass, k));
+function townWind(x0, y0, x1, y1, shown){
+  const blades = BLADES.map(() => new Path2D()), lamps = !isDay() && !townShade(player.rings);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){ const i = idx(x, y); if (!shown(i)) continue;
+    if (L.tiles[i] === T.LAMP && lamps){   // a lamp's flame leans with the wind and flickers
+      const g = gust(x * TS + 8, y * TS), X = x * TS, Y = y * TS; ctx.fillStyle = hash(Math.floor(windT * 8), i) < 0.3 ? "#ffe08a" : "#fff4c8";
+      ctx.fillRect(X + 7, Y + 2, 2, 2); ctx.fillRect(X + (g > 0.4 ? 8 : 7), Y + 1, 1, 1); }
+    if (L.tiles[i] !== T.GROUND || Math.abs(y - L.street) <= 1) continue;
+    for (let k = 0; k < 4; k++){   // four tufts a cell, taller ones swaying further at the tip
+      const bx = x * TS + 1 + Math.floor(hash(x, y, 60 + k) * 14), by = y * TS + 6 + Math.floor(hash(x, y, 70 + k) * 10), h = 3 + Math.floor(hash(x, y, 80 + k) * 4), g = gust(bx, by);
+      for (let j = 1; j <= h; j++) blades[j === h || g > 1.1 ? 1 : 0].rect(bx + Math.round(g * 0.95 * j / 3), by - j, 1, 1);
+    } }
+  blades.forEach((b, j) => { ctx.fillStyle = BLADES[j]; ctx.fill(b); });
+}
+// Clouds cross the town by day: value noise in two sizes, drifting with the wind; in shadow where it is thick.
+const vnoise = (x, y) => { const ix = Math.floor(x), iy = Math.floor(y), u = x - ix, v = y - iy, s = u * u * (3 - 2 * u), r = v * v * (3 - 2 * v);
+  const a = hash(ix, iy, 90), b = hash(ix + 1, iy, 90), c = hash(ix, iy + 1, 90), d = hash(ix + 1, iy + 1, 90); return a + (b - a) * s + (c - a) * r + (a - b - c + d) * s * r; };
+const cloudAt = (x, y) => { const n = 0.65 * vnoise((x - windT * 0.6) / 7, (y - windT * 0.2) / 5) + 0.35 * vnoise((x - windT * 0.9) / 3, y / 2.5); return Math.max(0, Math.min(1, (n - 0.52) / 0.12)); };
+
 /* ---------- one frame ---------- */
 function drawWorld(t, dt, real = dt){
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#000"; ctx.fillRect(0, 0, VWpx, VHpx);
   if (!L) return;
   const title = state === "title" || state === "create";
   computeLight(lightNow, Math.ceil(t / 80) * 80);   // flames flicker in steps, about 12 a second, so band edges jump rather than crawl
+  windT = calm() ? 0 : Math.floor(t / 125) / 8;
   for (const m of mons) stepAnim(m, dt);
   stepParts(dt); poke = false;
   const c = cameraTarget(), k = 1 - Math.exp(-dt * 10);
@@ -4456,6 +4483,7 @@ function drawWorld(t, dt, real = dt){
   const warm = [];   // burning cells in view, for their embers
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){ const i = idx(x, y); if (!shown(i)) continue;
     ctx.drawImage(tileImage(L, x, y, depth), x * TS, y * TS, TS, TS); if (L.tiles[i] === T.SHRINE_LIT || L.tiles[i] === T.LASTLAMP) warm.push(i); }
+  if (depth === 0) townWind(x0, y0, x1, y1, shown);
   if (title) return lightOverlay(x0, y0, x1, y1, lit, title);
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){ const i = idx(x, y); if (L.trapSeen[i] && L.trap[i] && mem[i]) ctx.drawImage(trapImage(TRAPS[L.trap[i] - 1]), x * TS, y * TS, TS, TS); }
   ambient(dt, x0, y0, x1, y1, warm);
@@ -4473,7 +4501,8 @@ function drawWorld(t, dt, real = dt){
   for (const m of after) figure(m, t, byHeat(m) ? "heat" : "ghost");
   for (const s of shots) shotDraw(s);
   drawParts();
-  ctx.globalCompositeOperation = "lighter";   // eyes and carried lights glow in the dark
+  ctx.globalCompositeOperation = "lighter";   // rims towards the light, and eyes and carried lights glowing in the dark
+  for (const m of figs) if (m === player || (seesMon(m) && !byHeat(m))) rim(m);
   for (const m of figs){ if (m !== player && (!seesMon(m) || byHeat(m) || m.sleep > 0)) continue; const d = posOf(m).drawn; if (!d || !d.img.glows) continue;
     for (const [u, v, col] of d.img.glows){ const x = d.flip ? d.X + d.W - u * d.W / TS : d.X + u * d.W / TS, y = d.Y + v * d.W / TS;
       ctx.fillStyle = col; ctx.globalAlpha = 0.45; ctx.fillRect(x - 0.5, y - 0.5, 1, 1); ctx.globalAlpha = 0.16; ctx.fillRect(x - 1.5, y - 1.5, 3, 3); } }
@@ -4531,14 +4560,18 @@ function figure(m, t, how){
   a.drawn = { X, Y, W, flip, img };
   ctx.globalAlpha = 1;
 }
-// A figure's shadow in whole pixels: a dark contact patch under the feet, and a lighter cast shadow pushed away from the
-// light, found from how the light falls off across the cell (so the hero, who carries the torch, stands on theirs).
-// Edges are dithered, and it never falls on a wall.
-function shadow(cx, cy, S, x, y){
+// Where the light on cell (x, y) comes from, found from how it falls off across the cell: [dx, dy] towards it (a unit
+// vector), k how one-sided it is (0 when lit evenly all round, as the hero is by their own torch, to 1), and how bright.
+function lightDir(x, y){
   const l = j => j < 0 || j >= MW * MH ? 0 : lum(lightNow, 3 * j), i = idx(x, y), here = l(i) + 0.05;
-  let gx = x > 0 && x < MW - 1 ? l(i + 1) - l(i - 1) : 0, gy = y > 0 && y < MH - 1 ? l(i + MW) - l(i - MW) : 0;
-  const g = Math.hypot(gx, gy), k = g > 1e-4 ? Math.min(1, g / here * 2.5) / g : 0;
-  const sx = cx - gx * k * 6, sy = cy - gy * k * 3, rx = 5.5 * S, ry = 2 * S, X0 = Math.floor(Math.min(cx, sx) - rx), Y0 = Math.floor(Math.min(cy, sy) - ry);
+  const gx = x > 0 && x < MW - 1 ? l(i + 1) - l(i - 1) : 0, gy = y > 0 && y < MH - 1 ? l(i + MW) - l(i - MW) : 0, g = Math.hypot(gx, gy);
+  return g > 1e-4 ? [gx / g, gy / g, Math.min(1, g / here * 2.5), here] : [0, 0, 0, here];
+}
+// A figure's shadow in whole pixels: a dark contact patch under the feet, and a lighter cast shadow pushed away from the
+// light (so the hero, who carries the torch, stands on theirs). Edges are dithered, and it never falls on a wall.
+function shadow(cx, cy, S, x, y){
+  const [dx, dy, k] = lightDir(x, y);
+  const sx = cx - dx * k * 6, sy = cy - dy * k * 3, rx = 5.5 * S, ry = 2 * S, X0 = Math.floor(Math.min(cx, sx) - rx), Y0 = Math.floor(Math.min(cy, sy) - ry);
   const dark = new Path2D(), soft = new Path2D();
   for (let Y = Y0; Y <= Math.ceil(Math.max(cy, sy) + ry); Y++) for (let X = X0; X <= Math.ceil(Math.max(cx, sx) + rx); X++){
     if (!passable(L.tiles[idx(Math.max(0, Math.min(MW - 1, Math.floor(X / TS))), Math.max(0, Math.min(MH - 1, Math.floor(Y / TS))))])) continue;
@@ -4547,6 +4580,25 @@ function shadow(cx, cy, S, x, y){
     else if (((u - sx) / rx) ** 2 + ((v - sy) / ry) ** 2 + t < 1) soft.rect(X, Y, 1, 1);
   }
   ctx.fillStyle = "rgba(4,2,10,.35)"; ctx.fill(soft); ctx.fillStyle = "rgba(4,2,10,.6)"; ctx.fill(dark);
+}
+// Rim light: the band of a figure's pixels just inside its outline, on the side facing the light, catches it warm. The
+// bands for the four sides are found once per picture (right, left, down, up); the frame adds the ones facing the light.
+const RIMS = new WeakMap();
+const rimsOf = img => { let r = RIMS.get(img); if (r) return r;
+  const W = img.width, H = img.height, a = img.getContext("2d").getImageData(0, 0, W, H).data, w = Math.max(1, W / 32);
+  const solid = (x, y) => x >= 0 && y >= 0 && x < W && y < H && a[4 * (y * W + x) + 3] > 128;
+  r = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => { const c = newCanvas(W, H), g = c.getContext("2d"), m = g.createImageData(W, H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (solid(x, y) && solid(x + dx * w, y + dy * w) && !solid(x + dx * 2 * w, y + dy * 2 * w)){
+      const o = 4 * (y * W + x); m.data[o] = 255; m.data[o + 1] = 196; m.data[o + 2] = 120; m.data[o + 3] = 255; }
+    g.putImageData(m, 0, 0); return c; });
+  RIMS.set(img, r); return r; };
+function rim(m){
+  const d = posOf(m).drawn; if (!d) return;
+  const [dx, dy, k, here] = lightDir(m.x, m.y), s = 0.85 * k * Math.min(1, here); if (s < 0.05) return;
+  const R = rimsOf(d.img), wx = d.flip ? -dx : dx;   // a mirrored picture's right side faces left
+  ctx.save(); if (d.flip){ ctx.translate(d.X + d.W, d.Y); ctx.scale(-1, 1); } else ctx.translate(d.X, d.Y);
+  [wx, -wx, dy, -dy].forEach((v, j) => { if (v > 0.15){ ctx.globalAlpha = s * v; ctx.drawImage(R[j], 0, 0, d.W, d.W); } });
+  ctx.restore(); ctx.globalAlpha = 1;
 }
 const FLASH = new Map();
 const flashImage = img => memo(FLASH, img, () => { const c = newCanvas(img.width, img.height), g = c.getContext("2d"); g.drawImage(img, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); return c; });
@@ -4580,12 +4632,13 @@ let lightVals = new Float32Array(0), lightImg = null;
 function lightOverlay(x0, y0, x1, y1, lit, title){
   const w = x1 - x0 + 3, h = y1 - y0 + 3, W = w * TS, H = h * TS;
   if (lightVals.length < 3 * w * h) lightVals = new Float32Array(3 * w * h);
-  const c = lightVals.fill(0);
+  const c = lightVals.fill(0), clouds = depth === 0 && isDay();
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
     const mx = x0 + x - 1, my = y0 + y - 1, o = 3 * (y * w + x);
     if (mx < 0 || my < 0 || mx >= MW || my >= MH) continue;
     const i = idx(mx, my), j = 3 * i;
-    if (lit(i)){ c[o] = Math.min(255, lightNow[j] * 220 + 22); c[o + 1] = Math.min(255, lightNow[j + 1] * 220 + 20); c[o + 2] = Math.min(255, lightNow[j + 2] * 220 + 26); }
+    if (lit(i)){ c[o] = Math.min(255, lightNow[j] * 220 + 22); c[o + 1] = Math.min(255, lightNow[j + 1] * 220 + 20); c[o + 2] = Math.min(255, lightNow[j + 2] * 220 + 26);
+      if (clouds){ const f = 1 - 0.3 * cloudAt(mx, my); c[o] *= f; c[o + 1] *= f; c[o + 2] *= f * 1.05; } }
     else if (!title && mem[i]){ c[o] = 30; c[o + 1] = 34; c[o + 2] = 58; }   // remembered: dim and cold
   }
   if (lightTex.width !== W || lightTex.height !== H){ lightTex.width = W; lightTex.height = H; lightImg = null; }
