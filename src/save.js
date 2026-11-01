@@ -1,7 +1,7 @@
 /* ---------- Torchlight Dungeons: save games (phase 9) ---------- */
-// A save is versioned JSON: the character (with what they know), the shops, and the level they are on. Levels are
-// not kept, so the current one is all there is; its map arrays are run-length encoded. decodeSave refuses anything
-// damaged with a message, and lifts older versions to this one through MIGRATIONS, one version at a time.
+// A save is versioned JSON: the character (with what they know), the shops, the level they are on, and the dungeon
+// levels they have left (levels, by depth), packed the same way; map arrays are run-length encoded. decodeSave refuses
+// anything damaged with a message, and lifts older versions to this one through MIGRATIONS, one version at a time.
 const SAVE_VERSION = 2;
 const MIGRATIONS = {   // n: save at version n => the same save at version n + 1
   // 1 => 2 (phase 13): the rings of light. An older character's rings start where a new game's do, the Last Lamp burning.
@@ -27,13 +27,37 @@ function unrle(s, n){
   if (i !== n) badSave("This save is damaged: a map is the wrong size.");
   return a;
 }
-// g: { player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log, rng, target }
-function encodeSave(g){
+// A level as plain data: its map arrays run-length encoded; its rooms and spot are worked out again when it is opened.
+function packLevel(L){
   const level = {};
-  for (const [k, v] of Object.entries(g.L)) if (ArrayBuffer.isView(v)) level[k] = rle(v); else if (typeof v !== "function" && k !== "rooms") level[k] = v;
-  return JSON.stringify({ v: SAVE_VERSION, player: { ...g.player, bonus: undefined }, depth: g.depth, level, mem: rle(g.mem),
+  for (const [k, v] of Object.entries(L)) if (ArrayBuffer.isView(v)) level[k] = rle(v); else if (typeof v !== "function" && k !== "rooms") level[k] = v;
+  return level;
+}
+function unpackLevel(level){
+  const L = {};
+  for (const [k, v] of Object.entries(level)) L[k] = typeof v === "string" && /^(Uint8|Int8|Int16)Array:/.test(v) ? unrle(v, MW * MH) : v;
+  if (!L.tiles || !L.room || !L.lit || !L.lock || !L.trap || !L.trapSeen) badSave("This save is damaged: the level is missing.");
+  // the rooms' floor cells, which levels use to place things, are worked out again from the map
+  if (L.town) L.rooms = [{ cells: [...L.tiles.keys()].filter(i => L.tiles[i] === T.GROUND) }];
+  else { const by = new Map(); L.tiles.forEach((t, i) => { const r = L.room[i]; if (r >= 0 && passable(t)){ if (!by.has(r)) by.set(r, []); by.get(r).push(i); } }); L.rooms = [...by.values()].map(cells => ({ cells })); }
+  return L;
+}
+// A dungeon level you leave, kept to come back to: the map and what you know of it, its monsters and what lies on the
+// floor, when you left (turns) and where you stood (at: the stairs you took, mostly). openKept throws if it is damaged.
+const keepOf = (L, mem, mons, floor, turns, at) => ({ level: packLevel(L), mem: rle(mem), mons: mons.map(m => ({ ...m, K: m.K.id })), floor, left: turns, at });
+const openKept = k => ({ L: unpackLevel(k.level), mem: unrle(k.mem, MW * MH), mons: k.mons.filter(m => MON[m.K]).map(m => ({ ...m, K: MON[m.K] })), floor: k.floor, left: k.left, at: k.at });
+const KEEP_LEVELS = 12;   // the most recently left levels are kept; older ones are forgotten (made anew), so saves stay small
+function keepLevel(levels, d, kept){
+  levels[d] = kept;
+  const old = Object.keys(levels).sort((a, b) => levels[a].left - levels[b].left);
+  while (old.length > KEEP_LEVELS) delete levels[old.shift()];
+  return levels;
+}
+// g: { player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log, rng, target, levels }
+function encodeSave(g){
+  return JSON.stringify({ v: SAVE_VERSION, player: { ...g.player, bonus: undefined }, depth: g.depth, level: packLevel(g.L), mem: rle(g.mem),
     mons: g.mons.map(m => m === g.player ? 0 : { ...m, K: m.K.id }), floor: g.floor, shops: g.shops, lastTown: g.lastTown, wasDay: g.wasDay,
-    turnNo: g.turnNo, log: g.log, rng: g.rng, target: g.target });
+    turnNo: g.turnNo, log: g.log, rng: g.rng, target: g.target, levels: g.levels || {} });
 }
 function decodeSave(str){
   try {
@@ -44,14 +68,10 @@ function decodeSave(str){
     const p = s.player;
     if (!p || !Array.isArray(p.inv) || !p.eq || !p.know || !p.stats || !p.t || !Number.isInteger(s.depth) || !s.level || !Array.isArray(s.mons) || !Array.isArray(s.floor) || !Array.isArray(s.shops))
       badSave("This save is damaged: parts of it are missing.");
-    const L = {};
-    for (const [k, v] of Object.entries(s.level)) L[k] = typeof v === "string" && /^(Uint8|Int8|Int16)Array:/.test(v) ? unrle(v, MW * MH) : v;
-    if (!L.tiles || !L.room || !L.lit || !L.lock || !L.trap || !L.trapSeen) badSave("This save is damaged: the level is missing.");
-    // the rooms' floor cells, which levels use to place things, are worked out again from the map
-    if (L.town) L.rooms = [{ cells: [...L.tiles.keys()].filter(i => L.tiles[i] === T.GROUND) }];
-    else { const by = new Map(); L.tiles.forEach((t, i) => { const r = L.room[i]; if (r >= 0 && passable(t)){ if (!by.has(r)) by.set(r, []); by.get(r).push(i); } }); L.rooms = [...by.values()].map(cells => ({ cells })); }
+    const L = unpackLevel(s.level);
     const mons = s.mons.map(m => { if (m === 0) return p; if (!m || !MON[m.K]) badSave("This save is damaged: it holds an unknown monster."); return { ...m, K: MON[m.K] }; });
     if (mons[0] !== p) badSave("This save is damaged: the character is missing from the level.");
-    return { ...s, player: p, L, mem: unrle(s.mem, MW * MH), mons };
+    const levels = s.levels && typeof s.levels === "object" && !Array.isArray(s.levels) ? s.levels : {};   // saves from before kept levels have none
+    return { ...s, player: p, L, mem: unrle(s.mem, MW * MH), mons, levels };
   } catch (e){ throw e.save ? e : new Error("This save is damaged and cannot be loaded."); }
 }

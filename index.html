@@ -90,7 +90,8 @@ h3 { margin: 12px 0 6px; font-size: 11px; color: var(--dim); letter-spacing: .12
 #dlg .plate { display: block; max-width: 560px; margin: 0 auto 10px; } #dlg .plate img { width: 100%; max-height: 46vh; object-fit: contain; display: block; border-radius: 4px; }
 .card img.plate { display: block; width: 100%; max-height: 180px; object-fit: cover; border-radius: 3px; margin-bottom: 6px; } .beast[data-s] { cursor: pointer; }
 .beast { display: flex; gap: 8px; margin: 6px 0; } .beast small { color: var(--dim); display: block; }
-#bigmap { image-rendering: pixelated; width: 100%; border: 2px solid var(--edge); }
+#bigmap { image-rendering: pixelated; width: 100%; border: 2px solid var(--edge); cursor: pointer; }
+#mini { cursor: pointer; }
 #tip { position: fixed; z-index: 30; width: 280px; pointer-events: none; }
 .card { background: #0c0b11f4; border: 2px solid var(--gold); padding: 10px; border-radius: 4px; font: 13px/1.35 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--text); }
 .card p { display: flex; justify-content: space-between; margin: 3px 0; } .card hr { border: 0; border-top: 1px solid var(--edge); margin: 6px 0; }
@@ -398,6 +399,13 @@ const isShrine = t => t === T.SHRINE || t === T.SHRINE_LIT;
 const HARDNESS = { [T.RUBBLE]: 60, [T.MAGMA]: 250, [T.MAGMA_T]: 250, [T.QUARTZ]: 400, [T.QUARTZ_T]: 400, [T.WALL]: 900 };
 
 // light: the ring's light (0 to 100, phase 13), which sets how many rooms are lit and how many shrines burn.
+// Where you arrive by stairs: on a staircase of kind want (down a level: one leading back up; up: one leading back
+// down), the one at prefer if it is that kind (the stairs you left a kept level by), else any of them; -1 if none.
+function arriveAt(L, want, prefer, rng){
+  if (prefer >= 0 && L.tiles[prefer] === want) return prefer;
+  const all = []; L.tiles.forEach((t, i) => { if (t === want) all.push(i); });
+  return all.length ? rng.pick(all) : -1;
+}
 function generateLevel(rng, depth, light = 70){
   const tiles = new Uint8Array(MW * MH).fill(T.WALL), room = new Int16Array(MW * MH).fill(-1), lit = new Uint8Array(MW * MH);
   const lock = new Int8Array(MW * MH), trap = new Uint8Array(MW * MH), trapSeen = new Uint8Array(MW * MH);   // trap: 0 none, else 1 + its index in TRAPS
@@ -1748,9 +1756,9 @@ const bossFactor = rings => 0.6 + 1.4 * (1 - cageLight(rings) / (100 * CAGE_RING
 // What a carried flame fetches from the Lantern Guild: more the deeper its ring.
 const flamePrice = k => 300 * (CAGE_RINGS.indexOf(k) + 1 || 6);
 /* ---------- Torchlight Dungeons: save games (phase 9) ---------- */
-// A save is versioned JSON: the character (with what they know), the shops, and the level they are on. Levels are
-// not kept, so the current one is all there is; its map arrays are run-length encoded. decodeSave refuses anything
-// damaged with a message, and lifts older versions to this one through MIGRATIONS, one version at a time.
+// A save is versioned JSON: the character (with what they know), the shops, the level they are on, and the dungeon
+// levels they have left (levels, by depth), packed the same way; map arrays are run-length encoded. decodeSave refuses
+// anything damaged with a message, and lifts older versions to this one through MIGRATIONS, one version at a time.
 const SAVE_VERSION = 2;
 const MIGRATIONS = {   // n: save at version n => the same save at version n + 1
   // 1 => 2 (phase 13): the rings of light. An older character's rings start where a new game's do, the Last Lamp burning.
@@ -1776,13 +1784,37 @@ function unrle(s, n){
   if (i !== n) badSave("This save is damaged: a map is the wrong size.");
   return a;
 }
-// g: { player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log, rng, target }
-function encodeSave(g){
+// A level as plain data: its map arrays run-length encoded; its rooms and spot are worked out again when it is opened.
+function packLevel(L){
   const level = {};
-  for (const [k, v] of Object.entries(g.L)) if (ArrayBuffer.isView(v)) level[k] = rle(v); else if (typeof v !== "function" && k !== "rooms") level[k] = v;
-  return JSON.stringify({ v: SAVE_VERSION, player: { ...g.player, bonus: undefined }, depth: g.depth, level, mem: rle(g.mem),
+  for (const [k, v] of Object.entries(L)) if (ArrayBuffer.isView(v)) level[k] = rle(v); else if (typeof v !== "function" && k !== "rooms") level[k] = v;
+  return level;
+}
+function unpackLevel(level){
+  const L = {};
+  for (const [k, v] of Object.entries(level)) L[k] = typeof v === "string" && /^(Uint8|Int8|Int16)Array:/.test(v) ? unrle(v, MW * MH) : v;
+  if (!L.tiles || !L.room || !L.lit || !L.lock || !L.trap || !L.trapSeen) badSave("This save is damaged: the level is missing.");
+  // the rooms' floor cells, which levels use to place things, are worked out again from the map
+  if (L.town) L.rooms = [{ cells: [...L.tiles.keys()].filter(i => L.tiles[i] === T.GROUND) }];
+  else { const by = new Map(); L.tiles.forEach((t, i) => { const r = L.room[i]; if (r >= 0 && passable(t)){ if (!by.has(r)) by.set(r, []); by.get(r).push(i); } }); L.rooms = [...by.values()].map(cells => ({ cells })); }
+  return L;
+}
+// A dungeon level you leave, kept to come back to: the map and what you know of it, its monsters and what lies on the
+// floor, when you left (turns) and where you stood (at: the stairs you took, mostly). openKept throws if it is damaged.
+const keepOf = (L, mem, mons, floor, turns, at) => ({ level: packLevel(L), mem: rle(mem), mons: mons.map(m => ({ ...m, K: m.K.id })), floor, left: turns, at });
+const openKept = k => ({ L: unpackLevel(k.level), mem: unrle(k.mem, MW * MH), mons: k.mons.filter(m => MON[m.K]).map(m => ({ ...m, K: MON[m.K] })), floor: k.floor, left: k.left, at: k.at });
+const KEEP_LEVELS = 12;   // the most recently left levels are kept; older ones are forgotten (made anew), so saves stay small
+function keepLevel(levels, d, kept){
+  levels[d] = kept;
+  const old = Object.keys(levels).sort((a, b) => levels[a].left - levels[b].left);
+  while (old.length > KEEP_LEVELS) delete levels[old.shift()];
+  return levels;
+}
+// g: { player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log, rng, target, levels }
+function encodeSave(g){
+  return JSON.stringify({ v: SAVE_VERSION, player: { ...g.player, bonus: undefined }, depth: g.depth, level: packLevel(g.L), mem: rle(g.mem),
     mons: g.mons.map(m => m === g.player ? 0 : { ...m, K: m.K.id }), floor: g.floor, shops: g.shops, lastTown: g.lastTown, wasDay: g.wasDay,
-    turnNo: g.turnNo, log: g.log, rng: g.rng, target: g.target });
+    turnNo: g.turnNo, log: g.log, rng: g.rng, target: g.target, levels: g.levels || {} });
 }
 function decodeSave(str){
   try {
@@ -1793,15 +1825,11 @@ function decodeSave(str){
     const p = s.player;
     if (!p || !Array.isArray(p.inv) || !p.eq || !p.know || !p.stats || !p.t || !Number.isInteger(s.depth) || !s.level || !Array.isArray(s.mons) || !Array.isArray(s.floor) || !Array.isArray(s.shops))
       badSave("This save is damaged: parts of it are missing.");
-    const L = {};
-    for (const [k, v] of Object.entries(s.level)) L[k] = typeof v === "string" && /^(Uint8|Int8|Int16)Array:/.test(v) ? unrle(v, MW * MH) : v;
-    if (!L.tiles || !L.room || !L.lit || !L.lock || !L.trap || !L.trapSeen) badSave("This save is damaged: the level is missing.");
-    // the rooms' floor cells, which levels use to place things, are worked out again from the map
-    if (L.town) L.rooms = [{ cells: [...L.tiles.keys()].filter(i => L.tiles[i] === T.GROUND) }];
-    else { const by = new Map(); L.tiles.forEach((t, i) => { const r = L.room[i]; if (r >= 0 && passable(t)){ if (!by.has(r)) by.set(r, []); by.get(r).push(i); } }); L.rooms = [...by.values()].map(cells => ({ cells })); }
+    const L = unpackLevel(s.level);
     const mons = s.mons.map(m => { if (m === 0) return p; if (!m || !MON[m.K]) badSave("This save is damaged: it holds an unknown monster."); return { ...m, K: MON[m.K] }; });
     if (mons[0] !== p) badSave("This save is damaged: the character is missing from the level.");
-    return { ...s, player: p, L, mem: unrle(s.mem, MW * MH), mons };
+    const levels = s.levels && typeof s.levels === "object" && !Array.isArray(s.levels) ? s.levels : {};   // saves from before kept levels have none
+    return { ...s, player: p, L, mem: unrle(s.mem, MW * MH), mons, levels };
   } catch (e){ throw e.save ? e : new Error("This save is damaged and cannot be loaded."); }
 }
 /* ---------- Torchlight Dungeons: tiles, figures and icons, all drawn by code (phase 6) ---------- */
@@ -2451,12 +2479,32 @@ function lightRadius(){
 const infra = () => player.t.blind ? 0 : race().infra + player.bonus.infra;
 
 /* ---------- levels ---------- */
-function newLevel(d){
+// Dungeon levels are kept when you leave them (levels, by depth; see keepOf in save.js), so stairs stay where you found
+// them. Stairs lead to stairs: going down you arrive on a way back up, going up on a way back down, on a kept level the
+// very stairs you left it by. Falling (a trapdoor, a deep descent, recall) lands you anywhere.
+let levels = {};
+function newLevel(d, stairs = false){
   const from = depth; fxIris();
+  if (from > 0 && L && !L.town) keepLevel(levels, from, keepOf(L, mem, mons.filter(m => m !== player), floor, player.turns, idx(player.x, player.y)));
   depth = d; player.maxDepth = Math.max(player.maxDepth, d);
-  L = d === 0 ? generateTown(rng) : generateLevel(rng, d, player.rings[ringKey(d)]);
-  mem.fill(0); mons = [player]; floor = []; pendingLevel = null; parts = []; floats = []; shots = []; flashes = []; later = []; target = null;
-  const at = L.spot(); player.x = at % MW; player.y = Math.floor(at / MW); audio.music(d ? "depths" : "town");
+  let back = null;
+  if (d > 0 && levels[d]){ try { back = openKept(levels[d]); } catch (e){ back = null; } delete levels[d]; }   // a damaged one is made anew
+  L = back ? back.L : d === 0 ? generateTown(rng) : generateLevel(rng, d, player.rings[ringKey(d)]);
+  if (back) mem.set(back.mem); else mem.fill(0);
+  mons = back ? [player, ...back.mons] : [player]; floor = back ? back.floor : []; pendingLevel = null; parts = []; floats = []; shots = []; flashes = []; later = []; target = null;
+  let at = stairs && d > 0 ? arriveAt(L, d > from ? T.UP : T.DOWN, back ? back.at : -1, rng) : -1;
+  if (at < 0){ const f = back ? freeSpot(0) : -1; at = back ? (f >= 0 ? f : back.at) : L.spot(); }
+  player.x = at % MW; player.y = Math.floor(at / MW); audio.music(d ? "depths" : "town");
+  const inWay = monAt(player.x, player.y); if (inWay && inWay !== player) sendAway(inWay);
+  if (back){   // back where you were: the level as you left it, and a few newcomers the longer you were away
+    relight();
+    const light = player.rings[ringKey(d)], darkRing = light <= 0;
+    for (let k = 0, n = Math.min(8, Math.floor((player.turns - back.left) / 300)); k < n; k++) spawnMonster(false, pickMonster(darkRing && rng.chance(0.3) ? d + 10 : d));
+    updateSight(); digging = null;
+    say("You are back at " + feet(d) + " ft.");
+    saveGame();
+    return;
+  }
   if (d === 0){
     // back from the dungeon: the shops have sold some things and bought in others
     if (from > 0 && player.turns - lastTown > 500) shops.forEach((sh, i) => { sh.stock = restock(sh.stock, SHOPS[i], rng, player.know, 0.5); });
@@ -2594,8 +2642,8 @@ function pickMonster(d){
   const pool = d === 0 ? MONSTERS.filter(m => m.town) : MONSTERS.filter(m => !m.town && !m.boss && m.depth <= d + deep && !(m.unique && uniqueGone(m)));
   return rng.weighted(pool, m => 1 / m.rarity * (m.depth >= d - 4 ? 1.5 : 0.6) * (m.unique ? 0.5 : 1));
 }
-// A unique lives once a game: not again once slain, nor twice on one level.
-const uniqueGone = K => (player.slain && player.slain[K.id]) || mons.some(m => m.K === K);
+// A unique lives once a game: not again once slain, nor twice on one level, nor while it waits on a level you left.
+const uniqueGone = K => (player.slain && player.slain[K.id]) || mons.some(m => m.K === K) || Object.values(levels).some(v => v.mons.some(m => m.K === K.id));
 function newMon(K, x, y, sleep){
   const hp = rng.dice(K.hp);
   const m = { K, x, y, hp, mhp: hp, energy: rng.int(100), speed: K.speed, sleep, seen: false };
@@ -2750,10 +2798,19 @@ function pickUp(){
 }
 function takeStairs(down){
   const t = L.tiles[idx(player.x, player.y)];
-  if (t !== (down ? T.DOWN : T.UP)){ say("There is no staircase " + (down ? "down" : "up") + " here."); return false; }
+  if (t !== (down ? T.DOWN : T.UP)){ headFor(down ? T.DOWN : T.UP); return false; }
   say(down ? "You descend the stairs." : "You climb the stairs."); sfx("stairs");
-  newLevel(depth + (down ? 1 : -1));
+  newLevel(depth + (down ? 1 : -1), true);
   return "level";
+}
+// Away from stairs, the stairs keys walk you to the nearest staircase of that kind you know of on this level.
+function headFor(t){
+  const way = t === T.DOWN ? "down" : "up"; let best = null;
+  for (let i = 0; i < MW * MH; i++) if (mem[i] && L.tiles[i] === t){ const p = pathTo(i % MW, Math.floor(i / MW)); if (p && (!best || p.length < best.length)) best = p; }
+  msgs = [];
+  if (!best) return say("You know of no staircase " + way + " on this level" + (mem.some((v, i) => v && L.tiles[i] === t) ? " that you can reach." : "."));
+  say("You head for the staircase " + way + ".");
+  walk = { path: best, t: 0, seen: new Set(mons.filter(m => m.K && seesMon(m))) };
 }
 /* ---------- digging, locked doors, searching and traps (phase 8) ---------- */
 // Walking into rubble, a vein, a locked or stuck door or a trap you know of works at it, turn after turn (work);
@@ -3762,7 +3819,7 @@ function begin(){
   player.hot = Array(10).fill(null); player.slain = {}; player.ready = null; player.lore = Object.fromEntries(LORE_START.map(id => [id, 1]));
   log = []; msgs = []; killer = ""; tomb = null; cr = null;
   state = "play"; stateT = 0;
-  shops = newShops(rng, player.know); lastTown = 0; depth = 0; slot = newSlot; store.del(dyingKey(slot));
+  shops = newShops(rng, player.know); lastTown = 0; depth = 0; levels = {}; slot = newSlot; store.del(dyingKey(slot));
   newLevel(0);
   tutBegin();   // a new player's first game teaches itself (tutorial.js)
 }
@@ -3778,7 +3835,7 @@ let slot = 0, newSlot = 1, saveFailed = false;   // slot: where this character i
 const slotKey = n => "slot" + n;
 function saveGame(){
   if (state !== "play" || !slot) return;
-  const ok = store.set(slotKey(slot), encodeSave({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log, rng: rng.s, target: mons.indexOf(target) }));
+  const ok = store.set(slotKey(slot), encodeSave({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log, rng: rng.s, target: mons.indexOf(target), levels }));
   if (!ok && !saveFailed) say("Your game could not be saved: the browser's storage is full or blocked. Export it from the menu to keep it.");
   saveFailed = !ok;
 }
@@ -3790,7 +3847,7 @@ function slotInfo(n){
 }
 function loadGame(n){
   let g; try { g = decodeSave(store.get(slotKey(n))); } catch (e){ return noteDialog("Slot " + n, e.message); }
-  ({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log } = g);
+  ({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log, levels } = g);
   rng = new RNG(g.rng); target = mons[g.target] || null; slot = n;
   player.lore = player.lore || Object.fromEntries(LORE_START.map(id => [id, 1]));   // saves from before phase 11 have no Lore pages yet
   msgs = []; killer = ""; tomb = null; cr = null; aiming = null; pendingLevel = null; digging = null; parts = []; floats = []; shots = []; flashes = []; later = [];
@@ -4680,7 +4737,23 @@ function drawMinimap(c, s, focus){
   const ox = focus ? Math.max(0, Math.min(w * s - cw, player.x * s - cw / 2)) : (w * s - cw) / 2, oy = focus ? Math.max(0, Math.min(h * s - ch, player.y * s - ch / 2)) : (h * s - ch) / 2;
   g.fillStyle = "#07060b"; g.fillRect(0, 0, cw, ch); g.imageSmoothingEnabled = false;
   g.drawImage(tmp, -ox, -oy, w * s, h * s);
+  // stairs you know of, as arrows big enough to find at a glance: pale blue up, gold down
+  const r = Math.max(3.5, s * 1.7); g.lineWidth = Math.max(1, r / 3); g.strokeStyle = "#07060b";
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const i = idx(x, y), t = L.tiles[i]; if (!mem[i] || (t !== T.UP && t !== T.DOWN)) continue;
+    const cx = (x + 0.5) * s - ox, cy = (y + 0.5) * s - oy, k = t === T.UP ? -1 : 1;
+    g.beginPath(); g.moveTo(cx, cy + k * r); g.lineTo(cx - r, cy - k * r * 0.75); g.lineTo(cx + r, cy - k * r * 0.75); g.closePath();
+    g.fillStyle = t === T.UP ? "#9fd8ff" : "#f0c040"; g.stroke(); g.fill(); }
   g.fillStyle = (performance.now() / 300 | 0) % 2 ? "#ffe060" : "#fff"; g.fillRect(player.x * s - ox - 1, player.y * s - oy - 1, s + 2, s + 2);
+  c.view = { ox, oy, s };   // for mapCell: which cell a click on this map is
+}
+// The cell under a click or tap on a map canvas; stairs within about 12 screen pixels catch it, as they are small to hit.
+function mapCell(c, e){
+  const v = c.view, b = c.getBoundingClientRect(); if (!v || !L) return null;
+  const x = Math.floor(((e.clientX - b.left) * c.width / b.width + v.ox) / v.s), y = Math.floor(((e.clientY - b.top) * c.height / b.height + v.oy) / v.s);
+  let best = null, bd = 12 * c.width / b.width / v.s + 1;
+  for (let j = Math.floor(y - bd); j <= y + bd; j++) for (let i = Math.floor(x - bd); i <= x + bd; i++){ if (i < 0 || j < 0 || i >= L.w || j >= L.h) continue;
+    const t = L.tiles[idx(i, j)], d = Math.hypot(i - x, j - y); if (mem[idx(i, j)] && (t === T.UP || t === T.DOWN) && d <= bd && (!best || d < best[2])) best = [i, j, d]; }
+  return best ? [best[0], best[1]] : x >= 0 && y >= 0 && x < L.w && y < L.h ? [x, y] : null;
 }
 /* ---------- Torchlight Dungeons: the interface, in HTML over the map (phase 6) ---------- */
 // The HUD (status, minimap, target, messages, action bar and hotbar), the side panel's tabs (Character, Pack,
@@ -4947,7 +5020,8 @@ function drawPanel(){
       if (got.length < all.length) h += `<div class="ln dim">${all.length - got.length} still to find.</div>`;
     }
   } else if (tab === "map"){
-    h += `<canvas id="bigmap"></canvas><div class="ln dim">${depth ? feet(depth) + " ft" : "Lanternhollow"}. White: stairs; blue: items; red: monsters you sense.</div>`;
+    h += `<canvas id="bigmap"></canvas><div class="ln dim">${depth ? feet(depth) + " ft" : "Lanternhollow"}. <b style="color:#9fd8ff">▲</b> stairs up, <b style="color:#f0c040">▼</b> stairs down; blue: items; red: monsters you sense.</div>`;
+    h += `<div class="ln dim"><span class="keys">Click</span><span class="taps">Tap</span> a place you know to walk there. <span class="keys">&lt; and &gt; walk to the nearest stairs.</span></div>`;
   }
   body.innerHTML = h; bindTips(body, cards);
   panelSel = sel; psel = Math.min(psel, Math.max(0, sel.length - 1));
@@ -4956,7 +5030,9 @@ function drawPanel(){
   A.classList.toggle("focus", panelFocus);
   if (tab === "map") drawBigMap();
 }
-function drawBigMap(){ const c = $("bigmap"); if (!c || !L) return; const w = $("tab").clientWidth - 4, s = Math.max(1, Math.floor(w / L.w)); c.width = L.w * s; c.height = L.h * s; drawMinimap(c, s, false); }
+function drawBigMap(){ const c = $("bigmap"); if (!c || !L) return; const w = $("tab").clientWidth - 4, s = Math.max(1, Math.floor(w / L.w)); c.width = L.w * s; c.height = L.h * s; drawMinimap(c, s, false); c.onclick = mapWalk; }
+// A click or tap on a map walks you to that place, if you know a way there.
+function mapWalk(e){ const at = mapCell(e.currentTarget, e); if (!at || state !== "play" || dlg) return; if (!mem[idx(at[0], at[1])]) return; walkTo(at[0], at[1]); refreshUI(); }
 function openTab(id){
   tutNote(id);
   if (!panelOn){ panelOn = true; store.set("panel", "1"); }
@@ -5244,7 +5320,7 @@ function drawUI(dt){
     if (dlg) drawDialog();
     if (tipFor && !document.body.contains(tipFor)) hideTip();
   }
-  if (miniT <= 0 && L && player && player.hot && state !== "title"){ miniT = 0.2; drawMinimap($("mini"), 3, true); if (tab === "map" && panelOn) drawBigMap(); }
+  if (miniT <= 0 && L && player && player.hot && state !== "title"){ miniT = 0.2; drawMinimap($("mini"), 3, true); $("mini").onclick = mapWalk; if (tab === "map" && panelOn) drawBigMap(); }
 }
 
 // The mouse and touch on the map (phase 15): a tap or click does what makes sense there (tapCell), a long press or a

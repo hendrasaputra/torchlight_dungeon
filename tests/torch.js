@@ -2,7 +2,7 @@
 // Loads the game's logic files without a browser: random numbers, sight and light, turns, levels and data.
 const fs = require("fs"), vm = require("vm"), path = require("path");
 const files = ["rng.js", "fov.js", "turn.js", "gen.js", "data.js", "bestiary.js", "items.js", "shops.js", "chars.js", "spells.js", "lore.js", "rings.js", "save.js", "sprites.js", "tutorial.js"].map(f => fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"));
-const G = vm.runInNewContext("var depth = 1;\n" + files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, RINGS, pageArt, monsterArt, itemArt, LORE_SITE, ringOf, LORE_PAGES, LORE_START, FAMILY_LORE, EGO_LORE, BOOK_LORE, TUT_STEPS, TUT_KEYS, soulPrice, clockOf, DAY_TURNS, RING_START, CAGE_RINGS, newRings, ringKey, relightRing, dimRing, drainRings, townShade, worldDark, cageFinished, bossFactor, RELIGHT, TAKE_FLAME, DIG_CRYSTAL, START_LIGHT, isShrine, firstSpell, CLASSES, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell })", { Math, console });
+const G = vm.runInNewContext("var depth = 1;\n" + files.join("\n") + "\n;({ FAMILIES, KIN, SHAPES, PLAN, RNG, fov, addLight, lum, nextActor, generateLevel, generateTown, reachable, T, TRAPS, encodeSave, decodeSave, SAVE_VERSION, MON, RINGS, pageArt, monsterArt, itemArt, LORE_SITE, ringOf, LORE_PAGES, LORE_START, FAMILY_LORE, EGO_LORE, BOOK_LORE, TUT_STEPS, TUT_KEYS, soulPrice, clockOf, DAY_TURNS, RING_START, CAGE_RINGS, newRings, ringKey, relightRing, dimRing, drainRings, townShade, worldDark, cageFinished, bossFactor, RELIGHT, TAKE_FLAME, DIG_CRYSTAL, START_LIGHT, isShrine, firstSpell, CLASSES, HARDNESS, rocky, MW, MH, passable, opaque, MONSTERS, ITEMS, ITEM, EGOS, ARTIFACTS, CAT, SLOTS, newKnowledge, makeItem, rollItem, itemName, itemPowers, kindKnown, SHOPS, newShops, restock, itemValue, buyPrice, sellPrice, shopBuys, generateTown, TW, TH, RACES, CLASSES, RACE, CLASS, STATS, SKILLS, rollStats, finalStats, skillOf, expNeeded, maxMana, firstHp, levelHp, titleOf, buySpent, BUY_POINTS, randomName, SPELLS, SPELL, spellLevel, spellFail, learnable, bookOf, firstSpell, keepOf, openKept, keepLevel, KEEP_LEVELS, arriveAt })", { Math, console });
 
 let failed = 0;
 const check = (name, ok, detail) => { console.log((ok ? "ok    " : "FAIL  ") + name + (detail ? "  (" + detail + ")" : "")); if (!ok) failed++; };
@@ -239,6 +239,25 @@ const { MW, MH, T } = G;
     a.replace('"v":' + G.SAVE_VERSION, '"v":' + (G.SAVE_VERSION + 1)), a.replace('"v":' + G.SAVE_VERSION, '"v":0')].map(refused);
   check("damaged, foreign, newer and unreadably old saves are refused with a message", bad.every(m => m.length > 10), bad.join(" | "));
   // ponytail: no older save version exists yet; when SAVE_VERSION goes to 2, keep a version 1 save here and check it loads
+}
+
+{ // kept levels: a level you leave comes back as it was, stairs lead to stairs, and saves carry the kept levels
+  const rng = new G.RNG(7), know = G.newKnowledge(rng), L = G.generateLevel(rng, 6), mem = new Uint8Array(MW * MH);
+  for (let i = 0; i < 3000; i++) mem[i * 4] = 1;
+  const mons = G.MONSTERS.filter(K => !K.town).slice(0, 12).map((K, i) => ({ K, x: i + 5, y: 5, hp: 3, mhp: 9, energy: 50, sleep: 0 }));
+  const down = L.tiles.findIndex(t => t === T.DOWN), up = L.tiles.findIndex(t => t === T.UP);
+  const kept = G.keepOf(L, mem, mons, [{ x: 3, y: 4, it: G.rollItem(6, rng, know), seen: true }], 1200, down), back = G.openKept(JSON.parse(JSON.stringify(kept)));
+  check("a kept level comes back with its map, what you knew of it, its monsters and its floor", back.L.tiles.every((t, i) => t === L.tiles[i]) && back.mem.every((v, i) => v === mem[i])
+    && back.mons.length === 12 && back.mons[3].K === mons[3].K && back.floor.length === 1 && back.L.rooms.length >= 10 && back.left === 1200, Math.round(JSON.stringify(kept).length / 1024) + " KB");
+  check("going back up a kept level puts you on the stairs down you took", G.arriveAt(back.L, T.DOWN, down, rng) === down);
+  check("going down puts you on stairs up; with no memory of a staircase, any one of the kind", back.L.tiles[G.arriveAt(back.L, T.UP, down, rng)] === T.UP && G.arriveAt(back.L, T.UP, -1, rng) >= 0 && up >= 0);
+  const levels = {}; for (let d = 1; d <= G.KEEP_LEVELS + 5; d++) G.keepLevel(levels, d, { ...kept, left: d * 100 });
+  check("only the " + G.KEEP_LEVELS + " most recently left levels are kept", Object.keys(levels).length === G.KEEP_LEVELS && !levels[1] && !levels[5] && levels[G.KEEP_LEVELS + 5]);
+  const player = { name: "Kip", x: 5, y: 6, stats: {}, base: {}, t: {}, know, inv: [], eq: {}, hot: Array(10).fill(null), slain: {} };
+  const g = { player, depth: 6, L, mem, mons: [player], floor: [], shops: G.newShops(rng, know), lastTown: 0, wasDay: true, turnNo: 1, log: [], rng: rng.s, target: -1, levels: { 3: kept, 4: kept } };
+  const a = G.encodeSave(g), loaded = G.decodeSave(a), old = G.decodeSave(a.replace(/,"levels":\{.*\}\}$/, "}"));
+  check("a save keeps its kept levels, and one from before them loads with none", Object.keys(loaded.levels).join() === "3,4" && G.openKept(loaded.levels[4]).L.tiles.every((t, i) => t === L.tiles[i]) && Object.keys(old.levels).length === 0,
+    Math.round(a.length / 1024) + " KB with two kept");
 }
 
 { // phase 11: the lore in the game

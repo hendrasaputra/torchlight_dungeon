@@ -263,7 +263,8 @@ function drawPanel(){
       if (got.length < all.length) h += `<div class="ln dim">${all.length - got.length} still to find.</div>`;
     }
   } else if (tab === "map"){
-    h += `<canvas id="bigmap"></canvas><div class="ln dim">${depth ? feet(depth) + " ft" : "Lanternhollow"}. White: stairs; blue: items; red: monsters you sense.</div>`;
+    h += `<canvas id="bigmap"></canvas><div class="ln dim">${depth ? feet(depth) + " ft" : "Lanternhollow"}. <b style="color:#9fd8ff">▲</b> stairs up, <b style="color:#f0c040">▼</b> stairs down; blue: items; red: monsters you sense.</div>`;
+    h += `<div class="ln dim"><span class="keys">Click</span><span class="taps">Tap</span> a place you know to walk there. <span class="keys">&lt; and &gt; walk to the nearest stairs.</span></div>`;
   }
   body.innerHTML = h; bindTips(body, cards);
   panelSel = sel; psel = Math.min(psel, Math.max(0, sel.length - 1));
@@ -272,7 +273,9 @@ function drawPanel(){
   A.classList.toggle("focus", panelFocus);
   if (tab === "map") drawBigMap();
 }
-function drawBigMap(){ const c = $("bigmap"); if (!c || !L) return; const w = $("tab").clientWidth - 4, s = Math.max(1, Math.floor(w / L.w)); c.width = L.w * s; c.height = L.h * s; drawMinimap(c, s, false); }
+function drawBigMap(){ const c = $("bigmap"); if (!c || !L) return; const w = $("tab").clientWidth - 4, s = Math.max(1, Math.floor(w / L.w)); c.width = L.w * s; c.height = L.h * s; drawMinimap(c, s, false); c.onclick = mapWalk; }
+// A click or tap on a map walks you to that place, if you know a way there.
+function mapWalk(e){ const at = mapCell(e.currentTarget, e); if (!at || state !== "play" || dlg) return; if (!mem[idx(at[0], at[1])]) return; walkTo(at[0], at[1]); refreshUI(); }
 function openTab(id){
   tutNote(id);
   if (!panelOn){ panelOn = true; store.set("panel", "1"); }
@@ -560,7 +563,7 @@ function drawUI(dt){
     if (dlg) drawDialog();
     if (tipFor && !document.body.contains(tipFor)) hideTip();
   }
-  if (miniT <= 0 && L && player && player.hot && state !== "title"){ miniT = 0.2; drawMinimap($("mini"), 3, true); if (tab === "map" && panelOn) drawBigMap(); }
+  if (miniT <= 0 && L && player && player.hot && state !== "title"){ miniT = 0.2; drawMinimap($("mini"), 3, true); $("mini").onclick = mapWalk; if (tab === "map" && panelOn) drawBigMap(); }
 }
 
 // The mouse and touch on the map (phase 15): a tap or click does what makes sense there (tapCell), a long press or a

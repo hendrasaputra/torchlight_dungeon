@@ -17,6 +17,13 @@ const isShrine = t => t === T.SHRINE || t === T.SHRINE_LIT;
 const HARDNESS = { [T.RUBBLE]: 60, [T.MAGMA]: 250, [T.MAGMA_T]: 250, [T.QUARTZ]: 400, [T.QUARTZ_T]: 400, [T.WALL]: 900 };
 
 // light: the ring's light (0 to 100, phase 13), which sets how many rooms are lit and how many shrines burn.
+// Where you arrive by stairs: on a staircase of kind want (down a level: one leading back up; up: one leading back
+// down), the one at prefer if it is that kind (the stairs you left a kept level by), else any of them; -1 if none.
+function arriveAt(L, want, prefer, rng){
+  if (prefer >= 0 && L.tiles[prefer] === want) return prefer;
+  const all = []; L.tiles.forEach((t, i) => { if (t === want) all.push(i); });
+  return all.length ? rng.pick(all) : -1;
+}
 function generateLevel(rng, depth, light = 70){
   const tiles = new Uint8Array(MW * MH).fill(T.WALL), room = new Int16Array(MW * MH).fill(-1), lit = new Uint8Array(MW * MH);
   const lock = new Int8Array(MW * MH), trap = new Uint8Array(MW * MH), trapSeen = new Uint8Array(MW * MH);   // trap: 0 none, else 1 + its index in TRAPS

@@ -103,12 +103,32 @@ function lightRadius(){
 const infra = () => player.t.blind ? 0 : race().infra + player.bonus.infra;
 
 /* ---------- levels ---------- */
-function newLevel(d){
+// Dungeon levels are kept when you leave them (levels, by depth; see keepOf in save.js), so stairs stay where you found
+// them. Stairs lead to stairs: going down you arrive on a way back up, going up on a way back down, on a kept level the
+// very stairs you left it by. Falling (a trapdoor, a deep descent, recall) lands you anywhere.
+let levels = {};
+function newLevel(d, stairs = false){
   const from = depth; fxIris();
+  if (from > 0 && L && !L.town) keepLevel(levels, from, keepOf(L, mem, mons.filter(m => m !== player), floor, player.turns, idx(player.x, player.y)));
   depth = d; player.maxDepth = Math.max(player.maxDepth, d);
-  L = d === 0 ? generateTown(rng) : generateLevel(rng, d, player.rings[ringKey(d)]);
-  mem.fill(0); mons = [player]; floor = []; pendingLevel = null; parts = []; floats = []; shots = []; flashes = []; later = []; target = null;
-  const at = L.spot(); player.x = at % MW; player.y = Math.floor(at / MW); audio.music(d ? "depths" : "town");
+  let back = null;
+  if (d > 0 && levels[d]){ try { back = openKept(levels[d]); } catch (e){ back = null; } delete levels[d]; }   // a damaged one is made anew
+  L = back ? back.L : d === 0 ? generateTown(rng) : generateLevel(rng, d, player.rings[ringKey(d)]);
+  if (back) mem.set(back.mem); else mem.fill(0);
+  mons = back ? [player, ...back.mons] : [player]; floor = back ? back.floor : []; pendingLevel = null; parts = []; floats = []; shots = []; flashes = []; later = []; target = null;
+  let at = stairs && d > 0 ? arriveAt(L, d > from ? T.UP : T.DOWN, back ? back.at : -1, rng) : -1;
+  if (at < 0){ const f = back ? freeSpot(0) : -1; at = back ? (f >= 0 ? f : back.at) : L.spot(); }
+  player.x = at % MW; player.y = Math.floor(at / MW); audio.music(d ? "depths" : "town");
+  const inWay = monAt(player.x, player.y); if (inWay && inWay !== player) sendAway(inWay);
+  if (back){   // back where you were: the level as you left it, and a few newcomers the longer you were away
+    relight();
+    const light = player.rings[ringKey(d)], darkRing = light <= 0;
+    for (let k = 0, n = Math.min(8, Math.floor((player.turns - back.left) / 300)); k < n; k++) spawnMonster(false, pickMonster(darkRing && rng.chance(0.3) ? d + 10 : d));
+    updateSight(); digging = null;
+    say("You are back at " + feet(d) + " ft.");
+    saveGame();
+    return;
+  }
   if (d === 0){
     // back from the dungeon: the shops have sold some things and bought in others
     if (from > 0 && player.turns - lastTown > 500) shops.forEach((sh, i) => { sh.stock = restock(sh.stock, SHOPS[i], rng, player.know, 0.5); });
@@ -246,8 +266,8 @@ function pickMonster(d){
   const pool = d === 0 ? MONSTERS.filter(m => m.town) : MONSTERS.filter(m => !m.town && !m.boss && m.depth <= d + deep && !(m.unique && uniqueGone(m)));
   return rng.weighted(pool, m => 1 / m.rarity * (m.depth >= d - 4 ? 1.5 : 0.6) * (m.unique ? 0.5 : 1));
 }
-// A unique lives once a game: not again once slain, nor twice on one level.
-const uniqueGone = K => (player.slain && player.slain[K.id]) || mons.some(m => m.K === K);
+// A unique lives once a game: not again once slain, nor twice on one level, nor while it waits on a level you left.
+const uniqueGone = K => (player.slain && player.slain[K.id]) || mons.some(m => m.K === K) || Object.values(levels).some(v => v.mons.some(m => m.K === K.id));
 function newMon(K, x, y, sleep){
   const hp = rng.dice(K.hp);
   const m = { K, x, y, hp, mhp: hp, energy: rng.int(100), speed: K.speed, sleep, seen: false };
@@ -402,10 +422,19 @@ function pickUp(){
 }
 function takeStairs(down){
   const t = L.tiles[idx(player.x, player.y)];
-  if (t !== (down ? T.DOWN : T.UP)){ say("There is no staircase " + (down ? "down" : "up") + " here."); return false; }
+  if (t !== (down ? T.DOWN : T.UP)){ headFor(down ? T.DOWN : T.UP); return false; }
   say(down ? "You descend the stairs." : "You climb the stairs."); sfx("stairs");
-  newLevel(depth + (down ? 1 : -1));
+  newLevel(depth + (down ? 1 : -1), true);
   return "level";
+}
+// Away from stairs, the stairs keys walk you to the nearest staircase of that kind you know of on this level.
+function headFor(t){
+  const way = t === T.DOWN ? "down" : "up"; let best = null;
+  for (let i = 0; i < MW * MH; i++) if (mem[i] && L.tiles[i] === t){ const p = pathTo(i % MW, Math.floor(i / MW)); if (p && (!best || p.length < best.length)) best = p; }
+  msgs = [];
+  if (!best) return say("You know of no staircase " + way + " on this level" + (mem.some((v, i) => v && L.tiles[i] === t) ? " that you can reach." : "."));
+  say("You head for the staircase " + way + ".");
+  walk = { path: best, t: 0, seen: new Set(mons.filter(m => m.K && seesMon(m))) };
 }
 /* ---------- digging, locked doors, searching and traps (phase 8) ---------- */
 // Walking into rubble, a vein, a locked or stuck door or a trap you know of works at it, turn after turn (work);
@@ -1414,7 +1443,7 @@ function begin(){
   player.hot = Array(10).fill(null); player.slain = {}; player.ready = null; player.lore = Object.fromEntries(LORE_START.map(id => [id, 1]));
   log = []; msgs = []; killer = ""; tomb = null; cr = null;
   state = "play"; stateT = 0;
-  shops = newShops(rng, player.know); lastTown = 0; depth = 0; slot = newSlot; store.del(dyingKey(slot));
+  shops = newShops(rng, player.know); lastTown = 0; depth = 0; levels = {}; slot = newSlot; store.del(dyingKey(slot));
   newLevel(0);
   tutBegin();   // a new player's first game teaches itself (tutorial.js)
 }
@@ -1430,7 +1459,7 @@ let slot = 0, newSlot = 1, saveFailed = false;   // slot: where this character i
 const slotKey = n => "slot" + n;
 function saveGame(){
   if (state !== "play" || !slot) return;
-  const ok = store.set(slotKey(slot), encodeSave({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log, rng: rng.s, target: mons.indexOf(target) }));
+  const ok = store.set(slotKey(slot), encodeSave({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log, rng: rng.s, target: mons.indexOf(target), levels }));
   if (!ok && !saveFailed) say("Your game could not be saved: the browser's storage is full or blocked. Export it from the menu to keep it.");
   saveFailed = !ok;
 }
@@ -1442,7 +1471,7 @@ function slotInfo(n){
 }
 function loadGame(n){
   let g; try { g = decodeSave(store.get(slotKey(n))); } catch (e){ return noteDialog("Slot " + n, e.message); }
-  ({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log } = g);
+  ({ player, depth, L, mem, mons, floor, shops, lastTown, wasDay, turnNo, log, levels } = g);
   rng = new RNG(g.rng); target = mons[g.target] || null; slot = n;
   player.lore = player.lore || Object.fromEntries(LORE_START.map(id => [id, 1]));   // saves from before phase 11 have no Lore pages yet
   msgs = []; killer = ""; tomb = null; cr = null; aiming = null; pendingLevel = null; digging = null; parts = []; floats = []; shots = []; flashes = []; later = [];

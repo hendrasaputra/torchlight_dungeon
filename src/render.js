@@ -471,5 +471,21 @@ function drawMinimap(c, s, focus){
   const ox = focus ? Math.max(0, Math.min(w * s - cw, player.x * s - cw / 2)) : (w * s - cw) / 2, oy = focus ? Math.max(0, Math.min(h * s - ch, player.y * s - ch / 2)) : (h * s - ch) / 2;
   g.fillStyle = "#07060b"; g.fillRect(0, 0, cw, ch); g.imageSmoothingEnabled = false;
   g.drawImage(tmp, -ox, -oy, w * s, h * s);
+  // stairs you know of, as arrows big enough to find at a glance: pale blue up, gold down
+  const r = Math.max(3.5, s * 1.7); g.lineWidth = Math.max(1, r / 3); g.strokeStyle = "#07060b";
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){ const i = idx(x, y), t = L.tiles[i]; if (!mem[i] || (t !== T.UP && t !== T.DOWN)) continue;
+    const cx = (x + 0.5) * s - ox, cy = (y + 0.5) * s - oy, k = t === T.UP ? -1 : 1;
+    g.beginPath(); g.moveTo(cx, cy + k * r); g.lineTo(cx - r, cy - k * r * 0.75); g.lineTo(cx + r, cy - k * r * 0.75); g.closePath();
+    g.fillStyle = t === T.UP ? "#9fd8ff" : "#f0c040"; g.stroke(); g.fill(); }
   g.fillStyle = (performance.now() / 300 | 0) % 2 ? "#ffe060" : "#fff"; g.fillRect(player.x * s - ox - 1, player.y * s - oy - 1, s + 2, s + 2);
+  c.view = { ox, oy, s };   // for mapCell: which cell a click on this map is
+}
+// The cell under a click or tap on a map canvas; stairs within about 12 screen pixels catch it, as they are small to hit.
+function mapCell(c, e){
+  const v = c.view, b = c.getBoundingClientRect(); if (!v || !L) return null;
+  const x = Math.floor(((e.clientX - b.left) * c.width / b.width + v.ox) / v.s), y = Math.floor(((e.clientY - b.top) * c.height / b.height + v.oy) / v.s);
+  let best = null, bd = 12 * c.width / b.width / v.s + 1;
+  for (let j = Math.floor(y - bd); j <= y + bd; j++) for (let i = Math.floor(x - bd); i <= x + bd; i++){ if (i < 0 || j < 0 || i >= L.w || j >= L.h) continue;
+    const t = L.tiles[idx(i, j)], d = Math.hypot(i - x, j - y); if (mem[idx(i, j)] && (t === T.UP || t === T.DOWN) && d <= bd && (!best || d < best[2])) best = [i, j, d]; }
+  return best ? [best[0], best[1]] : x >= 0 && y >= 0 && x < L.w && y < L.h ? [x, y] : null;
 }
