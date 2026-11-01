@@ -297,7 +297,18 @@ function tileImage(L, x, y, depth){
   if (t === T.RUBBLE) return k("rubble" + (v & 1), () => rubbleTile(th, fl(v)));
   if (t === T.SHRINE || t === T.SHRINE_LIT) return k("shrine" + (t === T.SHRINE_LIT), () => shrineTile(th, fl(0), t === T.SHRINE_LIT));
   if (t === T.LASTLAMP) return k("lastlamp", () => lastLampTile(fl(0)));
-  return fl(v);
+  const ao = (wallish(x, y - 1) ? 1 : 0) | (wallish(x + 1, y) ? 2 : 0) | (wallish(x, y + 1) ? 4 : 0) | (wallish(x - 1, y) ? 8 : 0);
+  return ao ? k("floor" + v + "ao" + ao, () => occlude(fl(v), ao)) : fl(v);
+}
+// Floor beside a wall darkens towards it: solid at the foot of the wall, dithered further out, deepest under a wall to
+// the north (bits of m: 1 north, 2 east, 4 south, 8 west). Baked once per neighbour mask, in pixels of the 16 x 16 grid.
+function occlude(img, m){
+  const p = pix(); p.g.drawImage(img, 0, 0);
+  for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++){
+    const a = Math.max(m & 1 ? 1 - y / 5 : 0, m & 2 ? 1 - (TS - 1 - x) / 4 : 0, m & 4 ? 1 - (TS - 1 - y) / 2.5 : 0, m & 8 ? 1 - x / 4 : 0);
+    if (a > BAYER4[((y & 3) << 2) | (x & 3)]) p.rect(x, y, 1, 1, a > 0.6 ? "rgba(6,4,12,.6)" : "rgba(6,4,12,.35)");
+  }
+  return p.c;
 }
 
 /* ---------- people: a paper doll layered from what they wear ---------- */

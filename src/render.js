@@ -229,7 +229,7 @@ function drawWorld(t, dt, real = dt){
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#000"; ctx.fillRect(0, 0, VWpx, VHpx);
   if (!L) return;
   const title = state === "title" || state === "create";
-  computeLight(lightNow, t);
+  computeLight(lightNow, Math.ceil(t / 80) * 80);   // flames flicker in steps, about 12 a second, so band edges jump rather than crawl
   for (const m of mons) stepAnim(m, dt);
   stepParts(dt); poke = false;
   const c = cameraTarget(), k = 1 - Math.exp(-dt * 10);
@@ -315,12 +315,29 @@ function figure(m, t, how){
   const px = Math.round(a.x * TS + ox), py = Math.round(a.y * TS + oy), W = Math.round(TS * S), X = px - (W - TS) / 2, Y = py - (W - TS);   // big ones grow upward from their feet
   if (m === player){ if (m.x !== a.lastX){ if (m.x !== a.lastX && a.lastX !== undefined) a.face = m.x < a.lastX ? -1 : 1; a.lastX = m.x; } }
   const flip = m === player ? a.face < 0 : m.x > player.x;
-  if (!how){ ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.beginPath(); ctx.ellipse(px + 8, py + 14.5, 5 * S, 1.6 * S, 0, 0, 7); ctx.fill(); }
+  if (!how) shadow(px + 8, py + 14.5, S, Math.round(a.x), Math.round(a.y));
   const pic = how === "heat" ? heatImage(img) : a.flash > 0 ? flashImage(img) : img;
   ctx.globalAlpha = how === "ghost" ? 0.45 : K && K.invis && m !== player ? 0.7 : 1;
   if (flip){ ctx.save(); ctx.translate(X + W, Y); ctx.scale(-1, 1); ctx.drawImage(pic, 0, 0, W, W); ctx.restore(); } else ctx.drawImage(pic, X, Y, W, W);
   a.drawn = { X, Y, W, flip, img };
   ctx.globalAlpha = 1;
+}
+// A figure's shadow in whole pixels: a dark contact patch under the feet, and a lighter cast shadow pushed away from the
+// light, found from how the light falls off across the cell (so the hero, who carries the torch, stands on theirs).
+// Edges are dithered, and it never falls on a wall.
+function shadow(cx, cy, S, x, y){
+  const l = j => j < 0 || j >= MW * MH ? 0 : lum(lightNow, 3 * j), i = idx(x, y), here = l(i) + 0.05;
+  let gx = x > 0 && x < MW - 1 ? l(i + 1) - l(i - 1) : 0, gy = y > 0 && y < MH - 1 ? l(i + MW) - l(i - MW) : 0;
+  const g = Math.hypot(gx, gy), k = g > 1e-4 ? Math.min(1, g / here * 2.5) / g : 0;
+  const sx = cx - gx * k * 6, sy = cy - gy * k * 3, rx = 5.5 * S, ry = 2 * S, X0 = Math.floor(Math.min(cx, sx) - rx), Y0 = Math.floor(Math.min(cy, sy) - ry);
+  const dark = new Path2D(), soft = new Path2D();
+  for (let Y = Y0; Y <= Math.ceil(Math.max(cy, sy) + ry); Y++) for (let X = X0; X <= Math.ceil(Math.max(cx, sx) + rx); X++){
+    if (!passable(L.tiles[idx(Math.max(0, Math.min(MW - 1, Math.floor(X / TS))), Math.max(0, Math.min(MH - 1, Math.floor(Y / TS))))])) continue;
+    const t = (BAYER[((Y & 3) << 2) | (X & 3)] - 0.5) * 0.4, u = X + 0.5, v = Y + 0.5;
+    if (((u - cx) / (4.5 * S)) ** 2 + ((v - cy) / (1.5 * S)) ** 2 + t < 1) dark.rect(X, Y, 1, 1);
+    else if (((u - sx) / rx) ** 2 + ((v - sy) / ry) ** 2 + t < 1) soft.rect(X, Y, 1, 1);
+  }
+  ctx.fillStyle = "rgba(4,2,10,.35)"; ctx.fill(soft); ctx.fillStyle = "rgba(4,2,10,.6)"; ctx.fill(dark);
 }
 const FLASH = new Map();
 const flashImage = img => memo(FLASH, img, () => { const c = newCanvas(img.width, img.height), g = c.getContext("2d"); g.drawImage(img, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); return c; });
@@ -345,24 +362,42 @@ function shotDraw(s){
   ctx.fillStyle = "#fff"; ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
   ctx.globalCompositeOperation = "source-over";
 }
-// The light: one pixel per cell, smoothly enlarged and multiplied over the tiles, with a little warm bloom on top.
+// The light: a value per cell, blended between cell centres at one texel per sprite pixel of the 16 x 16 grid, then cut
+// into bands of brightness with a 4 x 4 dither between them (the ways of banded, dithered light are learned from
+// pixel-plays, github.com/amirmushichge/pixel-plays, MIT; the code is ours). Multiplied over the tiles unsmoothed,
+// so the light keeps the same hard pixels as the art, with a little warm bloom on top.
+const LIGHT_BANDS = 20;   // steps of brightness, spaced on a square-root curve so the dark end gets more of them
+let lightVals = new Float32Array(0), lightImg = null;
 function lightOverlay(x0, y0, x1, y1, lit, title){
-  const w = x1 - x0 + 3, h = y1 - y0 + 3;
-  if (lightTex.width !== w || lightTex.height !== h){ lightTex.width = w; lightTex.height = h; }
-  const img = lightG.createImageData(w, h), d = img.data;
+  const w = x1 - x0 + 3, h = y1 - y0 + 3, W = w * TS, H = h * TS;
+  if (lightVals.length < 3 * w * h) lightVals = new Float32Array(3 * w * h);
+  const c = lightVals.fill(0);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
-    const mx = x0 + x - 1, my = y0 + y - 1, o = 4 * (y * w + x); d[o + 3] = 255;
+    const mx = x0 + x - 1, my = y0 + y - 1, o = 3 * (y * w + x);
     if (mx < 0 || my < 0 || mx >= MW || my >= MH) continue;
     const i = idx(mx, my), j = 3 * i;
-    if (lit(i)){ d[o] = Math.min(255, lightNow[j] * 220 + 22); d[o + 1] = Math.min(255, lightNow[j + 1] * 220 + 20); d[o + 2] = Math.min(255, lightNow[j + 2] * 220 + 26); }
-    else if (!title && mem[i]){ d[o] = 30; d[o + 1] = 34; d[o + 2] = 58; }   // remembered: dim and cold
+    if (lit(i)){ c[o] = Math.min(255, lightNow[j] * 220 + 22); c[o + 1] = Math.min(255, lightNow[j + 1] * 220 + 20); c[o + 2] = Math.min(255, lightNow[j + 2] * 220 + 26); }
+    else if (!title && mem[i]){ c[o] = 30; c[o + 1] = 34; c[o + 2] = 58; }   // remembered: dim and cold
   }
-  lightG.putImageData(img, 0, 0);
-  const X = (x0 - 1.5) * TS, Y = (y0 - 1.5) * TS;
-  ctx.imageSmoothingEnabled = true;
-  ctx.globalCompositeOperation = "multiply"; ctx.drawImage(lightTex, X, Y, w * TS, h * TS);
-  ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.16; ctx.drawImage(lightTex, X, Y, w * TS, h * TS);
-  ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over"; ctx.imageSmoothingEnabled = false;
+  if (lightTex.width !== W || lightTex.height !== H){ lightTex.width = W; lightTex.height = H; lightImg = null; }
+  const d = (lightImg = lightImg || lightG.createImageData(W, H)).data;
+  for (let Y = 0; Y < H; Y++){
+    const v = Math.max(0, Math.min(h - 1, (Y + 0.5) / TS - 0.5)), ya = Math.floor(v), yb = Math.min(h - 1, ya + 1), fy = v - ya;
+    for (let X = 0; X < W; X++){
+      const u = Math.max(0, Math.min(w - 1, (X + 0.5) / TS - 0.5)), xa = Math.floor(u), xb = Math.min(w - 1, xa + 1), fx = u - xa;
+      const a = 3 * (ya * w + xa), b = 3 * (ya * w + xb), e = 3 * (yb * w + xa), f = 3 * (yb * w + xb), o = 4 * (Y * W + X);
+      const r = (c[a] * (1 - fx) + c[b] * fx) * (1 - fy) + (c[e] * (1 - fx) + c[f] * fx) * fy;
+      const g = (c[a + 1] * (1 - fx) + c[b + 1] * fx) * (1 - fy) + (c[e + 1] * (1 - fx) + c[f + 1] * fx) * fy;
+      const bl = (c[a + 2] * (1 - fx) + c[b + 2] * fx) * (1 - fy) + (c[e + 2] * (1 - fx) + c[f + 2] * fx) * fy;
+      const m = Math.max(r, g, bl), q = m > 0 ? Math.floor(Math.sqrt(m / 255) * LIGHT_BANDS + BAYER[((Y & 3) << 2) | (X & 3)]) / LIGHT_BANDS : 0, k = m > 0 ? q * q * 255 / m : 0;
+      d[o] = r * k; d[o + 1] = g * k; d[o + 2] = bl * k; d[o + 3] = 255;   // the same hue, its brightness snapped to a band
+    }
+  }
+  lightG.putImageData(lightImg, 0, 0);
+  const X = (x0 - 1) * TS, Y = (y0 - 1) * TS;
+  ctx.globalCompositeOperation = "multiply"; ctx.drawImage(lightTex, X, Y);
+  ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.16; ctx.drawImage(lightTex, X, Y);
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
 }
 // The minimap and the Map tab: s screen pixels per cell, of what you remember.
 function drawMinimap(c, s, focus){
