@@ -427,10 +427,15 @@ function takeStairs(down){
   newLevel(depth + (down ? 1 : -1), true);
   return "level";
 }
-// Away from stairs, the stairs keys walk you to the nearest staircase of that kind you know of on this level.
-function headFor(t){
-  const way = t === T.DOWN ? "down" : "up"; let best = null;
+// Away from stairs, the stairs keys (and the Stairs button) walk you to the nearest staircase of that kind you know of
+// on this level. stairsPath: the way to it, or null.
+function stairsPath(t){
+  let best = null;
   for (let i = 0; i < MW * MH; i++) if (mem[i] && L.tiles[i] === t){ const p = pathTo(i % MW, Math.floor(i / MW)); if (p && (!best || p.length < best.length)) best = p; }
+  return best;
+}
+function headFor(t){
+  const way = t === T.DOWN ? "down" : "up", best = stairsPath(t);
   msgs = [];
   if (!best) return say("You know of no staircase " + way + " on this level" + (mem.some((v, i) => v && L.tiles[i] === t) ? " that you can reach." : "."));
   say("You head for the staircase " + way + ".");

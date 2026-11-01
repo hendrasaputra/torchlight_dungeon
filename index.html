@@ -2803,10 +2803,15 @@ function takeStairs(down){
   newLevel(depth + (down ? 1 : -1), true);
   return "level";
 }
-// Away from stairs, the stairs keys walk you to the nearest staircase of that kind you know of on this level.
-function headFor(t){
-  const way = t === T.DOWN ? "down" : "up"; let best = null;
+// Away from stairs, the stairs keys (and the Stairs button) walk you to the nearest staircase of that kind you know of
+// on this level. stairsPath: the way to it, or null.
+function stairsPath(t){
+  let best = null;
   for (let i = 0; i < MW * MH; i++) if (mem[i] && L.tiles[i] === t){ const p = pathTo(i % MW, Math.floor(i / MW)); if (p && (!best || p.length < best.length)) best = p; }
+  return best;
+}
+function headFor(t){
+  const way = t === T.DOWN ? "down" : "up", best = stairsPath(t);
   msgs = [];
   if (!best) return say("You know of no staircase " + way + " on this level" + (mem.some((v, i) => v && L.tiles[i] === t) ? " that you can reach." : "."));
   say("You head for the staircase " + way + ".");
@@ -4917,17 +4922,19 @@ function drawHud(){
   drawBar();
   $("prompt").hidden = !aiming; if (aiming) $("prompt").textContent = aimText;
 }
-// The action bar: the four smart keys, then the hotbar 1 to 0.
+// The action bar: the four smart keys and Stairs, then the hotbar 1 to 0.
 function drawBar(){
   const cards = [], r = f => (cards.push(f), cards.length - 1), p = player;
   const S = readySpell(), pot = bestPotion(), here = itemsAt(p.x, p.y), t = L.tiles[idx(p.x, p.y)];
   const grab = here.length ? itemPic(here[0].it) : t === T.DOWN || t === T.UP ? `<span class="glyph">${t === T.DOWN ? "▼" : "▲"}</span>` : t === T.SHOP ? `<span class="glyph">⌂</span>` : `<span class="glyph dim">✋</span>`;
-  const slot = (key, inner, label, ref, cls = "") => `<div class="slot ${cls}" data-key="${key}" ${ref !== undefined ? `data-r="${ref}"` : ""}><span class="k">${key}</span>${inner}${label ? `<span class="n">${label}</span>` : ""}</div>`;
+  const slot = (key, inner, label, ref, cls = "") => `<div class="slot ${cls}" data-key="${key}" ${ref !== undefined ? `data-r="${ref}"` : ""}><span class="k">${esc(key)}</span>${inner}${label ? `<span class="n">${label}</span>` : ""}</div>`;
+  const onStairs = t === T.DOWN || t === T.UP, knowStairs = onStairs || mem.some((v, i) => v && (L.tiles[i] === T.DOWN || L.tiles[i] === T.UP));
   let h = `<div class="acts">`;
   h += slot("A", p.eq.weapon ? itemPic(p.eq.weapon) : `<span class="glyph">✊</span>`, "Attack", p.eq.weapon ? r(() => card(p.eq.weapon, false)) : undefined);
   h += S ? slot("S", pic(spellPic(S)), S.mana + " mp", r(() => spellCard(S)), p.mana < S.mana ? "off" : "") : slot("S", `<span class="glyph dim">✦</span>`, cls().realm ? "Spell" : "", undefined, "off");
   h += slot("D", pot ? itemPic(pot) : `<span class="glyph dim">♥</span>`, pot ? "×" + pot.n : "Drink", pot ? r(() => card(pot)) : undefined, pot ? "" : "off");
-  h += slot("W", grab, "Grab", here.length ? r(() => card(here[0].it)) : undefined) + `</div><div class="hot">`;
+  h += slot("W", grab, "Grab", here.length ? r(() => card(here[0].it)) : undefined);
+  h += slot("<>", `<span class="glyph${knowStairs ? "" : " dim"}">${onStairs ? (t === T.DOWN ? "▼" : "▲") : "⇅"}</span>`, "Stairs", undefined, knowStairs ? "" : "off") + `</div><div class="hot">`;
   for (let k = 0; k < 10; k++){
     const e = p.hot[k], key = String((k + 1) % 10);
     if (!e){ h += slot(key, "", ""); continue; }
@@ -4947,8 +4954,17 @@ function drawBar(){
 function pressSlot(k){
   walk = null; if (state !== "play" || dlg) return;
   if (/^[0-9]$/.test(k)) useHot((+k + 9) % 10);
-  else ({ A: attackKey, S: spellKey, D: drinkKey, W: grabKey, Q: () => nextSpell(1), " ": () => act(waitAndSearch), R: rest, L: look, P: togglePanel, Esc: menuDialog })[k]();
+  else ({ A: attackKey, S: spellKey, D: drinkKey, W: grabKey, "<>": stairsButton, Q: () => nextSpell(1), " ": () => act(waitAndSearch), R: rest, L: look, P: togglePanel, Esc: menuDialog })[k]();
   refreshUI();
+}
+// The Stairs button (the < and > keys' way in by mouse or touch): on a staircase, take it; elsewhere walk to the nearest
+// one you know of, asking up or down when you know of both.
+function stairsButton(){
+  const t = L.tiles[idx(player.x, player.y)];
+  if (t === T.DOWN || t === T.UP) return act(() => takeStairs(t === T.DOWN));
+  const ways = [[T.DOWN, "▼ Stairs down"], [T.UP, "▲ Stairs up"]].map(([k, label]) => ({ k, label, p: stairsPath(k) })).filter(w => w.p);
+  if (ways.length < 2) return headFor(ways.length ? ways[0].k : [T.DOWN, T.UP].find(k => mem.some((v, i) => v && L.tiles[i] === k)) || T.DOWN);
+  openDialog({ title: "Which stairs?", side: false, cols: [ways.map(w => ({ label: w.label, right: w.p.length + " steps", select: () => { closeDialog(); headFor(w.k); refreshUI(); } }))] });
 }
 
 /* ---------- the side panel ---------- */
@@ -5234,13 +5250,13 @@ function fameDialog(){
 }
 function helpDialog(){
   const modern = [["Arrow keys", "move; into a monster attacks, into a door opens"], ["Two arrows", "move diagonally (or numpad, Home, End, PgUp, PgDn)"], ["Shift + arrow", "run"],
-    ["A", "attack the target: melee, or fire / throw if it is further"], ["S", "cast the readied spell"], ["D", "drink the best-fitting healing potion"], ["W", "grab: pick up, stairs, shop"],
+    ["A", "attack the target: melee, or fire / throw if it is further"], ["S", "cast the readied spell"], ["D", "drink the best-fitting healing potion"], ["W", "grab: pick up, stairs, shop"], ["<  >", "take the stairs; elsewhere walk to the nearest ones you know (the Stairs button)"],
     ["Q / Shift+Q", "ready the next / previous spell"], ["E", "eat"], ["R", "rest (in town only)"], ["F", "refill your lantern, or a fresh torch"], ["Tab / Shift+Tab", "next / previous target"],
     ["Space", "wait a turn and search"], ["T", "dig in a direction (walking into rubble or a vein digs it)"], ["1 to 0", "use a hotbar slot"], ["I C B J K M", "Pack, Character, Book, Journal, Lore, Map"], ["P", "show or hide the panel"], ["L", "look"], ["Esc", "close, or the menu"]];
   const ro = keySet === "roguelike";
   const classic = [[ro ? "hjklyubn" : "Arrows / numpad", "move (Shift runs)"], ["g or ,", "pick up"], ["i  e", "pack, equipment"], ["w  " + (ro ? "T" : "t") + "  d", "wear, take off, drop"],
     ["E  q  r", "eat, drink, read"], ["a  " + (ro ? "Z" : "u") + "  z", "aim a wand, use a staff, zap a rod"], ["F", "fill lantern"], ["f  v  I", "fire, throw, inspect"], ["m or p  S", "cast or pray, study"],
-    [">  <", "stairs"], ["R  " + (ro ? ". s" : ". 5 s"), "rest (in town only), wait and search"], [ro ? "#" : "T", "dig in a direction"], [(ro ? "x" : "l") + "  C", "look, character"], ["Tab", "next target"], ["Esc", "menu"]];
+    [">  <", "take the stairs; elsewhere walk to the nearest ones you know"], ["R  " + (ro ? ". s" : ". 5 s"), "rest (in town only), wait and search"], [ro ? "#" : "T", "dig in a direction"], [(ro ? "x" : "l") + "  C", "look, character"], ["Tab", "next target"], ["Esc", "menu"]];
   const guide = [["Mouse and touch", "Click or tap a place to walk there, a monster to fight it (or shoot it, from afar), yourself to pick up or take the stairs. Right-click or a long press looks. The bar's slots and the tools on the right are buttons; while aiming, tap where to aim."], ["The aim", "Go down. Morrowgloom the Lantern-Eater waits at 2,500 ft; the dungeon goes on below it."], ["Light", "Your torch burns down. F lights a fresh one or fills a lantern with oil. In the dark you see very little."],
     ["Food", "Eat (E) when you are hungry. Go too long and you grow weak, then faint, then starve."], ["Unknown things", "Potions and scrolls look different every game. Try them, read Identify, or sell one: the keeper tells you what it was."],
     ["The town", "Walk into a numbered door to shop. A scroll of Word of Recall takes you between the town and your deepest level."],
