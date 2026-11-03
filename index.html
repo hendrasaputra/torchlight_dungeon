@@ -2136,12 +2136,12 @@ function tileImage(L, x, y, depth){
   return ao ? k("floor" + v + "ao" + ao, () => occlude(fl(v), ao)) : fl(v);
 }
 // Floor beside a wall darkens towards it: solid at the foot of the wall, dithered further out, deepest under a wall to
-// the north (bits of m: 1 north, 2 east, 4 south, 8 west). Baked once per neighbour mask, in pixels of the 16 x 16 grid.
+// the north (bits of m: 1 north, 2 east, 4 south, 8 west). Baked once per neighbour mask, in the tile's own pixels.
 function occlude(img, m){
-  const p = pix(); p.g.drawImage(img, 0, 0);
-  for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++){
-    const a = Math.max(m & 1 ? 1 - y / 5 : 0, m & 2 ? 1 - (TS - 1 - x) / 4 : 0, m & 4 ? 1 - (TS - 1 - y) / 2.5 : 0, m & 8 ? 1 - x / 4 : 0);
-    if (a > BAYER4[((y & 3) << 2) | (x & 3)]) p.rect(x, y, 1, 1, a > 0.6 ? "rgba(6,4,12,.6)" : "rgba(6,4,12,.35)");
+  const p = pix(), S = p.S; p.g.drawImage(img, 0, 0);
+  for (let Y = 0; Y < TS * S; Y++) for (let X = 0; X < TS * S; X++){
+    const x = (X + 0.5) / S - 0.5, y = (Y + 0.5) / S - 0.5, a = Math.max(m & 1 ? 1 - y / 5 : 0, m & 2 ? 1 - (TS - 1 - x) / 4 : 0, m & 4 ? 1 - (TS - 1 - y) / 2.5 : 0, m & 8 ? 1 - x / 4 : 0);
+    if (a > BAYER4[((Y & 3) << 2) | (X & 3)]) p.rect(X / S, Y / S, 1 / S, 1 / S, a > 0.6 ? "rgba(6,4,12,.6)" : "rgba(6,4,12,.35)");
   }
   return p.c;
 }
@@ -4284,11 +4284,11 @@ let parts = [], floats = [], hoverCell = null, lit = () => false;
 function renderLayout(){
   const r = stage.getBoundingClientRect(); if (!r.width) return;
   DPR = Math.min(window.devicePixelRatio || 1, 4);   // the screen's own pixels: one canvas pixel to each, so nothing is stretched or blurred
-  // the Detail setting: larger or smaller sprites; whole device pixels keep the edges crisp. Sprites are drawn with
-  // SR pixels to a unit: 4 (64-pixel pictures) when Z is a multiple of 4, as on a high-density screen; otherwise 2
-  // with Z kept even, or 1. So every sprite pixel still lands on whole device pixels
+  // the Detail setting: larger or smaller sprites; whole device pixels keep the edges crisp. One pixel size for all of
+  // it: sprites, light, shadows, particles and grass are all drawn with SR pixels to a unit, 2 (32-pixel cells) with
+  // Z kept even, or 1 on a screen too small for that. So every pixel lands on whole device pixels, and all are one size
   const css = { 1: r.width > 1300 ? 2.5 : 2, 2: 1.5, 3: 1 }[DETAIL] || 2, want = css * DPR, Z0 = Math.max(1, Math.round(want));
-  SR = Z0 % 4 === 0 ? 4 : Z0 >= 2 ? 2 : 1; Z = SR === 2 ? Math.max(2, 2 * Math.round(want / 2)) : Z0;
+  SR = Z0 >= 2 ? 2 : 1; Z = SR === 2 ? Math.max(2, 2 * Math.round(want / 2)) : Z0;
   VWpx = Math.round(r.width * DPR); VHpx = Math.round(r.height * DPR);
   cv.width = VWpx; cv.height = VHpx; cv.style.width = r.width + "px"; cv.style.height = r.height + "px";
   if (player) snapView();
@@ -4444,7 +4444,7 @@ function stepParts(dt){
 }
 // Particles in map pixels: solid pixels, faded by dither, then glow added on top for the bright kinds.
 function drawParts(){
-  const G = Math.min(SR, 2);   // on the sprite pixel grid, but no finer than 32 pixels a cell, so sparks do not shrink to dust
+  const G = SR;   // on the sprites' own pixel grid
   ctx.save(); ctx.scale(1 / G, 1 / G);
   const glow = [], P = TS * G;
   for (const p of parts){
@@ -4513,7 +4513,7 @@ function townWind(x0, y0, x1, y1, shown){
     if (L.tiles[i] !== T.GROUND || Math.abs(y - L.street) <= 1) continue;
     for (let k = 0; k < 4; k++){   // four tufts a cell, taller ones swaying further at the tip
       const bx = x * TS + 1 + Math.floor(hash(x, y, 60 + k) * 14), by = y * TS + 6 + Math.floor(hash(x, y, 70 + k) * 10), h = 3 + Math.floor(hash(x, y, 80 + k) * 4), g = gust(bx, by);
-      for (let j = 1; j <= h; j++) blades[j === h || g > 1.1 ? 1 : 0].rect(bx + Math.round(g * 0.95 * j / 3), by - j, 1, 1);
+      for (let j = 1; j <= h * SR; j++) blades[j > (h - 1) * SR || g > 1.1 ? 1 : 0].rect(bx + Math.round(g * 0.95 * j / 3) / SR, by - j / SR, 1 / SR, 1 / SR);   // in whole pixels
     } }
   blades.forEach((b, j) => { ctx.fillStyle = BLADES[j]; ctx.fill(b); });
 }
@@ -4534,7 +4534,7 @@ function drawWorld(t, dt, real = dt){
   const c = cameraTarget(), k = 1 - Math.exp(-dt * 10);
   view.x += (c.x - view.x) * k; view.y += (c.y - view.y) * k;
   if (Math.hypot(c.x - view.x, c.y - view.y) > TS * 12) snapView();
-  let vx = Math.round(view.x * Z) / Z, vy = Math.round(view.y * Z) / Z;   // whole device pixels: no shimmer
+  let vx = Math.round(view.x * SR) / SR, vy = Math.round(view.y * SR) / SR;   // eased as it likes, drawn at whole pixels: no shimmer
   if (quake > 0){ quake -= real; const a = quakeAmp * Math.max(0, quake) / 0.25; vx += Math.round((Math.random() * 2 - 1) * a); vy += Math.round((Math.random() * 2 - 1) * a); }   // the shake, in whole pixels
   ctx.setTransform(Z, 0, 0, Z, -vx * Z, -vy * Z); ctx.imageSmoothingEnabled = false;
   const [vw, vh] = viewCells(), x0 = Math.max(0, Math.floor(vx / TS)), y0 = Math.max(0, Math.floor(vy / TS)), x1 = Math.min(MW - 1, x0 + Math.ceil(vw) + 1), y1 = Math.min(MH - 1, y0 + Math.ceil(vh) + 1);
@@ -4634,13 +4634,14 @@ function lightDir(x, y){
 // light (so the hero, who carries the torch, stands on theirs). Edges are dithered, and it never falls on a wall.
 function shadow(cx, cy, S, x, y){
   const [dx, dy, k] = lightDir(x, y);
-  const sx = cx - dx * k * 6, sy = cy - dy * k * 3, rx = 5.5 * S, ry = 2 * S, X0 = Math.floor(Math.min(cx, sx) - rx), Y0 = Math.floor(Math.min(cy, sy) - ry);
+  const sx = cx - dx * k * 6, sy = cy - dy * k * 3, rx = 5.5 * S, ry = 2 * S, q = 1 / SR;   // in whole pixels, SR to a unit
   const dark = new Path2D(), soft = new Path2D();
-  for (let Y = Y0; Y <= Math.ceil(Math.max(cy, sy) + ry); Y++) for (let X = X0; X <= Math.ceil(Math.max(cx, sx) + rx); X++){
-    if (!passable(L.tiles[idx(Math.max(0, Math.min(MW - 1, Math.floor(X / TS))), Math.max(0, Math.min(MH - 1, Math.floor(Y / TS))))])) continue;
-    const t = (BAYER[((Y & 3) << 2) | (X & 3)] - 0.5) * 0.4, u = X + 0.5, v = Y + 0.5;
-    if (((u - cx) / (4.5 * S)) ** 2 + ((v - cy) / (1.5 * S)) ** 2 + t < 1) dark.rect(X, Y, 1, 1);
-    else if (((u - sx) / rx) ** 2 + ((v - sy) / ry) ** 2 + t < 1) soft.rect(X, Y, 1, 1);
+  for (let Y = Math.floor((Math.min(cy, sy) - ry) * SR); Y <= Math.ceil((Math.max(cy, sy) + ry) * SR); Y++) for (let X = Math.floor((Math.min(cx, sx) - rx) * SR); X <= Math.ceil((Math.max(cx, sx) + rx) * SR); X++){
+    const u = (X + 0.5) * q, v = (Y + 0.5) * q;
+    if (!passable(L.tiles[idx(Math.max(0, Math.min(MW - 1, Math.floor(u / TS))), Math.max(0, Math.min(MH - 1, Math.floor(v / TS))))])) continue;
+    const t = (BAYER[((Y & 3) << 2) | (X & 3)] - 0.5) * 0.4;
+    if (((u - cx) / (4.5 * S)) ** 2 + ((v - cy) / (1.5 * S)) ** 2 + t < 1) dark.rect(X * q, Y * q, q, q);
+    else if (((u - sx) / rx) ** 2 + ((v - sy) / ry) ** 2 + t < 1) soft.rect(X * q, Y * q, q, q);
   }
   ctx.fillStyle = "rgba(4,2,10,.35)"; ctx.fill(soft); ctx.fillStyle = "rgba(4,2,10,.6)"; ctx.fill(dark);
 }
@@ -4679,7 +4680,7 @@ const itemIcon = (it, S = SR) => it.k === "gold" ? memo(ICONS, S + "gold", () =>
 const floorIcon = it => itemIcon(it, SR * 0.75);
 function shotDraw(s){
   const f = Math.min(s.path.length - 1, s.t * s.speed), i = Math.floor(f), c = s.path[i], n = s.path[Math.min(s.path.length - 1, i + 1)], u = f - i;
-  const x = (c[0] + (n[0] - c[0]) * u + 0.5) * TS, y = (c[1] + (n[1] - c[1]) * u + 0.5) * TS;
+  const x = Math.round((c[0] + (n[0] - c[0]) * u + 0.5) * TS * SR) / SR, y = Math.round((c[1] + (n[1] - c[1]) * u + 0.5) * TS * SR) / SR;   // at whole pixels as it flies
   if (s.item){ ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(Math.floor(s.t * 9) * Math.PI / 2); ctx.drawImage(floorIcon(s.item), -6, -6, 12, 12); ctx.restore(); return; }   // it tumbles in quarter turns, so no pixel is resampled
   if (s.elem && !hold && Math.random() < 0.7){ const R = RAMPS[s.elem] || RAMPS.arcane, px = x / TS, py = y / TS;   // a trail in the element's kind
     if (s.elem === "fire") embers(px, py, 1); else if (s.elem === "cold") flakes(px, py, 1); else if (s.elem === "elec") sparks(px, py, R, 1, 4); else twinkles(px, py, 1, R, 0.2); }
@@ -4689,14 +4690,15 @@ function shotDraw(s){
   ctx.fillStyle = "#fff"; ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
   ctx.globalCompositeOperation = "source-over";
 }
-// The light: a value per cell, blended between cell centres at one texel per sprite pixel of the 16 x 16 grid, then cut
+// The light: a value per cell, blended between cell centres at one texel per sprite pixel (SR to a unit), then cut
 // into bands of brightness with a 4 x 4 dither between them (the ways of banded, dithered light are learned from
 // pixel-plays, github.com/amirmushichge/pixel-plays, MIT; the code is ours). Multiplied over the tiles unsmoothed,
 // so the light keeps the same hard pixels as the art, with a little warm bloom on top.
 const LIGHT_BANDS = 20;   // steps of brightness, spaced on a square-root curve so the dark end gets more of them
-let lightVals = new Float32Array(0), lightImg = null;
+const BAND_AT = Float32Array.from({ length: 256 }, (_, m) => Math.sqrt(m / 255) * LIGHT_BANDS), BAND_LUM = Float32Array.from({ length: LIGHT_BANDS + 2 }, (_, q) => Math.min(255, (q / LIGHT_BANDS) ** 2 * 255));
+let lightVals = new Float32Array(0), lightImg = null, lightCols = new Int32Array(0), lightFx = new Float32Array(0);
 function lightOverlay(x0, y0, x1, y1, lit, title){
-  const w = x1 - x0 + 3, h = y1 - y0 + 3, W = w * TS, H = h * TS;
+  const w = x1 - x0 + 3, h = y1 - y0 + 3, P = TS * SR, W = w * P, H = h * P;
   if (lightVals.length < 3 * w * h) lightVals = new Float32Array(3 * w * h);
   const c = lightVals.fill(0), clouds = depth === 0 && isDay();
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
@@ -4708,23 +4710,27 @@ function lightOverlay(x0, y0, x1, y1, lit, title){
     else if (!title && mem[i]){ c[o] = 30; c[o + 1] = 34; c[o + 2] = 58; }   // remembered: dim and cold
   }
   if (lightTex.width !== W || lightTex.height !== H){ lightTex.width = W; lightTex.height = H; lightImg = null; }
-  const d = (lightImg = lightImg || lightG.createImageData(W, H)).data;
-  for (let Y = 0; Y < H; Y++){
-    const v = Math.max(0, Math.min(h - 1, (Y + 0.5) / TS - 0.5)), ya = Math.floor(v), yb = Math.min(h - 1, ya + 1), fy = v - ya;
-    for (let X = 0; X < W; X++){
-      const u = Math.max(0, Math.min(w - 1, (X + 0.5) / TS - 0.5)), xa = Math.floor(u), xb = Math.min(w - 1, xa + 1), fx = u - xa;
-      const a = 3 * (ya * w + xa), b = 3 * (ya * w + xb), e = 3 * (yb * w + xa), f = 3 * (yb * w + xb), o = 4 * (Y * W + X);
+  if (!lightImg){ lightImg = lightG.createImageData(W, H); lightImg.u32 = new Uint32Array(lightImg.data.buffer); }
+  const d = lightImg.u32, U = w * TS, V = h * TS;   // blended once a unit, dithered at each of its SR x SR pixels
+  if (lightFx.length !== U){ lightCols = new Int32Array(2 * U); lightFx = new Float32Array(U); }
+  for (let X = 0; X < U; X++){ const u = Math.max(0, Math.min(w - 1, (X + 0.5) / TS - 0.5)), xa = Math.floor(u); lightCols[2 * X] = 3 * xa; lightCols[2 * X + 1] = 3 * Math.min(w - 1, xa + 1); lightFx[X] = u - xa; }
+  for (let Yu = 0; Yu < V; Yu++){
+    const v = Math.max(0, Math.min(h - 1, (Yu + 0.5) / TS - 0.5)), ya = Math.floor(v), ra = 3 * ya * w, rb = 3 * Math.min(h - 1, ya + 1) * w, fy = v - ya;
+    for (let Xu = 0; Xu < U; Xu++){
+      const fx = lightFx[Xu], a = ra + lightCols[2 * Xu], b = ra + lightCols[2 * Xu + 1], e = rb + lightCols[2 * Xu], f = rb + lightCols[2 * Xu + 1];
       const r = (c[a] * (1 - fx) + c[b] * fx) * (1 - fy) + (c[e] * (1 - fx) + c[f] * fx) * fy;
       const g = (c[a + 1] * (1 - fx) + c[b + 1] * fx) * (1 - fy) + (c[e + 1] * (1 - fx) + c[f + 1] * fx) * fy;
       const bl = (c[a + 2] * (1 - fx) + c[b + 2] * fx) * (1 - fy) + (c[e + 2] * (1 - fx) + c[f + 2] * fx) * fy;
-      const m = Math.max(r, g, bl), q = m > 0 ? Math.floor(Math.sqrt(m / 255) * LIGHT_BANDS + BAYER[((Y & 3) << 2) | (X & 3)]) / LIGHT_BANDS : 0, k = m > 0 ? q * q * 255 / m : 0;
-      d[o] = r * k; d[o + 1] = g * k; d[o + 2] = bl * k; d[o + 3] = 255;   // the same hue, its brightness snapped to a band
+      const m = Math.max(r, g, bl), sq = BAND_AT[Math.min(255, m | 0)], im = m > 0 ? 1 / m : 0;
+      for (let sy = 0; sy < SR; sy++){ const Y = Yu * SR + sy, row = Y * W, by = (Y & 3) << 2;
+        for (let sx = 0; sx < SR; sx++){ const X = Xu * SR + sx, k = BAND_LUM[Math.floor(sq + BAYER[by | (X & 3)])] * im;   // the same hue, its brightness snapped to a band
+          d[row + X] = 0xff000000 | (bl * k) << 16 | (g * k) << 8 | (r * k); } }
     }
   }
   lightG.putImageData(lightImg, 0, 0);
   const X = (x0 - 1) * TS, Y = (y0 - 1) * TS;
-  ctx.globalCompositeOperation = "multiply"; ctx.drawImage(lightTex, X, Y);
-  ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.16; ctx.drawImage(lightTex, X, Y);
+  ctx.globalCompositeOperation = "multiply"; ctx.drawImage(lightTex, X, Y, w * TS, h * TS);
+  ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.16; ctx.drawImage(lightTex, X, Y, w * TS, h * TS);
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
 }
 // The minimap and the Map tab: s screen pixels per cell, of what you remember.
