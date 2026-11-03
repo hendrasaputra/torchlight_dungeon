@@ -11,7 +11,7 @@ let parts = [], floats = [], hoverCell = null, lit = () => false;
 
 function renderLayout(){
   const r = stage.getBoundingClientRect(); if (!r.width) return;
-  DPR = Math.min(window.devicePixelRatio || 1, 2);   // above 2, the map is not visibly sharper, only far more work for a phone's GPU
+  DPR = Math.min(window.devicePixelRatio || 1, 4);   // the screen's own pixels: one canvas pixel to each, so nothing is stretched or blurred
   // the Detail setting: larger or smaller sprites; whole device pixels keep the edges crisp. Sprites are drawn with
   // SR pixels to a unit: 4 (64-pixel pictures) when Z is a multiple of 4, as on a high-density screen; otherwise 2
   // with Z kept even, or 1. So every sprite pixel still lands on whole device pixels
@@ -280,7 +280,7 @@ function drawWorld(t, dt, real = dt){
   ambient(dt, x0, y0, x1, y1, warm);
   const bob = n => Math.round(Math.sin(t / 260 + n) * 0.6);
   for (const f of floor){ const i = idx(f.x, f.y); if (!visible(i) && !f.seen) continue;
-    ctx.drawImage(itemIcon(f.it), f.x * TS + 2, f.y * TS + 2 + (visible(i) ? bob(f.x) : 0), 12, 12); }
+    ctx.drawImage(floorIcon(f.it), f.x * TS + 2, f.y * TS + 2 + (visible(i) ? bob(f.x) : 0), 12, 12); }
   // figures, back to front; the lit ones go under the light so the torch shades them
   const after = [], figs = mons.filter(m => m === player ? state === "play" || state === "dead" : m.K && sensed(m)).sort((a, b) => posOf(a).y - posOf(b).y);
   for (const m of figs){
@@ -401,11 +401,14 @@ function heroImage(f = 0){   // the paper doll, redrawn when what you wear chang
 }
 const dollLook = p => ({ race: p.race, eq: Object.fromEntries(["weapon", "shield", "body", "head", "hands", "feet", "cloak", "light"].filter(s => p.eq[s]).map(s => [s, p.eq[s].k])) });
 const ICONS = new Map();
-const itemIcon = it => it.k === "gold" ? memo(ICONS, SR + "gold", () => icon({ cat: "gold" }, [1, 0.8, 0.3])) : memo(ICONS, SR + it.k + "|" + (it.art || ""), () => icon(ITEM[it.k], itemRgb(it, player.know)));
+const itemIcon = (it, S = SR) => it.k === "gold" ? memo(ICONS, S + "gold", () => icon({ cat: "gold" }, [1, 0.8, 0.3], S)) : memo(ICONS, S + it.k + "|" + (it.art || ""), () => icon(ITEM[it.k], itemRgb(it, player.know), S));
+// On the floor and in flight an item is three quarters of a cell: drawn at that size by the pen, not shrunk, so its
+// pixels are the same size as every other sprite's (12 units at SR pixels each)
+const floorIcon = it => itemIcon(it, SR * 0.75);
 function shotDraw(s){
   const f = Math.min(s.path.length - 1, s.t * s.speed), i = Math.floor(f), c = s.path[i], n = s.path[Math.min(s.path.length - 1, i + 1)], u = f - i;
   const x = (c[0] + (n[0] - c[0]) * u + 0.5) * TS, y = (c[1] + (n[1] - c[1]) * u + 0.5) * TS;
-  if (s.item){ ctx.save(); ctx.translate(x, y); ctx.rotate(s.t * 14); ctx.drawImage(itemIcon(s.item), -5, -5, 10, 10); ctx.restore(); return; }
+  if (s.item){ ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(Math.floor(s.t * 9) * Math.PI / 2); ctx.drawImage(floorIcon(s.item), -6, -6, 12, 12); ctx.restore(); return; }   // it tumbles in quarter turns, so no pixel is resampled
   if (s.elem && !hold && Math.random() < 0.7){ const R = RAMPS[s.elem] || RAMPS.arcane, px = x / TS, py = y / TS;   // a trail in the element's kind
     if (s.elem === "fire") embers(px, py, 1); else if (s.elem === "cold") flakes(px, py, 1); else if (s.elem === "elec") sparks(px, py, R, 1, 4); else twinkles(px, py, 1, R, 0.2); }
   ctx.globalCompositeOperation = "lighter";

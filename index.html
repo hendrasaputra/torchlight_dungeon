@@ -18,7 +18,7 @@ header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:bas
 h1{font-size:17px;font-weight:650;margin:0;letter-spacing:-0.01em}
 #hud{font:12px/1.2 ui-monospace,"SF Mono",Menlo,Consolas,monospace;white-space:nowrap}
 #stage{flex:1;position:relative;border:1px solid;border-radius:6px;overflow:hidden;min-height:0}
-#cv{position:absolute;display:block}
+#cv{position:absolute;display:block;image-rendering:pixelated}
 </style>
 <style>
 /* Torchlight's own look: a dark panel and HUD over the code-drawn map (phase 6). Keyboard, mouse and touch (phase 15). */
@@ -1892,6 +1892,7 @@ function pix(w = TS, h = TS, S = SR){
       if (typeof col === "string") return fill(X, Y, RW, RH, col);
       for (let j = 0; j < RH; j++) for (let i = 0; i < RW; i++) put(X + i, Y + j, tone(col, j === 0 && RH > 1 ? 1 : (0.5 - (j + 0.5) / RH) * 0.8 + (0.5 - (i + 0.5) / RW) * 0.3, X + i, Y + j)); },
     px: (x, y, col) => p.rect(x, y, 1, 1, solid(col)),
+    harden: () => { const d = buf(); for (let o = 3; o < d.length; o += 4) d[o] = d[o] >= 128 ? 255 : 0; return p; },   // after drawing on the canvas itself (rotated, so smoothed): each pixel wholly there or not
     dot: (x, y, col) => fill(Math.floor(x * S), Math.floor(y * S), Math.max(1, S >> 1), Math.max(1, S >> 1), solid(col)),   // fine detail: half a unit at S > 1
     clear: (x, y, ww, hh) => { const d = buf(); for (let Y = Math.max(0, y * S); Y < Math.min(H, (y + hh) * S); Y++) for (let X = Math.max(0, x * S); X < Math.min(W, (x + ww) * S); X++) d[4 * (Y * W + X) + 3] = 0; },
     // a ball around the cell (cx, cy), the same footprint as before at S = 1
@@ -2306,10 +2307,10 @@ const HEAT = new Map();
 const heatImage = img => memo(HEAT, img, () => { const c = newCanvas(img.width, img.height), g = c.getContext("2d"); g.drawImage(img, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = "#c8402f"; g.fillRect(0, 0, c.width, c.height); return c; });
 
 /* ---------- item icons: one drawing per category, coloured by material or flavour ---------- */
-function icon(K, rgb){
-  const p = pix(), col = shade(rgb, 3), dark = shade(rgb, 1), light = shade(rgb, 5), c = K.cat;
+function icon(K, rgb, S = SR){
+  const p = pix(TS, TS, S), col = shade(rgb, 3), dark = shade(rgb, 1), light = shade(rgb, 5), c = K.cat;
   if (c === "weapon"){ p.g.translate(16 * p.S, 0); p.g.rotate(Math.PI / 4); p.g.translate(-3 * p.S, 2 * p.S);
-    weaponArt((x, y, w, h, cl) => { const g = p.g, S = p.S; g.fillStyle = cl; g.fillRect(Math.round(x * 1.3 * S), Math.round(y * 1.3 * S), Math.max(1, Math.round((w * 1.3 + 0.5) * S)), Math.max(1, Math.round((h * 1.3 + 0.5) * S))); }, K.id, 0, 0); p.g.setTransform(1, 0, 0, 1, 0, 0); }
+    weaponArt((x, y, w, h, cl) => { const g = p.g, S = p.S; g.fillStyle = cl; g.fillRect(Math.round(x * 1.3 * S), Math.round(y * 1.3 * S), Math.max(1, Math.round((w * 1.3 + 0.5) * S)), Math.max(1, Math.round((h * 1.3 + 0.5) * S))); }, K.id, 0, 0); p.g.setTransform(1, 0, 0, 1, 0, 0); p.harden(); }
   else if (c === "bow"){ if (/sling/.test(K.id)){ p.line(3, 3, 8, 11, hex(LEATHER)); p.line(13, 3, 8, 11, hex(LEATHER)); p.disc(8, 12, 2, hex(LEATHER, 0.8)); }
     else { for (let y = 2; y < 15; y++) p.px(5 + Math.round(4 * Math.sin((y - 2) / 12 * Math.PI)), y, hex(WOOD)); p.line(5, 2, 5, 14, "#ddd"); } }
   else if (c === "ammo" || c === "dart"){ if (/shot|pebble/.test(K.id)) for (const [x, y] of [[5, 9], [10, 9], [8, 5], [7, 12]]) p.disc(x, y, 1, "#9a9aa4");
@@ -4282,7 +4283,7 @@ let parts = [], floats = [], hoverCell = null, lit = () => false;
 
 function renderLayout(){
   const r = stage.getBoundingClientRect(); if (!r.width) return;
-  DPR = Math.min(window.devicePixelRatio || 1, 2);   // above 2, the map is not visibly sharper, only far more work for a phone's GPU
+  DPR = Math.min(window.devicePixelRatio || 1, 4);   // the screen's own pixels: one canvas pixel to each, so nothing is stretched or blurred
   // the Detail setting: larger or smaller sprites; whole device pixels keep the edges crisp. Sprites are drawn with
   // SR pixels to a unit: 4 (64-pixel pictures) when Z is a multiple of 4, as on a high-density screen; otherwise 2
   // with Z kept even, or 1. So every sprite pixel still lands on whole device pixels
@@ -4551,7 +4552,7 @@ function drawWorld(t, dt, real = dt){
   ambient(dt, x0, y0, x1, y1, warm);
   const bob = n => Math.round(Math.sin(t / 260 + n) * 0.6);
   for (const f of floor){ const i = idx(f.x, f.y); if (!visible(i) && !f.seen) continue;
-    ctx.drawImage(itemIcon(f.it), f.x * TS + 2, f.y * TS + 2 + (visible(i) ? bob(f.x) : 0), 12, 12); }
+    ctx.drawImage(floorIcon(f.it), f.x * TS + 2, f.y * TS + 2 + (visible(i) ? bob(f.x) : 0), 12, 12); }
   // figures, back to front; the lit ones go under the light so the torch shades them
   const after = [], figs = mons.filter(m => m === player ? state === "play" || state === "dead" : m.K && sensed(m)).sort((a, b) => posOf(a).y - posOf(b).y);
   for (const m of figs){
@@ -4672,11 +4673,14 @@ function heroImage(f = 0){   // the paper doll, redrawn when what you wear chang
 }
 const dollLook = p => ({ race: p.race, eq: Object.fromEntries(["weapon", "shield", "body", "head", "hands", "feet", "cloak", "light"].filter(s => p.eq[s]).map(s => [s, p.eq[s].k])) });
 const ICONS = new Map();
-const itemIcon = it => it.k === "gold" ? memo(ICONS, SR + "gold", () => icon({ cat: "gold" }, [1, 0.8, 0.3])) : memo(ICONS, SR + it.k + "|" + (it.art || ""), () => icon(ITEM[it.k], itemRgb(it, player.know)));
+const itemIcon = (it, S = SR) => it.k === "gold" ? memo(ICONS, S + "gold", () => icon({ cat: "gold" }, [1, 0.8, 0.3], S)) : memo(ICONS, S + it.k + "|" + (it.art || ""), () => icon(ITEM[it.k], itemRgb(it, player.know), S));
+// On the floor and in flight an item is three quarters of a cell: drawn at that size by the pen, not shrunk, so its
+// pixels are the same size as every other sprite's (12 units at SR pixels each)
+const floorIcon = it => itemIcon(it, SR * 0.75);
 function shotDraw(s){
   const f = Math.min(s.path.length - 1, s.t * s.speed), i = Math.floor(f), c = s.path[i], n = s.path[Math.min(s.path.length - 1, i + 1)], u = f - i;
   const x = (c[0] + (n[0] - c[0]) * u + 0.5) * TS, y = (c[1] + (n[1] - c[1]) * u + 0.5) * TS;
-  if (s.item){ ctx.save(); ctx.translate(x, y); ctx.rotate(s.t * 14); ctx.drawImage(itemIcon(s.item), -5, -5, 10, 10); ctx.restore(); return; }
+  if (s.item){ ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(Math.floor(s.t * 9) * Math.PI / 2); ctx.drawImage(floorIcon(s.item), -6, -6, 12, 12); ctx.restore(); return; }   // it tumbles in quarter turns, so no pixel is resampled
   if (s.elem && !hold && Math.random() < 0.7){ const R = RAMPS[s.elem] || RAMPS.arcane, px = x / TS, py = y / TS;   // a trail in the element's kind
     if (s.elem === "fire") embers(px, py, 1); else if (s.elem === "cold") flakes(px, py, 1); else if (s.elem === "elec") sparks(px, py, R, 1, 4); else twinkles(px, py, 1, R, 0.2); }
   ctx.globalCompositeOperation = "lighter";

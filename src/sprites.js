@@ -58,6 +58,7 @@ function pix(w = TS, h = TS, S = SR){
       if (typeof col === "string") return fill(X, Y, RW, RH, col);
       for (let j = 0; j < RH; j++) for (let i = 0; i < RW; i++) put(X + i, Y + j, tone(col, j === 0 && RH > 1 ? 1 : (0.5 - (j + 0.5) / RH) * 0.8 + (0.5 - (i + 0.5) / RW) * 0.3, X + i, Y + j)); },
     px: (x, y, col) => p.rect(x, y, 1, 1, solid(col)),
+    harden: () => { const d = buf(); for (let o = 3; o < d.length; o += 4) d[o] = d[o] >= 128 ? 255 : 0; return p; },   // after drawing on the canvas itself (rotated, so smoothed): each pixel wholly there or not
     dot: (x, y, col) => fill(Math.floor(x * S), Math.floor(y * S), Math.max(1, S >> 1), Math.max(1, S >> 1), solid(col)),   // fine detail: half a unit at S > 1
     clear: (x, y, ww, hh) => { const d = buf(); for (let Y = Math.max(0, y * S); Y < Math.min(H, (y + hh) * S); Y++) for (let X = Math.max(0, x * S); X < Math.min(W, (x + ww) * S); X++) d[4 * (Y * W + X) + 3] = 0; },
     // a ball around the cell (cx, cy), the same footprint as before at S = 1
@@ -472,10 +473,10 @@ const HEAT = new Map();
 const heatImage = img => memo(HEAT, img, () => { const c = newCanvas(img.width, img.height), g = c.getContext("2d"); g.drawImage(img, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = "#c8402f"; g.fillRect(0, 0, c.width, c.height); return c; });
 
 /* ---------- item icons: one drawing per category, coloured by material or flavour ---------- */
-function icon(K, rgb){
-  const p = pix(), col = shade(rgb, 3), dark = shade(rgb, 1), light = shade(rgb, 5), c = K.cat;
+function icon(K, rgb, S = SR){
+  const p = pix(TS, TS, S), col = shade(rgb, 3), dark = shade(rgb, 1), light = shade(rgb, 5), c = K.cat;
   if (c === "weapon"){ p.g.translate(16 * p.S, 0); p.g.rotate(Math.PI / 4); p.g.translate(-3 * p.S, 2 * p.S);
-    weaponArt((x, y, w, h, cl) => { const g = p.g, S = p.S; g.fillStyle = cl; g.fillRect(Math.round(x * 1.3 * S), Math.round(y * 1.3 * S), Math.max(1, Math.round((w * 1.3 + 0.5) * S)), Math.max(1, Math.round((h * 1.3 + 0.5) * S))); }, K.id, 0, 0); p.g.setTransform(1, 0, 0, 1, 0, 0); }
+    weaponArt((x, y, w, h, cl) => { const g = p.g, S = p.S; g.fillStyle = cl; g.fillRect(Math.round(x * 1.3 * S), Math.round(y * 1.3 * S), Math.max(1, Math.round((w * 1.3 + 0.5) * S)), Math.max(1, Math.round((h * 1.3 + 0.5) * S))); }, K.id, 0, 0); p.g.setTransform(1, 0, 0, 1, 0, 0); p.harden(); }
   else if (c === "bow"){ if (/sling/.test(K.id)){ p.line(3, 3, 8, 11, hex(LEATHER)); p.line(13, 3, 8, 11, hex(LEATHER)); p.disc(8, 12, 2, hex(LEATHER, 0.8)); }
     else { for (let y = 2; y < 15; y++) p.px(5 + Math.round(4 * Math.sin((y - 2) / 12 * Math.PI)), y, hex(WOOD)); p.line(5, 2, 5, 14, "#ddd"); } }
   else if (c === "ammo" || c === "dart"){ if (/shot|pebble/.test(K.id)) for (const [x, y] of [[5, 9], [10, 9], [8, 5], [7, 12]]) p.disc(x, y, 1, "#9a9aa4");
