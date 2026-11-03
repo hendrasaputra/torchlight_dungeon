@@ -330,9 +330,26 @@ function drawWorld(t, dt, real = dt){
     warmSprites(); iris = Math.min(1, iris + real / 0.5); const [px, py] = scr(posOf(player).x + 0.5, posOf(player).y + 0.5);
     ctx.fillStyle = "#000"; ctx.beginPath(); ctx.rect(0, 0, VWpx, VHpx); ctx.arc(px, py, 10 * Z + Math.hypot(VWpx, VHpx) * iris * iris, 0, 7); ctx.fill("evenodd"); }
 }
+// Text on the map in the same pixels as everything else: written once at SR pixels a unit, each pixel wholly there or
+// not, with a one-pixel black outline, then drawn up unsmoothed onto whole pixels
+const LABELS = new Map();
+function labelImage(s, col, px){
+  const key = px + col + s; let c = LABELS.get(key); if (c) return c;
+  if (LABELS.size > 300) LABELS.clear();   // ponytail: floats make new ones all game; dropping the lot now and then is enough
+  const font = "bold " + px + "px ui-monospace, Menlo, monospace", m = newCanvas(1, 1).getContext("2d"); m.font = font;
+  const W = Math.ceil(m.measureText(s).width) + 2, H = Math.ceil(px * 1.3) + 2; c = newCanvas(W, H); c.base = Math.ceil(px * 1.05) + 1;
+  const g = c.getContext("2d"); g.font = font; g.fillStyle = col; g.fillText(s, 1, c.base);
+  const im = g.getImageData(0, 0, W, H), d = im.data, on = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) on[i] = d[4 * i + 3] >= 128;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){ const i = y * W + x, o = 4 * i;
+    if (on[i]){ d[o + 3] = 255; continue; }
+    let edge = false; for (let j = -1; j <= 1 && !edge; j++) for (let k = -1; k <= 1; k++){ const X = x + k, Y = y + j; if (X >= 0 && Y >= 0 && X < W && Y < H && on[Y * W + X]){ edge = true; break; } }
+    d[o] = d[o + 1] = d[o + 2] = 0; d[o + 3] = edge ? 255 : 0; }
+  g.putImageData(im, 0, 0); LABELS.set(key, c); return c;
+}
 function label(x, y, s, col, size = 0.8, centre = false){
-  ctx.font = "bold " + Math.round(Z * TS * size * 0.5) + "px ui-monospace, Menlo, monospace"; ctx.textAlign = centre ? "center" : "left";
-  ctx.lineWidth = Math.max(2, Z * 0.9); ctx.strokeStyle = "#000"; ctx.strokeText(s, x, y); ctx.fillStyle = col; ctx.fillText(s, x, y); ctx.textAlign = "left";
+  const img = labelImage(s, col, Math.round(TS * size * 0.5 * SR)), q = Z / SR, snap = v => Math.round(v / q) * q;
+  ctx.drawImage(img, snap(x - (centre ? img.width * q / 2 : q)), snap(y - img.base * q), img.width * q, img.height * q);
 }
 const MIMICS = new Map();
 const mimicImage = K => memo(MIMICS, SR + K.mimic, () => icon({ cat: K.mimic }, K.mimic === "potion" ? [0.5, 0.75, 1] : [1, 0.8, 0.3]));
@@ -377,7 +394,7 @@ function shadow(cx, cy, S, x, y){
 // bands for the four sides are found once per picture (right, left, down, up); the frame adds the ones facing the light.
 const RIMS = new WeakMap();
 const rimsOf = img => { let r = RIMS.get(img); if (r) return r;
-  const W = img.width, H = img.height, a = img.getContext("2d").getImageData(0, 0, W, H).data, w = Math.max(1, W / 32);
+  const W = img.width, H = img.height, a = img.getContext("2d").getImageData(0, 0, W, H).data, w = Math.max(1, Math.round(W / 32));
   const solid = (x, y) => x >= 0 && y >= 0 && x < W && y < H && a[4 * (y * W + x) + 3] > 128;
   r = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => { const c = newCanvas(W, H), g = c.getContext("2d"), m = g.createImageData(W, H);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (solid(x, y) && solid(x + dx * w, y + dy * w) && !solid(x + dx * 2 * w, y + dy * 2 * w)){

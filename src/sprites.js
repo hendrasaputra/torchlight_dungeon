@@ -60,7 +60,7 @@ function pix(w = TS, h = TS, S = SR){
     px: (x, y, col) => p.rect(x, y, 1, 1, solid(col)),
     harden: () => { const d = buf(); for (let o = 3; o < d.length; o += 4) d[o] = d[o] >= 128 ? 255 : 0; return p; },   // after drawing on the canvas itself (rotated, so smoothed): each pixel wholly there or not
     dot: (x, y, col) => fill(Math.floor(x * S), Math.floor(y * S), Math.max(1, S >> 1), Math.max(1, S >> 1), solid(col)),   // fine detail: half a unit at S > 1
-    clear: (x, y, ww, hh) => { const d = buf(); for (let Y = Math.max(0, y * S); Y < Math.min(H, (y + hh) * S); Y++) for (let X = Math.max(0, x * S); X < Math.min(W, (x + ww) * S); X++) d[4 * (Y * W + X) + 3] = 0; },
+    clear: (x, y, ww, hh) => { const d = buf(); for (let Y = Math.max(0, Math.round(y * S)); Y < Math.min(H, Math.round((y + hh) * S)); Y++) for (let X = Math.max(0, Math.round(x * S)); X < Math.min(W, Math.round((x + ww) * S)); X++) d[4 * (Y * W + X) + 3] = 0; },
     // a ball around the cell (cx, cy), the same footprint as before at S = 1
     disc: (cx, cy, r, col) => { const ox = cx + 0.5, oy = cy + 0.5, R = r + 0.38;
       area(ox - R, oy - R, ox + R, oy + R, col, (u, v) => { const dx = (u - ox) / R, dy = (v - oy) / R, d2 = dx * dx + dy * dy;
@@ -387,19 +387,20 @@ const SPRITES = new Map();
 // F: the idle frame, 0 to 3. Plans that move on their own (wings, flicker) use it; the rest breathe or sway (idle).
 const OWN_FRAMES = new Set(["bat", "bird", "wisp", "elemental", "vortex", "ghost"]), SWAYS = new Set(["jelly", "plant", "mould", "worm", "snake", "mushroom", "horror"]);
 const planOf = K => K.shape || PLAN[K.glyph];
-const creatureImage = (K, F = 0) => memo(SPRITES, SR + "|" + K.id + "|" + F, () => { const plan = planOf(K); return !F || OWN_FRAMES.has(plan) ? creature(K, F) : idle(creatureImage(K, 0), SWAYS.has(plan), F); });
+// Big ones are drawn at their own size, Math.round(TS * size) units at SR pixels each, so their pixels match everyone's
+const creatureImage = (K, F = 0) => memo(SPRITES, SR + "|" + K.id + "|" + F, () => { const plan = planOf(K); return !F || OWN_FRAMES.has(plan) ? creature(K, F, Math.round(TS * (K.size || 1)) * SR) : idle(creatureImage(K, 0), SWAYS.has(plan), F); });
 // A stepped idle frame made from the still one: the upper body sinks a pixel and comes back, or the top sways.
 function idle(img, sway, F){
   if (!F) return img;
-  const W = img.width, H = img.height, c = newCanvas(W, H), g = c.getContext("2d"), u = Math.max(1, W / 32), top = Math.round(H * (sway ? 0.65 : 0.55));
+  const W = img.width, H = img.height, c = newCanvas(W, H), g = c.getContext("2d"), u = Math.max(1, Math.round(W / 32)), top = Math.round(H * (sway ? 0.65 : 0.55));
   c.glows = img.glows;
   if (sway){ g.drawImage(img, 0, top, W, H - top, 0, top, W, H - top);
     for (let y = 0; y < top; y++) g.drawImage(img, 0, y, W, 1, Math.round([0, 1, 0, -1][F] * u * (1 - y / top) * 1.6), y, W, 1); }
   else { const n = [0, 1, 1, 0][F] * u; g.drawImage(img, 0, top, W, H - top, 0, top, W, H - top); g.drawImage(img, 0, 0, W, top, 0, n, W, top); }
   return c;
 }
-function creature(K, F = 0){
-  const p = pix(), c = K.rgb, base = shade(c, 3), dark = shade(c, 1), light = shade(c, 5), eye = K.undead ? "#7ff" : "#ff4";
+function creature(K, F = 0, size = TS * SR){
+  const p = pix(TS, TS, size / TS), c = K.rgb, base = shade(c, 3), dark = shade(c, 1), light = shade(c, 5), eye = K.undead ? "#7ff" : "#ff4";
   switch (planOf(K)){
     case "rodent": p.rect(3, 9, 9, 5, base); p.rect(4, 9, 7, 1, light); p.rect(11, 8, 4, 4, base); p.eye(13, 9, eye); p.px(12, 7, light); p.line(0, 13, 3, 11, dark); p.rect(4, 14, 1, 1, dark); p.rect(10, 14, 1, 1, dark); break;
     case "canine": p.rect(2, 7, 10, 5, base); p.rect(3, 7, 8, 1, light); p.rect(11, 4, 4, 5, base); p.rect(14, 6, 2, 2, dark); p.eye(12, 5, eye); p.px(11, 3, base);
@@ -450,16 +451,16 @@ function creature(K, F = 0){
       p.eye(6, 6, eye); p.eye(9, 5, eye); p.eye(10, 8, eye); p.rect(6, 9, 4, 1, "#300"); break;
     case "mushroom": p.disc(8, 6, 5, base); p.clear(2, 7, 13, 9); p.rect(3, 6, 11, 1, hex(c, 0.75)); p.rect(6, 7, 4, 7, hex([0.92, 0.88, 0.78])); p.px(7, 9, "#111"); p.px(9, 9, "#111");
       p.rect(5, 14, 2, 2, hex([0.85, 0.8, 0.7])); p.rect(9, 14, 2, 2, hex([0.85, 0.8, 0.7])); p.px(5, 3, "#fff"); p.px(10, 4, "#fff"); break;
-    case "skeleton": return doll({ skin: [0.9, 0.88, 0.8], hair: [0.9, 0.88, 0.8], cloth: [0.85, 0.83, 0.75], race: "human", eq: K.kit || { weapon: "shortsword" } });
-    case "ghoul": return doll({ skin: c, hair: c.map(v => v * 0.6), cloth: [0.3, 0.32, 0.28], race: "human", eq: K.kit || {} });
-    case "mummy": return doll({ skin: c, hair: c, cloth: c.map(v => v * 0.9), race: "human", eq: K.kit || {} });
-    case "vampire": return doll({ skin: [0.9, 0.88, 0.9], hair: [0.12, 0.1, 0.12], cloth: c, race: "human", eq: { cloak: "furcloak", ...(K.kit || {}) } });
-    case "lich": return doll({ skin: [0.85, 0.82, 0.7], hair: [0.85, 0.82, 0.7], cloth: c, race: "human", eq: { body: "robe", head: "circlet", weapon: "staffw" } });
-    case "hybrid": return doll({ skin: c, hair: c.map(v => v * 0.6), cloth: [0.4, 0.32, 0.22], race: "stonekin", tusks: true, eq: K.kit || { weapon: "axe" } });
-    case "scalekin": return doll({ skin: c, hair: c.map(v => v * 0.7), cloth: [0.45, 0.35, 0.22], race: "human", tusks: true, eq: K.kit || {} });
-    case "giant": return doll({ skin: c, hair: c.map(v => v * 0.6), cloth: [0.4, 0.32, 0.22], race: "cragborn", tusks: true, eq: K.kit || { weapon: "club" } });
-    case "goblin": return doll({ skin: c, hair: [0.15, 0.12, 0.1], race: "burrowfolk", tusks: true, eq: K.kit || { weapon: "dagger", body: "leather" } });
-    case "person": return doll({ skin: SKIN.human, hair: c.map(v => v * 0.5), cloth: c, race: "human", eq: K.kit || {} });
+    case "skeleton": return doll({ skin: [0.9, 0.88, 0.8], hair: [0.9, 0.88, 0.8], cloth: [0.85, 0.83, 0.75], race: "human", eq: K.kit || { weapon: "shortsword" } }, size);
+    case "ghoul": return doll({ skin: c, hair: c.map(v => v * 0.6), cloth: [0.3, 0.32, 0.28], race: "human", eq: K.kit || {} }, size);
+    case "mummy": return doll({ skin: c, hair: c, cloth: c.map(v => v * 0.9), race: "human", eq: K.kit || {} }, size);
+    case "vampire": return doll({ skin: [0.9, 0.88, 0.9], hair: [0.12, 0.1, 0.12], cloth: c, race: "human", eq: { cloak: "furcloak", ...(K.kit || {}) } }, size);
+    case "lich": return doll({ skin: [0.85, 0.82, 0.7], hair: [0.85, 0.82, 0.7], cloth: c, race: "human", eq: { body: "robe", head: "circlet", weapon: "staffw" } }, size);
+    case "hybrid": return doll({ skin: c, hair: c.map(v => v * 0.6), cloth: [0.4, 0.32, 0.22], race: "stonekin", tusks: true, eq: K.kit || { weapon: "axe" } }, size);
+    case "scalekin": return doll({ skin: c, hair: c.map(v => v * 0.7), cloth: [0.45, 0.35, 0.22], race: "human", tusks: true, eq: K.kit || {} }, size);
+    case "giant": return doll({ skin: c, hair: c.map(v => v * 0.6), cloth: [0.4, 0.32, 0.22], race: "cragborn", tusks: true, eq: K.kit || { weapon: "club" } }, size);
+    case "goblin": return doll({ skin: c, hair: [0.15, 0.12, 0.1], race: "burrowfolk", tusks: true, eq: K.kit || { weapon: "dagger", body: "leather" } }, size);
+    case "person": return doll({ skin: SKIN.human, hair: c.map(v => v * 0.5), cloth: c, race: "human", eq: K.kit || {} }, size);
     default: {   // no plan: a mirrored shape seeded by the monster's id, so every kind still looks like itself
       let seed = 0; for (const ch of K.id) seed = seed * 31 + ch.charCodeAt(0);
       for (let y = 2; y < 15; y++) for (let x = 2; x < 8; x++) if (hash(x, y, seed) < 0.5 - Math.abs(y - 8) * 0.03){ const col = hash(x, y, seed + 1) < 0.2 ? light : base; p.px(x, y, col); p.px(15 - x, y, col); }
