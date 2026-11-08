@@ -2671,21 +2671,27 @@ function spawnMonster(awake, K = pickMonster(depth), at = freeSpot(10)){
 }
 
 /* ---------- sight and light ---------- */
-// The hero's own light, flickering at time t (0: still); null without one
-function torchLight(t){
-  const R = lightRadius(); if (R <= 0) return null;
-  const f = t ? 0.06 * Math.sin(t * 0.011) + 0.04 * Math.sin(t * 0.029 + 1.3) + 0.03 * Math.sin(t * 0.071) : 0;   // the flame flickers
-  return { x: player.x, y: player.y, r: R + f * 4, i: 1.3 * (1 + f), rgb: TORCH_RGB };
-}
-// torch false: everything but the hero's light, which the renderer casts itself at a finer grain
-function computeLight(field, t, torch = true){
-  field.set(roomLight);
-  if (depth === 0 && L.fire >= 0 && !isDay()){   // the town's campfire at night: wide and warm, lower when the cage fails
+// The lights the renderer casts itself at a finer grain, each with the figure it moves with (m), if any: the town's
+// campfire at night (wide and warm, lower when the cage fails), the hero's torch, and glowing monsters. t: the time
+// the flames flicker at (0: still).
+function castLights(t){
+  const out = [];
+  if (depth === 0 && L.fire >= 0 && !isDay()){
     const f = t ? 0.08 * Math.sin(t * 0.013) + 0.06 * Math.sin(t * 0.037 + 2) + 0.04 * Math.sin(t * 0.09) : 0, low = townShade(player.rings) ? 0.7 : 1;
-    addLight(field, MW, MH, blocks, { x: L.fire % MW, y: Math.floor(L.fire / MW), r: (10 + f * 6) * low, i: 1.25 * (1 + f) * low, rgb: FIRE_RGB });
+    out.push({ x: L.fire % MW, y: Math.floor(L.fire / MW), r: (10 + f * 6) * low, i: 1.25 * (1 + f) * low, rgb: FIRE_RGB });
   }
-  const tl = torch && torchLight(t); if (tl) addLight(field, MW, MH, blocks, tl);
-  for (const m of mons) if (m.K && m.K.glow) addLight(field, MW, MH, blocks, { x: m.x, y: m.y, r: m.K.glow.r, i: 1.0, rgb: m.K.glow.rgb });
+  const R = lightRadius();
+  if (R > 0){
+    const f = t ? 0.06 * Math.sin(t * 0.011) + 0.04 * Math.sin(t * 0.029 + 1.3) + 0.03 * Math.sin(t * 0.071) : 0;   // the flame flickers
+    out.push({ x: player.x, y: player.y, r: R + f * 4, i: 1.3 * (1 + f), rgb: TORCH_RGB, m: player });
+  }
+  for (const m of mons) if (m.K && m.K.glow) out.push({ x: m.x, y: m.y, r: m.K.glow.r, i: 1.0, rgb: m.K.glow.rgb, m });
+  return out;
+}
+// cast false: without the lights above, which the renderer draws itself
+function computeLight(field, t, cast = true){
+  field.set(roomLight);
+  if (cast) for (const s of castLights(t)) addLight(field, MW, MH, blocks, s);
   if (!t) return;   // bolts and flashes only light what is drawn; they do not change what the turn saw
   for (const s of shots){ const c = s.path[Math.min(s.path.length - 1, Math.floor(s.t * s.speed))]; if (s.light) addLight(field, MW, MH, blocks, { x: c[0], y: c[1], r: 2.5, i: 1.2, rgb: s.light }); }
   for (const f of flashes) addLight(field, MW, MH, blocks, { x: f.x, y: f.y, r: 3.5, i: 1.6 * f.t / f.t0, rgb: f.rgb });
@@ -4538,7 +4544,7 @@ function drawWorld(t, dt, real = dt){
   if (!L) return;
   const title = state === "title" || state === "create";
   const lt = Math.ceil(t / 80) * 80;   // flames flicker in steps, about 12 a second, so band edges jump rather than crawl
-  computeLight(lightNow, lt); computeLight(lightBase, lt, false); torchNow = torchLight(lt);
+  computeLight(lightNow, lt); computeLight(lightBase, lt, false); castNow = castLights(lt);
   windT = calm() ? 0 : Math.floor(t / 125) / 8;
   for (const m of mons) stepAnim(m, dt);
   stepParts(dt); poke = false;
@@ -4725,28 +4731,30 @@ function shotDraw(s){
 const LIGHT_BANDS = 20;   // steps of brightness, spaced on a square-root curve so the dark end gets more of them
 const BAND_AT = Float32Array.from({ length: 256 }, (_, m) => Math.sqrt(m / 255) * LIGHT_BANDS), BAND_LUM = Float32Array.from({ length: LIGHT_BANDS + 2 }, (_, q) => Math.min(255, (q / LIGHT_BANDS) ** 2 * 255));
 let lightVals = new Float32Array(0), lightImg = null, lightCols = new Int32Array(0), lightFx = new Float32Array(0), lightCell = new Uint8Array(0);
-const lightBase = new Float32Array(3 * MW * MH);   // the light without the hero's torch
-let torchNow = null;
-// The torch is drawn by shadow casting at one unit, finer than the cells: rays from the flame to the corners of every
-// wall near it (and a ring of others) find where each is stopped, and the polygon they make is the lit shape. Its edges
-// are where the shadows truly fall, so a pillar casts a sharp wedge and light does not seep round corners.
-const torchMask = newCanvas(1, 1), torchMG = torchMask.getContext("2d", { willReadFrequently: true });
+const lightBase = new Float32Array(3 * MW * MH);   // the light without the cast ones (castLights)
+let castNow = [], lightU = new Float32Array(0), lightUF = new Uint8Array(0);
+const wallSeen = new Uint32Array(MW * MH); let wallMark = 0;
+// The torch, the campfire and glowing monsters are drawn by shadow casting at one unit, finer than the cells: rays from
+// the flame to the corners of every wall near it (and a ring of others) find where each is stopped, and the polygon they
+// make is the lit shape. Its edges are where the shadows truly fall, so a pillar casts a sharp wedge and light does not
+// seep round corners.
+const lightMask = newCanvas(1, 1), lightMG = lightMask.getContext("2d", { willReadFrequently: true });
 function rayTo(ox, oy, dx, dy, R){   // how far a ray from (ox, oy) in cells gets before a wall, up to R (grid stepping)
   let x = Math.floor(ox), y = Math.floor(oy); const sx = dx > 0 ? 1 : -1, sy = dy > 0 ? 1 : -1, ax = Math.abs(1 / dx), ay = Math.abs(1 / dy);
   let tx = (dx > 0 ? x + 1 - ox : ox - x) * ax, ty = (dy > 0 ? y + 1 - oy : oy - y) * ay;
   for (;;){ const t = Math.min(tx, ty); if (t >= R) return R; if (tx < ty){ x += sx; tx += ax; } else { y += sy; ty += ay; } if (blocks(x, y)) return t; }
 }
-function torchShape(ox, oy, R){   // a mask n x n units, from cell (x0, y0): which units the flame at (ox, oy) reaches
+function lightShape(ox, oy, R){   // a mask n x n units, from cell (x0, y0): which units a flame at (ox, oy) reaches
   const k = Math.ceil(R) + 1, x0 = Math.floor(ox) - k, y0 = Math.floor(oy) - k, n = (2 * k + 1) * TS, A = [];
   for (let j = 0; j < 64; j++) A.push((j + 0.5) / 64 * 2 * Math.PI - Math.PI);
   for (let y = y0; y < y0 + 2 * k + 1; y++) for (let x = x0; x < x0 + 2 * k + 1; x++) if (blocks(x, y))
     for (const [cx, cy] of [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]]){ const a = Math.atan2(cy - oy, cx - ox); A.push(a - 1e-4, a + 1e-4); }
   A.sort((a, b) => a - b);
-  if (torchMask.width !== n){ torchMask.width = torchMask.height = n; } else torchMG.clearRect(0, 0, n, n);
-  torchMG.beginPath();
-  for (const a of A){ const dx = Math.cos(a), dy = Math.sin(a), t = rayTo(ox, oy, dx, dy, R); torchMG.lineTo((ox + dx * t - x0) * TS, (oy + dy * t - y0) * TS); }
-  torchMG.fillStyle = "#fff"; torchMG.fill();
-  return { x0, y0, n, a: torchMG.getImageData(0, 0, n, n).data };
+  if (lightMask.width !== n){ lightMask.width = lightMask.height = n; } else lightMG.clearRect(0, 0, n, n);
+  lightMG.beginPath();
+  for (const a of A){ const dx = Math.cos(a), dy = Math.sin(a), t = rayTo(ox, oy, dx, dy, R); lightMG.lineTo((ox + dx * t - x0) * TS, (oy + dy * t - y0) * TS); }
+  lightMG.fillStyle = "#fff"; lightMG.fill();
+  return { x0, y0, n, a: lightMG.getImageData(0, 0, n, n).data };
 }
 function lightOverlay(x0, y0, x1, y1, lit, title){
   const w = x1 - x0 + 3, h = y1 - y0 + 3, P = TS * SR, W = w * P, H = h * P;
@@ -4757,36 +4765,51 @@ function lightOverlay(x0, y0, x1, y1, lit, title){
     if (mx < 0 || my < 0 || mx >= MW || my >= MH) continue;
     const i = idx(mx, my), j = 3 * i, base = title ? lightNow : lightBase;
     if (lit(i)){ c[o] = Math.min(255, base[j] * 220 + 22); c[o + 1] = Math.min(255, base[j + 1] * 220 + 20); c[o + 2] = Math.min(255, base[j + 2] * 220 + 26);
-      // where the torch may add its light: open floor by its mask (3: floor no other light reaches, so its shadowed
-      // part is drawn as remembered); a wall face whole, if the flame sees that wall
-      cell[y * w + x] = !blocks(mx, my) ? (lum(lightBase, j) > 0.03 ? 1 : 3) : lum(lightNow, j) - lum(lightBase, j) > 1e-4 ? 2 : 0;
+      // where cast lights may add theirs: open floor by their masks (3: floor no other light reaches, so its shadowed
+      // part is drawn as remembered); 2: a wall, whole, by each light that sees it
+      cell[y * w + x] = !blocks(mx, my) ? (lum(lightBase, j) > 0.03 ? 1 : 3) : 2;
       if (clouds){ const f = 1 - 0.3 * cloudAt(mx, my); c[o] *= f; c[o + 1] *= f; c[o + 2] *= f * 1.05; } }
     else if (!title && mem[i]){ c[o] = 30; c[o + 1] = 34; c[o + 2] = 58; }   // remembered: dim and cold
   }
   if (lightTex.width !== W || lightTex.height !== H){ lightTex.width = W; lightTex.height = H; lightImg = null; }
   if (!lightImg){ lightImg = lightG.createImageData(W, H); lightImg.u32 = new Uint32Array(lightImg.data.buffer); }
   const d = lightImg.u32, U = w * TS, V = h * TS;   // blended once a unit, dithered at each of its SR x SR pixels
-  const tl = title ? null : torchNow, a = posOf(player), ox = a.x + 0.5, oy = a.y + 0.5, RR = tl ? tl.r + 1 : 0, R2 = RR * RR;   // the flame moves with the hero
-  const M = tl ? torchShape(ox, oy, RR) : null, t0 = tl ? tl.rgb[0] * tl.i * 220 : 0, t1 = tl ? tl.rgb[1] * tl.i * 220 : 0, t2 = tl ? tl.rgb[2] * tl.i * 220 : 0;
+  if (lightUF.length < U * V){ lightU = new Float32Array(3 * U * V); lightUF = new Uint8Array(U * V); }
+  const B = lightU, F = lightUF.fill(0, 0, U * V);   // each unit's light, and 1: in a cast light's reach, 2: lit by one
   if (lightFx.length !== U){ lightCols = new Int32Array(2 * U); lightFx = new Float32Array(U); }
   for (let X = 0; X < U; X++){ const u = Math.max(0, Math.min(w - 1, (X + 0.5) / TS - 0.5)), xa = Math.floor(u); lightCols[2 * X] = 3 * xa; lightCols[2 * X + 1] = 3 * Math.min(w - 1, xa + 1); lightFx[X] = u - xa; }
   for (let Yu = 0; Yu < V; Yu++){
     const v = Math.max(0, Math.min(h - 1, (Yu + 0.5) / TS - 0.5)), ya = Math.floor(v), ra = 3 * ya * w, rb = 3 * Math.min(h - 1, ya + 1) * w, fy = v - ya;
     for (let Xu = 0; Xu < U; Xu++){
-      const fx = lightFx[Xu], a = ra + lightCols[2 * Xu], b = ra + lightCols[2 * Xu + 1], e = rb + lightCols[2 * Xu], f = rb + lightCols[2 * Xu + 1];
-      let r = (c[a] * (1 - fx) + c[b] * fx) * (1 - fy) + (c[e] * (1 - fx) + c[f] * fx) * fy;
-      let g = (c[a + 1] * (1 - fx) + c[b + 1] * fx) * (1 - fy) + (c[e + 1] * (1 - fx) + c[f + 1] * fx) * fy;
-      let bl = (c[a + 2] * (1 - fx) + c[b + 2] * fx) * (1 - fy) + (c[e + 2] * (1 - fx) + c[f + 2] * fx) * fy;
-      const ux = (Xu + 0.5) / TS + x0 - 1 - ox, uy = (Yu + 0.5) / TS + y0 - 1 - oy, d2 = ux * ux + uy * uy;
-      if (d2 < R2){ const k = cell[(Yu >> 4) * w + (Xu >> 4)], mx = Math.floor((ux + ox - M.x0) * TS), my = Math.floor((uy + oy - M.y0) * TS);   // TS is 16
-        if (k === 2 || (k && mx >= 0 && my >= 0 && mx < M.n && my < M.n && M.a[4 * (my * M.n + mx) + 3] >= 128)){ const q = 1 - Math.sqrt(d2) / RR, v = q * Math.sqrt(q);
-          r += t0 * v; g += t1 * v; bl += t2 * v; }
-        else if (k === 3){ r = 30; g = 34; bl = 58; } }   // in the torch's shadow: the remembered tone
-      const m = Math.max(r, g, bl), sq = BAND_AT[Math.min(255, m | 0)], im = m > 0 ? 1 / m : 0;
-      for (let sy = 0; sy < SR; sy++){ const Y = Yu * SR + sy, row = Y * W, by = (Y & 3) << 2;
-        for (let sx = 0; sx < SR; sx++){ const X = Xu * SR + sx, k = BAND_LUM[Math.floor(sq + BAYER[by | (X & 3)])] * im;   // the same hue, its brightness snapped to a band
-          d[row + X] = 0xff000000 | (bl * k) << 16 | (g * k) << 8 | (r * k); } }
+      const fx = lightFx[Xu], a = ra + lightCols[2 * Xu], b = ra + lightCols[2 * Xu + 1], e = rb + lightCols[2 * Xu], f = rb + lightCols[2 * Xu + 1], o = 3 * (Yu * U + Xu);
+      B[o] = (c[a] * (1 - fx) + c[b] * fx) * (1 - fy) + (c[e] * (1 - fx) + c[f] * fx) * fy;
+      B[o + 1] = (c[a + 1] * (1 - fx) + c[b + 1] * fx) * (1 - fy) + (c[e + 1] * (1 - fx) + c[f + 1] * fx) * fy;
+      B[o + 2] = (c[a + 2] * (1 - fx) + c[b + 2] * fx) * (1 - fy) + (c[e + 2] * (1 - fx) + c[f + 2] * fx) * fy;
     }
+  }
+  if (!title) for (const s of castNow){   // each cast light over the units it reaches; it moves with its figure
+    const p = s.m ? posOf(s.m) : s, ox = p.x + 0.5, oy = p.y + 0.5, RR = s.r + 1, R2 = RR * RR;
+    const ux0 = Math.max(0, Math.floor((ox - RR - x0 + 1) * TS)), ux1 = Math.min(U, Math.ceil((ox + RR - x0 + 1) * TS));
+    const uy0 = Math.max(0, Math.floor((oy - RR - y0 + 1) * TS)), uy1 = Math.min(V, Math.ceil((oy + RR - y0 + 1) * TS));
+    if (ux0 >= ux1 || uy0 >= uy1) continue;
+    const M = lightShape(ox, oy, RR), t0 = s.rgb[0] * s.i * 220, t1 = s.rgb[1] * s.i * 220, t2 = s.rgb[2] * s.i * 220, mark = ++wallMark;
+    fov(s.x, s.y, Math.ceil(s.r), blocks, (x, y) => { wallSeen[idx(x, y)] = mark; }, MW, MH);   // the walls it lights, whole
+    for (let Yu = uy0; Yu < uy1; Yu++) for (let Xu = ux0; Xu < ux1; Xu++){
+      const ux = (Xu + 0.5) / TS + x0 - 1, uy = (Yu + 0.5) / TS + y0 - 1, d2 = (ux - ox) ** 2 + (uy - oy) ** 2; if (d2 >= R2) continue;
+      const q = Yu * U + Xu, k = cell[(Yu >> 4) * w + (Xu >> 4)]; F[q] |= 1; if (!k) continue;   // TS is 16
+      if (k === 2){ if (wallSeen[idx(x0 - 1 + (Xu >> 4), y0 - 1 + (Yu >> 4))] !== mark) continue; }
+      else { const mx = Math.floor((ux - M.x0) * TS), my = Math.floor((uy - M.y0) * TS); if (mx < 0 || my < 0 || mx >= M.n || my >= M.n || M.a[4 * (my * M.n + mx) + 3] < 128) continue; }
+      const z = 1 - Math.sqrt(d2) / RR, v = z * Math.sqrt(z), o = 3 * q; B[o] += t0 * v; B[o + 1] += t1 * v; B[o + 2] += t2 * v; F[q] |= 2;
+    }
+  }
+  for (let Yu = 0; Yu < V; Yu++) for (let Xu = 0; Xu < U; Xu++){
+    const q = Yu * U + Xu, o = 3 * q;
+    let r = B[o], g = B[o + 1], bl = B[o + 2];
+    if (F[q] === 1 && cell[(Yu >> 4) * w + (Xu >> 4)] === 3){ r = 30; g = 34; bl = 58; }   // in shadow, where no other light reaches: the remembered tone
+    const m = Math.max(r, g, bl), sq = BAND_AT[Math.min(255, m | 0)], im = m > 0 ? 1 / m : 0;
+    for (let sy = 0; sy < SR; sy++){ const Y = Yu * SR + sy, row = Y * W, by = (Y & 3) << 2;
+      for (let sx = 0; sx < SR; sx++){ const X = Xu * SR + sx, k = BAND_LUM[Math.floor(sq + BAYER[by | (X & 3)])] * im;   // the same hue, its brightness snapped to a band
+        d[row + X] = 0xff000000 | (bl * k) << 16 | (g * k) << 8 | (r * k); } }
   }
   lightG.putImageData(lightImg, 0, 0);
   const X = (x0 - 1) * TS, Y = (y0 - 1) * TS;

@@ -287,21 +287,27 @@ function spawnMonster(awake, K = pickMonster(depth), at = freeSpot(10)){
 }
 
 /* ---------- sight and light ---------- */
-// The hero's own light, flickering at time t (0: still); null without one
-function torchLight(t){
-  const R = lightRadius(); if (R <= 0) return null;
-  const f = t ? 0.06 * Math.sin(t * 0.011) + 0.04 * Math.sin(t * 0.029 + 1.3) + 0.03 * Math.sin(t * 0.071) : 0;   // the flame flickers
-  return { x: player.x, y: player.y, r: R + f * 4, i: 1.3 * (1 + f), rgb: TORCH_RGB };
-}
-// torch false: everything but the hero's light, which the renderer casts itself at a finer grain
-function computeLight(field, t, torch = true){
-  field.set(roomLight);
-  if (depth === 0 && L.fire >= 0 && !isDay()){   // the town's campfire at night: wide and warm, lower when the cage fails
+// The lights the renderer casts itself at a finer grain, each with the figure it moves with (m), if any: the town's
+// campfire at night (wide and warm, lower when the cage fails), the hero's torch, and glowing monsters. t: the time
+// the flames flicker at (0: still).
+function castLights(t){
+  const out = [];
+  if (depth === 0 && L.fire >= 0 && !isDay()){
     const f = t ? 0.08 * Math.sin(t * 0.013) + 0.06 * Math.sin(t * 0.037 + 2) + 0.04 * Math.sin(t * 0.09) : 0, low = townShade(player.rings) ? 0.7 : 1;
-    addLight(field, MW, MH, blocks, { x: L.fire % MW, y: Math.floor(L.fire / MW), r: (10 + f * 6) * low, i: 1.25 * (1 + f) * low, rgb: FIRE_RGB });
+    out.push({ x: L.fire % MW, y: Math.floor(L.fire / MW), r: (10 + f * 6) * low, i: 1.25 * (1 + f) * low, rgb: FIRE_RGB });
   }
-  const tl = torch && torchLight(t); if (tl) addLight(field, MW, MH, blocks, tl);
-  for (const m of mons) if (m.K && m.K.glow) addLight(field, MW, MH, blocks, { x: m.x, y: m.y, r: m.K.glow.r, i: 1.0, rgb: m.K.glow.rgb });
+  const R = lightRadius();
+  if (R > 0){
+    const f = t ? 0.06 * Math.sin(t * 0.011) + 0.04 * Math.sin(t * 0.029 + 1.3) + 0.03 * Math.sin(t * 0.071) : 0;   // the flame flickers
+    out.push({ x: player.x, y: player.y, r: R + f * 4, i: 1.3 * (1 + f), rgb: TORCH_RGB, m: player });
+  }
+  for (const m of mons) if (m.K && m.K.glow) out.push({ x: m.x, y: m.y, r: m.K.glow.r, i: 1.0, rgb: m.K.glow.rgb, m });
+  return out;
+}
+// cast false: without the lights above, which the renderer draws itself
+function computeLight(field, t, cast = true){
+  field.set(roomLight);
+  if (cast) for (const s of castLights(t)) addLight(field, MW, MH, blocks, s);
   if (!t) return;   // bolts and flashes only light what is drawn; they do not change what the turn saw
   for (const s of shots){ const c = s.path[Math.min(s.path.length - 1, Math.floor(s.t * s.speed))]; if (s.light) addLight(field, MW, MH, blocks, { x: c[0], y: c[1], r: 2.5, i: 1.2, rgb: s.light }); }
   for (const f of flashes) addLight(field, MW, MH, blocks, { x: f.x, y: f.y, r: 3.5, i: 1.6 * f.t / f.t0, rgb: f.rgb });
