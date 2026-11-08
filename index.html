@@ -4757,8 +4757,9 @@ function lightOverlay(x0, y0, x1, y1, lit, title){
     if (mx < 0 || my < 0 || mx >= MW || my >= MH) continue;
     const i = idx(mx, my), j = 3 * i, base = title ? lightNow : lightBase;
     if (lit(i)){ c[o] = Math.min(255, base[j] * 220 + 22); c[o + 1] = Math.min(255, base[j + 1] * 220 + 20); c[o + 2] = Math.min(255, base[j + 2] * 220 + 26);
-      // where the torch may add its light: open floor by its mask; a wall face whole, if the flame sees that wall
-      cell[y * w + x] = !blocks(mx, my) ? 1 : lum(lightNow, j) - lum(lightBase, j) > 1e-4 ? 2 : 0;
+      // where the torch may add its light: open floor by its mask (3: floor no other light reaches, so its shadowed
+      // part is drawn as remembered); a wall face whole, if the flame sees that wall
+      cell[y * w + x] = !blocks(mx, my) ? (lum(lightBase, j) > 0.03 ? 1 : 3) : lum(lightNow, j) - lum(lightBase, j) > 1e-4 ? 2 : 0;
       if (clouds){ const f = 1 - 0.3 * cloudAt(mx, my); c[o] *= f; c[o + 1] *= f; c[o + 2] *= f * 1.05; } }
     else if (!title && mem[i]){ c[o] = 30; c[o + 1] = 34; c[o + 2] = 58; }   // remembered: dim and cold
   }
@@ -4778,8 +4779,9 @@ function lightOverlay(x0, y0, x1, y1, lit, title){
       let bl = (c[a + 2] * (1 - fx) + c[b + 2] * fx) * (1 - fy) + (c[e + 2] * (1 - fx) + c[f + 2] * fx) * fy;
       const ux = (Xu + 0.5) / TS + x0 - 1 - ox, uy = (Yu + 0.5) / TS + y0 - 1 - oy, d2 = ux * ux + uy * uy;
       if (d2 < R2){ const k = cell[(Yu >> 4) * w + (Xu >> 4)], mx = Math.floor((ux + ox - M.x0) * TS), my = Math.floor((uy + oy - M.y0) * TS);   // TS is 16
-        if (k === 2 || (k === 1 && mx >= 0 && my >= 0 && mx < M.n && my < M.n && M.a[4 * (my * M.n + mx) + 3] >= 128)){ const q = 1 - Math.sqrt(d2) / RR, v = q * Math.sqrt(q);
-          r += t0 * v; g += t1 * v; bl += t2 * v; } }
+        if (k === 2 || (k && mx >= 0 && my >= 0 && mx < M.n && my < M.n && M.a[4 * (my * M.n + mx) + 3] >= 128)){ const q = 1 - Math.sqrt(d2) / RR, v = q * Math.sqrt(q);
+          r += t0 * v; g += t1 * v; bl += t2 * v; }
+        else if (k === 3){ r = 30; g = 34; bl = 58; } }   // in the torch's shadow: the remembered tone
       const m = Math.max(r, g, bl), sq = BAND_AT[Math.min(255, m | 0)], im = m > 0 ? 1 / m : 0;
       for (let sy = 0; sy < SR; sy++){ const Y = Yu * SR + sy, row = Y * W, by = (Y & 3) << 2;
         for (let sx = 0; sx < SR; sx++){ const X = Xu * SR + sx, k = BAND_LUM[Math.floor(sq + BAYER[by | (X & 3)])] * im;   // the same hue, its brightness snapped to a band
