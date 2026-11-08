@@ -303,7 +303,9 @@ function castLights(t){
   }
   for (const m of mons) if (m.K && m.K.glow) out.push({ x: m.x, y: m.y, r: m.K.glow.r, i: 1.0, rgb: m.K.glow.rgb, m });
   if (!t) return out;   // bolts and flashes only light what is drawn; they do not change what the turn saw
-  for (const s of shots){ const c = s.path[Math.min(s.path.length - 1, Math.floor(s.t * s.speed))]; if (s.light) out.push({ x: c[0], y: c[1], r: 2.5, i: 1.2, rgb: s.light }); }
+  for (const s of shots) if (s.light){   // at its cell for what walls it sees, drawn (at) where the bolt is drawn, between cells
+    const f = Math.min(s.path.length - 1, s.t * s.speed), i = Math.floor(f), c = s.path[i], n = s.path[Math.min(s.path.length - 1, i + 1)], u = f - i;
+    out.push({ x: c[0], y: c[1], at: { x: c[0] + (n[0] - c[0]) * u, y: c[1] + (n[1] - c[1]) * u }, r: 2.5, i: 1.2, rgb: s.light }); }
   for (const f of flashes) out.push({ x: f.x, y: f.y, r: 3.5, i: 1.6 * f.t / f.t0, rgb: f.rgb });
   return out;
 }

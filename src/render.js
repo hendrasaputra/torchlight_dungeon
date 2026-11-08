@@ -499,8 +499,8 @@ function lightOverlay(x0, y0, x1, y1, lit, title){
       B[o + 2] = (c[a + 2] * (1 - fx) + c[b + 2] * fx) * (1 - fy) + (c[e + 2] * (1 - fx) + c[f + 2] * fx) * fy;
     }
   }
-  if (!title) for (const s of castNow){   // each cast light over the units it reaches; it moves with its figure
-    const p = s.m ? posOf(s.m) : s, ox = p.x + 0.5, oy = p.y + 0.5, RR = s.r + 1, R2 = RR * RR;
+  if (!title) for (const s of castNow){   // each cast light over the units it reaches; it moves with its figure or bolt
+    const p = s.m ? posOf(s.m) : s.at || s, ox = p.x + 0.5, oy = p.y + 0.5, RR = s.r + 1, R2 = RR * RR;
     const ux0 = Math.max(0, Math.floor((ox - RR - x0 + 1) * TS)), ux1 = Math.min(U, Math.ceil((ox + RR - x0 + 1) * TS));
     const uy0 = Math.max(0, Math.floor((oy - RR - y0 + 1) * TS)), uy1 = Math.min(V, Math.ceil((oy + RR - y0 + 1) * TS));
     if (ux0 >= ux1 || uy0 >= uy1) continue;
